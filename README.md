@@ -1,73 +1,172 @@
-# Welcome to your Lovable project
 
-## Project info
+# 콘킾 (ConKeep) - 스마트 기프티콘 관리 서비스
 
-**URL**: https://lovable.dev/projects/6aa3fa1a-532b-4a41-8c08-ee8aab5c218a
+## 📱 서비스 소개
 
-## How can I edit this code?
+콘킾(ConKeep)은 AI 기반의 모바일 기프티콘 관리 및 공유 서비스입니다. 기프티콘 이미지를 업로드하면 자동으로 바코드를 인식하고, Google Gemini Vision API를 통해 브랜드, 상품명, 유효기간, 금액을 추출하여 체계적으로 관리할 수 있습니다.
 
-There are several ways of editing your application.
+### ✨ 주요 기능
 
-**Use Lovable**
+- **🤖 AI 자동 인식**: Google Gemini Vision API로 쿠폰 정보 자동 추출
+- **📱 바코드 스캔**: ZXing-js 라이브러리를 통한 바코드/QR 코드 인식
+- **💾 로컬 저장**: IndexedDB를 활용한 안전한 로컬 데이터 저장
+- **🔔 만료 알림**: D-7, D-1일 푸시 알림으로 만료 방지
+- **🔗 실시간 공유**: BroadcastChannel API를 통한 즉시 동기화
+- **🎨 모바일 최적화**: 360×640 기준 반응형 디자인
+- **🌙 다크모드**: 자동 테마 전환 지원
+- **🔒 보안**: API 키 암호화 저장
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6aa3fa1a-532b-4a41-8c08-ee8aab5c218a) and start prompting.
+## 🚀 설치 및 사용 방법
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### 1. 프로젝트 다운로드
+```bash
+# Git clone 또는 파일 다운로드 후
+cd conkeep
 ```
 
-**Edit a file directly in GitHub**
+### 2. 웹 서버 실행
+```bash
+# Python 사용 (권장)
+python -m http.server 8000
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# 또는 Node.js serve 사용
+npx serve .
 
-**Use GitHub Codespaces**
+# 또는 PHP 사용
+php -S localhost:8000
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 3. 브라우저에서 접속
+```
+http://localhost:8000
+```
 
-## What technologies are used for this project?
+### 4. Google Gemini API 키 설정
+1. [Google AI Studio](https://makersuite.google.com/app/apikey)에서 API 키 발급
+2. 앱 설정에서 API 키 입력 및 저장
+3. AI 기능 활성화 완료
 
-This project is built with:
+## 📂 파일 구조
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+/
+├── index.html          # 메인 HTML 파일
+├── style.css          # CSS 스타일시트
+├── app.js             # JavaScript 메인 로직
+├── README.md          # 프로젝트 문서
+└── manifest.json      # PWA 매니페스트 (선택사항)
+```
 
-## How can I deploy this project?
+## 🛠 기술 스택
 
-Simply open [Lovable](https://lovable.dev/projects/6aa3fa1a-532b-4a41-8c08-ee8aab5c218a) and click on Share -> Publish.
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **AI Vision**: Google Gemini Vision API
+- **Barcode**: ZXing-js Library
+- **QR Generator**: qrcode.js Library
+- **Storage**: IndexedDB
+- **Communication**: BroadcastChannel API
+- **Notifications**: Web Notification API
 
-## Can I connect a custom domain to my Lovable project?
+## 📋 사용자 시나리오
 
-Yes, you can!
+### 1. 선물 관리
+- 생일에 받은 여러 브랜드 기프티콘을 한꺼번에 등록
+- AI가 자동으로 브랜드, 상품명, 유효기간 인식
+- 만료일 기준으로 정렬된 대시보드에서 한눈에 확인
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 2. 만료 방지
+- D-7, D-1일 푸시 알림으로 사용 리마인드
+- 사용 완료 체크로 중복 사용 방지
+- 만료 임박 쿠폰 별도 표시
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### 3. 가족 공유
+- 공유 링크 생성으로 가족과 쿠폰 공유
+- 실시간 사용 상태 동기화
+- QR 코드를 통한 간편 공유
+
+### 4. 이벤트 경품
+- 온라인 행사 경품 쿠폰 즉시 등록
+- 바코드 스캔으로 빠른 인식
+- 사용 시점까지 안전한 보관
+
+## 🧪 테스트 시나리오
+
+| # | 테스트 케이스 | 기대 결과 |
+|---|---------------|-----------|
+| 1 | 해상도 200dpi 흐릿한 바코드 업로드 | 스캔 성공률 70% 이상 |
+| 2 | QR 코드 + 흰 배경/그림자 이미지 | 인식 정확도 95% 이상 |
+| 3 | 만료일이 지난 쿠폰 등록 | 카드에 '만료' 상태 표시, 알림 제외 |
+| 4 | API 키 미입력 상태에서 등록 시도 | 'API 키 필요' 모달 표시 |
+| 5 | 공유 링크 접속 후 '사용 완료' 토글 | 원본 탭 상태 즉시 동기화 |
+| 6 | 오프라인 상태에서 대시보드 접근 | 저장된 쿠폰 목록 정상 로드 |
+| 7 | 푸시 알림 권한 거부 상태 | 앱 내부 배너 알림으로 대체 |
+| 8 | 50장 대량 쿠폰 업로드 | 3초 이내 렌더링, 스크롤 60fps |
+| 9 | 동일 바코드 중복 등록 시도 | '이미 존재하는 바코드' 경고 |
+| 10 | API 오류(429 등) 발생 시 | 수동 입력 폼으로 전환 |
+
+## ⚙️ 설정 옵션
+
+### 알림 설정
+- 만료 알림 ON/OFF
+- 7일 전 알림 설정
+- 1일 전 알림 설정
+
+### 데이터 관리
+- 데이터 내보내기 (JSON 형식)
+- 전체 데이터 삭제
+- API 키 관리
+
+### 테마 설정
+- 라이트/다크 모드 자동 감지
+- 수동 테마 전환 지원
+
+## 🔒 보안 및 개인정보
+
+- **로컬 저장**: 모든 데이터는 사용자 기기에만 저장됩니다
+- **API 키 암호화**: Crypto API를 통한 API 키 암호화 저장
+- **개인정보 없음**: 서버로 개인정보 전송하지 않음
+- **오프라인 동작**: 인터넷 연결 없이도 기본 기능 사용 가능
+
+## 📱 PWA 지원
+
+- 홈 화면에 추가 가능
+- 오프라인 모드 지원
+- 네이티브 앱과 유사한 UX
+
+## 🐛 알려진 이슈 (Known Issues)
+
+1. **iOS Safari 제한사항**
+   - 파일 업로드 시 `capture` 속성 일부 제한
+   - 해결: 수동 카메라 앱 사용 후 업로드
+
+2. **구형 브라우저 호환성**
+   - ES6+ 기능 사용으로 IE 미지원
+   - 해결: Chrome, Firefox, Safari 최신 버전 사용 권장
+
+3. **대용량 이미지 처리**
+   - 10MB 이상 이미지 처리 속도 저하
+   - 해결: 자동 WebP 압축 적용
+
+## 🔄 업데이트 계획 (TODO)
+
+- [ ] 카테고리별 쿠폰 분류 기능
+- [ ] 사용 내역 통계 및 분석
+- [ ] 쿠폰 교환/거래 기능
+- [ ] 브랜드별 할인 정보 연동
+- [ ] 가계부 연동 기능
+- [ ] 다국어 지원 (영어, 일본어)
+
+## 📞 지원 및 문의
+
+- **GitHub Issues**: 버그 리포트 및 기능 요청
+- **Email**: [개발자 이메일]
+- **버전**: v1.0.0
+- **최종 업데이트**: 2024-01-01
+
+## 📄 라이선스
+
+MIT License - 자유롭게 사용, 수정, 배포 가능합니다.
+
+---
+
+> 💡 **팁**: 최상의 경험을 위해 최신 버전의 Chrome 또는 Safari 브라우저를 사용하세요!
