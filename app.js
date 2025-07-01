@@ -1,89 +1,34 @@
-// ConKeep - Smart Gift Card Management App
-// Main Application Logic
-
+// ConKeep - 옥수수 테마 기프티콘 관리 앱
 class ConKeepApp {
     constructor() {
         this.db = null;
-        this.coupons = [];
         this.currentCoupon = null;
-        this.broadcastChannel = null;
-        this.apiKey = null;
-        this.codeReader = null;
+        this.sharedCoupon = null;
+        this.sharedCoupons = new Map(); // 공유 쿠폰 저장소
+        this.apiKey = localStorage.getItem('gemini-api-key');
+        this.uploadedImageData = null; // 업로드된 이미지 데이터 저장
+        this.currentScanResult = null; // 현재 스캔 결과 저장
         
         this.init();
     }
-    
+
     async init() {
-        console.log('Initializing ConKeep App...');
-        
-        // Initialize theme
-        this.initTheme();
-        
-        // Initialize database
         await this.initDB();
-        
-        // Load API key
-        await this.loadAPIKey();
-        
-        // Initialize barcode scanner
-        this.initBarcodeScanner();
-        
-        // Setup broadcast channel for real-time sync
-        this.initBroadcastChannel();
-        
-        // Setup event listeners
         this.setupEventListeners();
+        this.setupBroadcastChannel();
+        this.loadCoupons();
+        this.updateStats();
+        this.checkNotificationPermission();
+        this.startNotificationScheduler();
+        this.checkSharedCoupon();
         
-        // Load initial data
-        await this.loadCoupons();
-        
-        // Check URL for share page
-        this.checkShareURL();
-        
-        // Setup notifications
-        this.setupNotifications();
-        
-        // Hide loading screen
-        this.hideLoadingScreen();
-        
-        console.log('ConKeep App initialized successfully');
-    }
-    
-    initTheme() {
-        // Load saved theme or detect system preference
-        const savedTheme = localStorage.getItem('conkeep-theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-        
-        document.documentElement.setAttribute('data-theme', theme);
-        
-        // Update theme icon
-        const icon = document.querySelector('.theme-icon');
-        if (icon) {
-            icon.textContent = theme === 'dark' ? '☀️' : '🌙';
-        }
-        
-        // Listen for system theme changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (!localStorage.getItem('conkeep-theme')) {
-                const newTheme = e.matches ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', newTheme);
-                const icon = document.querySelector('.theme-icon');
-                if (icon) {
-                    icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-                }
-            }
-        });
-    }
-    
-    hideLoadingScreen() {
+        // 로딩 완료
         setTimeout(() => {
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
         }, 1500);
     }
-    
-    // Database initialization and management
+
     async initDB() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('ConKeepDB', 1);
@@ -96,266 +41,41 @@ class ConKeepApp {
             
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                
-                // Create coupons store
                 if (!db.objectStoreNames.contains('coupons')) {
                     const store = db.createObjectStore('coupons', { keyPath: 'id' });
-                    store.createIndex('brand', 'brand');
-                    store.createIndex('expiry', 'expiry');
-                    store.createIndex('used', 'used');
-                }
-                
-                // Create settings store
-                if (!db.objectStoreNames.contains('settings')) {
-                    db.createObjectStore('settings', { keyPath: 'key' });
+                    store.createIndex('brand', 'brand', { unique: false });
+                    store.createIndex('expiry', 'expiry', { unique: false });
+                    store.createIndex('used', 'used', { unique: false });
                 }
             };
         });
     }
-    
-    async saveCoupon(coupon) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['coupons'], 'readwrite');
-            const store = transaction.objectStore('coupons');
-            
-            const request = store.put(coupon);
-            request.onsuccess = () => resolve(coupon);
-            request.onerror = () => reject(request.error);
-        });
-    }
-    
-    async loadCoupons() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['coupons'], 'readonly');
-            const store = transaction.objectStore('coupons');
-            
-            const request = store.getAll();
-            request.onsuccess = () => {
-                this.coupons = request.result;
-                this.renderCoupons();
-                this.updateStats();
-                resolve(this.coupons);
-            };
-            request.onerror = () => reject(request.error);
-        });
-    }
-    
-    async deleteCoupon(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['coupons'], 'readwrite');
-            const store = transaction.objectStore('coupons');
-            
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    }
-    
-    // API Key management
-    async loadAPIKey() {
-        try {
-            const encrypted = localStorage.getItem('conkeep_api_key');
-            if (encrypted) {
-                this.apiKey = atob(encrypted); // Simple base64 decoding for demo
-            }
-        } catch (error) {
-            console.warn('Failed to load API key:', error);
-            localStorage.removeItem('conkeep_api_key');
-        }
-    }
-    
-    async saveAPIKey(key) {
-        try {
-            const encrypted = btoa(key); // Simple base64 encoding for demo
-            localStorage.setItem('conkeep_api_key', encrypted);
-            this.apiKey = key;
-            this.showToast('API 키가 저장되었습니다', 'success');
-        } catch (error) {
-            console.error('Failed to save API key:', error);
-            this.showToast('API 키 저장에 실패했습니다', 'error');
-        }
-    }
-    
-    // Barcode scanning
-    initBarcodeScanner() {
-        try {
-            this.codeReader = new ZXing.BrowserMultiFormatReader();
-            console.log('Barcode scanner initialized');
-        } catch (error) {
-            console.error('Failed to initialize barcode scanner:', error);
-        }
-    }
-    
-    async scanBarcode(imageElement) {
-        if (!this.codeReader) {
-            throw new Error('Barcode scanner not initialized');
-        }
-        
-        try {
-            const result = await this.codeReader.decodeFromImageElement(imageElement);
-            return result.text;
-        } catch (error) {
-            console.warn('Barcode scan failed:', error);
-            throw new Error('바코드를 인식할 수 없습니다');
-        }
-    }
-    
-    // AI Analysis with Gemini Vision API (FIXED URL)
-    async analyzeWithAI(imageBlob) {
-        if (!this.apiKey) {
-            throw new Error('API 키가 필요합니다');
-        }
-        
-        try {
-            const base64Image = await this.blobToBase64(imageBlob);
-            const base64Data = base64Image.split(',')[1];
-            
-            // FIXED: Correct Gemini API URL
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            {
-                                text: "이 기프티콘 이미지를 분석해서 다음 정보를 JSON 형태로 추출해주세요: 브랜드명(brand), 상품명(name), 금액(amount, 숫자만), 유효기간(expiry, YYYY-MM-DD 형식). 정보가 불분명하면 빈 문자열로 반환하세요. 반드시 JSON 형식으로만 응답하세요."
-                            },
-                            {
-                                inline_data: {
-                                    mime_type: "image/jpeg",
-                                    data: base64Data
-                                }
-                            }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        maxOutputTokens: 1024,
-                    }
-                })
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Error:', response.status, errorText);
-                throw new Error(`API 요청 실패: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            
-            console.log('AI Response:', text);
-            
-            // Extract JSON from response
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
-            }
-            
-            throw new Error('AI 분석 결과를 파싱할 수 없습니다');
-        } catch (error) {
-            console.error('AI analysis failed:', error);
-            throw error;
-        }
-    }
-    
-    blobToBase64(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    }
-    
-    // Broadcast Channel for real-time sync
-    initBroadcastChannel() {
-        this.broadcastChannel = new BroadcastChannel('conkeep-sync');
-        this.broadcastChannel.onmessage = (event) => {
-            const { type, data } = event.data;
-            
-            switch (type) {
-                case 'COUPON_UPDATED':
-                    this.handleCouponUpdated(data);
-                    break;
-                case 'COUPON_DELETED':
-                    this.handleCouponDeleted(data);
-                    break;
-            }
-        };
-    }
-    
-    broadcastCouponUpdate(coupon) {
-        if (this.broadcastChannel) {
-            this.broadcastChannel.postMessage({
-                type: 'COUPON_UPDATED',
-                data: coupon
-            });
-        }
-    }
-    
-    broadcastCouponDelete(couponId) {
-        if (this.broadcastChannel) {
-            this.broadcastChannel.postMessage({
-                type: 'COUPON_DELETED',
-                data: couponId
-            });
-        }
-    }
-    
-    handleCouponUpdated(updatedCoupon) {
-        const index = this.coupons.findIndex(c => c.id === updatedCoupon.id);
-        if (index !== -1) {
-            this.coupons[index] = updatedCoupon;
-            this.renderCoupons();
-            this.updateStats();
-            this.showToast('쿠폰이 실시간으로 업데이트되었습니다 🌽', 'info');
-        }
-    }
-    
-    handleCouponDeleted(couponId) {
-        this.coupons = this.coupons.filter(c => c.id !== couponId);
-        this.renderCoupons();
-        this.updateStats();
-        this.showToast('쿠폰이 삭제되었습니다', 'info');
-    }
-    
-    // Event listeners setup
+
     setupEventListeners() {
-        // Tab navigation
+        // 탭 전환
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const tabName = e.target.closest('.tab-btn').dataset.tab;
-                this.switchTab(tabName);
+                const tab = e.currentTarget.dataset.tab;
+                this.switchTab(tab);
             });
         });
-        
-        // Theme toggle - FIXED
+
+        // 테마 토글
         document.getElementById('theme-toggle').addEventListener('click', () => {
             this.toggleTheme();
         });
-        
-        // Settings button
+
+        // 설정 버튼
         document.getElementById('settings-btn').addEventListener('click', () => {
             this.showModal('settings');
         });
-        
-        // File upload
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                this.handleFileUpload(e.target.files[0]);
-            }
-        });
-        
-        // Upload area click
-        document.querySelector('.upload-btn').addEventListener('click', () => {
-            document.getElementById('file-input').click();
-        });
-        
-        // Drag and drop
+
+        // 파일 업로드
+        const fileInput = document.getElementById('file-input');
         const uploadArea = document.getElementById('upload-area');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -368,78 +88,60 @@ class ConKeepApp {
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
-            
-            const files = Array.from(e.dataTransfer.files);
-            if (files.length > 0 && files[0].type.startsWith('image/')) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
                 this.handleFileUpload(files[0]);
             }
         });
         
-        // Search and filter
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // 쿠폰 저장
+        document.getElementById('save-coupon').addEventListener('click', () => {
+            this.saveCoupon();
+        });
+
+        // 취소 버튼
+        document.getElementById('cancel-add').addEventListener('click', () => {
+            this.resetAddForm();
+        });
+
+        // 재스캔 버튼
+        document.getElementById('rescan-btn').addEventListener('click', () => {
+            this.rescanBarcode();
+        });
+
+        // 검색 및 필터
         document.getElementById('search-input').addEventListener('input', () => {
             this.filterCoupons();
         });
-        
+
         document.getElementById('filter-btn').addEventListener('click', () => {
             const panel = document.getElementById('filter-panel');
             panel.classList.toggle('hidden');
         });
-        
+
         document.getElementById('brand-filter').addEventListener('change', () => {
             this.filterCoupons();
         });
-        
+
         document.getElementById('status-filter').addEventListener('change', () => {
             this.filterCoupons();
         });
-        
-        // Coupon form
-        document.getElementById('save-coupon').addEventListener('click', () => {
-            this.saveCouponFromForm();
-        });
-        
-        document.getElementById('cancel-add').addEventListener('click', () => {
-            this.resetAddForm();
-        });
-        
-        document.getElementById('rescan-btn').addEventListener('click', () => {
-            this.rescanBarcode();
-        });
-        
-        // Modal close buttons
+
+        // 모달 닫기
         document.querySelectorAll('.close-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const modal = e.target.dataset.modal;
                 this.hideModal(modal);
             });
         });
-        
-        // Settings
-        document.getElementById('save-api-key').addEventListener('click', () => {
-            const key = document.getElementById('api-key-input').value.trim();
-            if (key) {
-                this.saveAPIKey(key);
-                document.getElementById('api-key-input').value = '';
-            }
-        });
-        
-        // Notifications toggle
-        document.getElementById('notifications-enabled').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                this.requestNotificationPermission();
-            }
-        });
-        
-        // Data management
-        document.getElementById('export-data').addEventListener('click', () => {
-            this.exportData();
-        });
-        
-        document.getElementById('clear-data').addEventListener('click', () => {
-            this.clearAllData();
-        });
-        
-        // Modal backdrop clicks
+
+        // 모달 바깥 클릭으로 닫기
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -447,779 +149,975 @@ class ConKeepApp {
                 }
             });
         });
+
+        // 설정 관련
+        document.getElementById('save-api-key').addEventListener('click', () => {
+            this.saveApiKey();
+        });
+
+        document.getElementById('export-data').addEventListener('click', () => {
+            this.exportData();
+        });
+
+        document.getElementById('clear-data').addEventListener('click', () => {
+            this.clearAllData();
+        });
+
+        // 쿠폰 상세 모달
+        document.getElementById('toggle-used').addEventListener('click', () => {
+            this.toggleCouponUsed();
+        });
+
+        document.getElementById('share-coupon').addEventListener('click', () => {
+            this.shareCoupon();
+        });
+
+        document.getElementById('delete-coupon').addEventListener('click', () => {
+            this.deleteCoupon();
+        });
+
+        document.getElementById('copy-link').addEventListener('click', () => {
+            this.copyShareLink();
+        });
+
+        // 공유 페이지
+        document.getElementById('back-to-app').addEventListener('click', () => {
+            this.hideSharePage();
+        });
+
+        document.getElementById('share-usage-toggle').addEventListener('change', (e) => {
+            this.updateSharedCouponUsage(e.target.checked);
+        });
     }
-    
-    // Tab switching
+
+    setupBroadcastChannel() {
+        this.channel = new BroadcastChannel('coupon-sync');
+        this.channel.addEventListener('message', (event) => {
+            if (event.data.type === 'coupon-updated') {
+                this.loadCoupons();
+                this.updateStats();
+            }
+        });
+    }
+
     switchTab(tabName) {
-        // Update tab buttons
+        // 탭 버튼 활성화
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-        
-        // Update tab content
+
+        // 탭 콘텐츠 표시
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
         document.getElementById(`${tabName}-tab`).classList.add('active');
-        
-        // Load tab-specific data
-        if (tabName === 'shared') {
-            this.loadSharedCoupons();
-        }
-    }
-    
-    // Theme management - FIXED
-    toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('conkeep-theme', newTheme);
-        
-        // Update theme icon
-        const icon = document.querySelector('.theme-icon');
-        if (icon) {
-            icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-        }
-        
-        this.showToast(`${newTheme === 'dark' ? '다크' : '라이트'} 모드로 전환했습니다 🌽`, 'success');
-    }
-    
-    // File upload handling
-    async handleFileUpload(file) {
-        try {
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                throw new Error('파일 크기가 너무 큽니다 (최대 10MB)');
-            }
-            
-            // Convert to WebP if needed
-            const processedFile = await this.processImage(file);
-            
-            // Show preview
-            const preview = document.getElementById('preview-image');
-            const url = URL.createObjectURL(processedFile);
-            preview.src = url;
-            
-            // Show preview section
-            document.getElementById('preview-section').classList.remove('hidden');
-            document.getElementById('scan-overlay').classList.remove('hidden');
-            
-            // Scan barcode
-            setTimeout(async () => {
-                try {
-                    const code = await this.scanBarcode(preview);
-                    document.getElementById('coupon-code').value = code;
-                    this.showToast('바코드 스캔 완료 🌽', 'success');
-                } catch (error) {
-                    this.showToast(error.message, 'warning');
-                }
-                
-                document.getElementById('scan-overlay').classList.add('hidden');
-                
-                // Start AI analysis
-                if (this.apiKey) {
-                    this.analyzeWithAIFromFile(processedFile);
-                } else {
-                    this.showToast('AI 분석을 위해 설정에서 API 키를 입력하세요', 'warning');
-                }
-            }, 1000);
-            
-        } catch (error) {
-            this.showToast(error.message, 'error');
-        }
-    }
-    
-    async processImage(file) {
-        return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.onload = () => {
-                // Calculate new dimensions (max 1200px width)
-                const maxWidth = 1200;
-                const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-                canvas.width = img.width * ratio;
-                canvas.height = img.height * ratio;
-                
-                // Draw and compress
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob(resolve, 'image/jpeg', 0.8);
-            };
-            
-            img.src = URL.createObjectURL(file);
-        });
-    }
-    
-    async analyzeWithAIFromFile(file) {
-        document.getElementById('ai-analysis').classList.remove('hidden');
-        
-        try {
-            const analysis = await this.analyzeWithAI(file);
-            
-            // Fill form with AI results
-            if (analysis.brand) {
-                document.getElementById('coupon-brand').value = analysis.brand;
-            }
-            if (analysis.name) {
-                document.getElementById('coupon-name').value = analysis.name;
-            }
-            if (analysis.amount) {
-                document.getElementById('coupon-amount').value = analysis.amount;
-            }
-            if (analysis.expiry) {
-                document.getElementById('coupon-expiry').value = analysis.expiry;
-            }
-            
-            this.showToast('AI 분석 완료 🌽🤖', 'success');
-        } catch (error) {
-            this.showToast('AI 분석 실패: ' + error.message, 'warning');
-        } finally {
-            document.getElementById('ai-analysis').classList.add('hidden');
-        }
-    }
-    
-    // Coupon management
-    async saveCouponFromForm() {
-        try {
-            const formData = this.getCouponFormData();
-            
-            if (!formData.brand || !formData.name) {
-                throw new Error('브랜드명과 상품명은 필수입니다');
-            }
-            
-            // Check for duplicate codes
-            if (formData.code && this.coupons.some(c => c.code === formData.code)) {
-                throw new Error('이미 등록된 바코드입니다');
-            }
-            
-            const coupon = {
-                id: this.generateUUID(),
-                imgSrc: document.getElementById('preview-image').src,
-                code: formData.code || '',
-                brand: formData.brand,
-                name: formData.name,
-                amount: formData.amount || null,
-                expiry: formData.expiry || null,
-                used: false,
-                shared: false,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-            };
-            
-            await this.saveCoupon(coupon);
-            this.coupons.push(coupon);
-            
-            this.renderCoupons();
-            this.updateStats();
+
+        // 등록 탭일 때 폼 초기화
+        if (tabName === 'add') {
             this.resetAddForm();
-            this.switchTab('dashboard');
-            
-            this.showToast('기프티콘이 등록되었습니다 🌽', 'success');
-        } catch (error) {
-            this.showToast(error.message, 'error');
         }
     }
-    
-    getCouponFormData() {
-        return {
-            code: document.getElementById('coupon-code').value.trim(),
-            brand: document.getElementById('coupon-brand').value.trim(),
-            name: document.getElementById('coupon-name').value.trim(),
-            amount: parseInt(document.getElementById('coupon-amount').value) || null,
-            expiry: document.getElementById('coupon-expiry').value || null
-        };
+
+    toggleTheme() {
+        const body = document.body;
+        const themeIcon = document.querySelector('.theme-icon');
+        
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.removeAttribute('data-theme');
+            themeIcon.textContent = '🌙';
+            localStorage.setItem('theme', 'light');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            themeIcon.textContent = '☀️';
+            localStorage.setItem('theme', 'dark');
+        }
     }
-    
+
+    // 초기 테마 설정
+    initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const themeIcon = document.querySelector('.theme-icon');
+        
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            themeIcon.textContent = '☀️';
+        } else {
+            themeIcon.textContent = '🌙';
+        }
+    }
+
+    showModal(modalName) {
+        const modal = document.getElementById(`${modalName}-modal`);
+        modal.classList.remove('hidden');
+        
+        if (modalName === 'settings') {
+            this.loadSettings();
+        }
+    }
+
+    hideModal(modalName) {
+        const modal = document.getElementById(`${modalName}-modal`);
+        modal.classList.add('hidden');
+    }
+
     resetAddForm() {
-        document.getElementById('preview-section').classList.add('hidden');
-        document.getElementById('ai-analysis').classList.add('hidden');
-        document.getElementById('file-input').value = '';
-        document.querySelectorAll('.coupon-form input').forEach(input => {
-            input.value = '';
-        });
-    }
-    
-    async rescanBarcode() {
-        const preview = document.getElementById('preview-image');
-        document.getElementById('scan-overlay').classList.remove('hidden');
+        // 모든 상태 초기화
+        this.uploadedImageData = null;
+        this.currentScanResult = null;
+        this.currentCoupon = null;
         
-        try {
-            const code = await this.scanBarcode(preview);
-            document.getElementById('coupon-code').value = code;
-            this.showToast('바코드 재스캔 완료 🌽', 'success');
-        } catch (error) {
-            this.showToast(error.message, 'warning');
-        } finally {
-            document.getElementById('scan-overlay').classList.add('hidden');
+        // UI 요소 초기화
+        const previewSection = document.getElementById('preview-section');
+        const aiAnalysis = document.getElementById('ai-analysis');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        
+        previewSection.classList.add('hidden');
+        aiAnalysis.classList.add('hidden');
+        uploadArea.classList.remove('hidden');
+        
+        // 폼 필드 초기화
+        document.getElementById('coupon-code').value = '';
+        document.getElementById('coupon-brand').value = '';
+        document.getElementById('coupon-name').value = '';
+        document.getElementById('coupon-amount').value = '';
+        document.getElementById('coupon-expiry').value = '';
+        
+        // 이미지 초기화
+        const previewImage = document.getElementById('preview-image');
+        if (previewImage) {
+            previewImage.src = '';
         }
-    }
-    
-    // Rendering
-    renderCoupons() {
-        const grid = document.getElementById('coupons-grid');
-        const emptyState = document.getElementById('empty-state');
         
-        if (this.coupons.length === 0) {
-            emptyState.style.display = 'block';
+        // 파일 입력 초기화
+        fileInput.value = '';
+        
+        this.showToast('등록 폼이 초기화되었습니다 🌽', 'success');
+    }
+
+    async handleFileUpload(file) {
+        if (!file.type.startsWith('image/')) {
+            this.showToast('이미지 파일만 업로드 가능합니다 🌽', 'error');
             return;
         }
+
+        try {
+            // 파일을 base64로 변환
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                this.uploadedImageData = e.target.result;
+                
+                // 이미지 미리보기 표시
+                document.getElementById('preview-image').src = this.uploadedImageData;
+                document.getElementById('upload-area').classList.add('hidden');
+                document.getElementById('preview-section').classList.remove('hidden');
+                
+                // 바코드 스캔 시작
+                await this.scanBarcode(this.uploadedImageData);
+            };
+            reader.readAsDataURL(file);
+            
+        } catch (error) {
+            console.error('파일 업로드 오류:', error);
+            this.showToast('파일 업로드에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async scanBarcode(imageSrc) {
+        const scanOverlay = document.getElementById('scan-overlay');
+        scanOverlay.classList.remove('hidden');
         
-        emptyState.style.display = 'none';
-        
-        // Sort by expiry date (soonest first)
-        const sortedCoupons = [...this.coupons].sort((a, b) => {
+        try {
+            // 이미지를 Image 객체로 변환
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            return new Promise((resolve, reject) => {
+                img.onload = async () => {
+                    try {
+                        // Canvas에 그리기
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        // ImageData 추출
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        // ZXing으로 바코드 스캔
+                        const codeReader = new ZXing.BrowserMultiFormatReader();
+                        const result = await codeReader.decodeFromImageData(imageData);
+                        
+                        this.currentScanResult = result.text;
+                        document.getElementById('coupon-code').value = result.text;
+                        
+                        scanOverlay.classList.add('hidden');
+                        this.showToast('바코드 인식 성공! 🌽✨', 'success');
+                        
+                        // AI 분석 시작
+                        await this.analyzeWithAI();
+                        
+                        resolve(result.text);
+                        
+                    } catch (error) {
+                        console.error('바코드 스캔 오류:', error);
+                        scanOverlay.classList.add('hidden');
+                        this.showToast('바코드를 인식할 수 없습니다. 수동으로 입력해주세요 🌽', 'warning');
+                        resolve(null);
+                    }
+                };
+                
+                img.onerror = () => {
+                    scanOverlay.classList.add('hidden');
+                    this.showToast('이미지 로드에 실패했습니다 🌽', 'error');
+                    reject(new Error('이미지 로드 실패'));
+                };
+                
+                img.src = imageSrc;
+            });
+            
+        } catch (error) {
+            scanOverlay.classList.add('hidden');
+            console.error('스캔 프로세스 오류:', error);
+            this.showToast('스캔 중 오류가 발생했습니다 🌽', 'error');
+        }
+    }
+
+    async rescanBarcode() {
+        if (this.uploadedImageData) {
+            await this.scanBarcode(this.uploadedImageData);
+        } else {
+            this.showToast('스캔할 이미지가 없습니다 🌽', 'error');
+        }
+    }
+
+    async analyzeWithAI() {
+        if (!this.apiKey) {
+            this.showToast('Gemini API 키가 필요합니다. 설정에서 등록해주세요 🌽', 'warning');
+            return;
+        }
+
+        if (!this.uploadedImageData) {
+            this.showToast('분석할 이미지가 없습니다 🌽', 'error');
+            return;
+        }
+
+        const aiAnalysis = document.getElementById('ai-analysis');
+        aiAnalysis.classList.remove('hidden');
+
+        try {
+            // 이미지를 Gemini API 형식으로 변환
+            const base64Data = this.uploadedImageData.split(',')[1];
+            
+            const requestBody = {
+                contents: [{
+                    parts: [
+                        {
+                            text: "이 기프티콘 이미지를 분석해서 다음 정보를 JSON 형식으로 추출해주세요:\n" +
+                                  "- brand: 브랜드명 (예: 스타벅스, 이디야커피)\n" +
+                                  "- name: 상품명 (예: 아메리카노 Tall)\n" +
+                                  "- amount: 금액 (숫자만, 예: 4500)\n" +
+                                  "- expiry: 유효기간 (YYYY-MM-DD 형식)\n" +
+                                  "정보를 찾을 수 없으면 null로 설정해주세요. 응답은 순수 JSON만 해주세요."
+                        },
+                        {
+                            inline_data: {
+                                mime_type: "image/jpeg",
+                                data: base64Data
+                            }
+                        }
+                    ]
+                }]
+            };
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API 오류: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Gemini API 응답:', data);
+            
+            if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                const text = data.candidates[0].content.parts[0].text;
+                console.log('추출된 텍스트:', text);
+                
+                try {
+                    // JSON 파싱 시도
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const couponInfo = JSON.parse(jsonMatch[0]);
+                        this.fillCouponForm(couponInfo);
+                        this.showToast('AI 분석 완료! 정보를 확인해주세요 🌽🤖', 'success');
+                    } else {
+                        throw new Error('JSON 형식을 찾을 수 없음');
+                    }
+                } catch (parseError) {
+                    console.error('JSON 파싱 오류:', parseError);
+                    this.showToast('AI 분석 결과를 처리할 수 없습니다. 수동으로 입력해주세요 🌽', 'warning');
+                }
+            } else {
+                throw new Error('API 응답이 비어있습니다');
+            }
+
+        } catch (error) {
+            console.error('AI 분석 오류:', error);
+            this.showToast('AI 분석에 실패했습니다. 수동으로 입력해주세요 🌽', 'warning');
+        } finally {
+            aiAnalysis.classList.add('hidden');
+        }
+    }
+
+    fillCouponForm(couponInfo) {
+        if (couponInfo.brand) {
+            document.getElementById('coupon-brand').value = couponInfo.brand;
+        }
+        if (couponInfo.name) {
+            document.getElementById('coupon-name').value = couponInfo.name;
+        }
+        if (couponInfo.amount) {
+            document.getElementById('coupon-amount').value = couponInfo.amount;
+        }
+        if (couponInfo.expiry) {
+            document.getElementById('coupon-expiry').value = couponInfo.expiry;
+        }
+    }
+
+    async saveCoupon() {
+        const code = document.getElementById('coupon-code').value.trim();
+        const brand = document.getElementById('coupon-brand').value.trim();
+        const name = document.getElementById('coupon-name').value.trim();
+        const amount = document.getElementById('coupon-amount').value;
+        const expiry = document.getElementById('coupon-expiry').value;
+
+        if (!code || !brand || !name) {
+            this.showToast('필수 항목을 입력해주세요 🌽', 'error');
+            return;
+        }
+
+        // 중복 확인
+        if (await this.isDuplicateCoupon(code)) {
+            this.showToast('이미 등록된 쿠폰입니다 🌽', 'warning');
+            return;
+        }
+
+        const coupon = {
+            id: this.generateId(),
+            imgSrc: this.uploadedImageData,
+            code: code,
+            brand: brand,
+            name: name,
+            amount: amount ? parseInt(amount) : null,
+            expiry: expiry,
+            used: false,
+            shared: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+
+        try {
+            await this.addCouponToDB(coupon);
+            this.showToast('기프티콘이 등록되었습니다! 🌽✨', 'success');
+            this.resetAddForm();
+            this.switchTab('dashboard');
+            this.loadCoupons();
+            this.updateStats();
+        } catch (error) {
+            console.error('쿠폰 저장 오류:', error);
+            this.showToast('저장에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async isDuplicateCoupon(code) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['coupons'], 'readonly');
+            const store = transaction.objectStore('coupons');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const coupons = request.result;
+                const duplicate = coupons.find(coupon => coupon.code === code);
+                resolve(!!duplicate);
+            };
+
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async addCouponToDB(coupon) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['coupons'], 'readwrite');
+            const store = transaction.objectStore('coupons');
+            const request = store.add(coupon);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async loadCoupons() {
+        try {
+            const coupons = await this.getCouponsFromDB();
+            this.displayCoupons(coupons);
+            this.updateBrandFilter(coupons);
+        } catch (error) {
+            console.error('쿠폰 로드 오류:', error);
+        }
+    }
+
+    async getCouponsFromDB() {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['coupons'], 'readonly');
+            const store = transaction.objectStore('coupons');
+            const request = store.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    displayCoupons(coupons) {
+        const grid = document.getElementById('coupons-grid');
+        const emptyState = document.getElementById('empty-state');
+
+        if (coupons.length === 0) {
+            grid.innerHTML = '';
+            grid.appendChild(emptyState);
+            return;
+        }
+
+        emptyState.remove();
+        grid.innerHTML = '';
+
+        // 만료일 순으로 정렬
+        coupons.sort((a, b) => {
             if (!a.expiry && !b.expiry) return 0;
             if (!a.expiry) return 1;
             if (!b.expiry) return -1;
             return new Date(a.expiry) - new Date(b.expiry);
         });
-        
-        const couponCards = sortedCoupons.map(coupon => {
-            const daysUntilExpiry = this.getDaysUntilExpiry(coupon.expiry);
-            const isExpired = daysUntilExpiry < 0;
-            const isExpiringSoon = daysUntilExpiry <= 7 && daysUntilExpiry >= 0;
-            
-            return `
-                <div class="coupon-card ${coupon.used ? 'used' : ''} ${isExpired ? 'expired' : ''}" 
-                     data-id="${coupon.id}" onclick="app.showCouponDetail('${coupon.id}')">
-                    <img src="${coupon.imgSrc}" alt="${coupon.name}" class="coupon-image" loading="lazy">
-                    ${coupon.used ? '<div class="status-badge used">사용완료</div>' : ''}
-                    ${isExpired ? '<div class="status-badge expired">만료</div>' : ''}
-                    <div class="coupon-info">
-                        <div class="coupon-brand">${coupon.brand}</div>
-                        <div class="coupon-name">${coupon.name}</div>
-                        <div class="coupon-meta">
-                            <span class="coupon-amount">${coupon.amount ? `${coupon.amount.toLocaleString()}원` : ''}</span>
-                            <div class="coupon-expiry">
-                                ${coupon.expiry ? `
-                                    <span class="expiry-badge ${isExpired ? 'expired' : isExpiringSoon ? 'urgent' : ''}">
-                                        ${isExpired ? '만료' : `D-${daysUntilExpiry}`}
-                                    </span>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
+
+        coupons.forEach(coupon => {
+            const card = this.createCouponCard(coupon);
+            grid.appendChild(card);
+        });
+    }
+
+    createCouponCard(coupon) {
+        const card = document.createElement('div');
+        card.className = 'coupon-card';
+        card.onclick = () => this.showCouponDetail(coupon);
+
+        const statusBadge = this.getStatusBadge(coupon);
+        const expiryBadge = this.getExpiryBadge(coupon);
+
+        card.innerHTML = `
+            ${statusBadge}
+            <img src="${coupon.imgSrc}" alt="${coupon.name}" class="coupon-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDMwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjhGOUZBIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZDNzU3RCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuydtOuvuOyngCDsl4bsnYw8L3RleHQ+Cjwvc3ZnPg=='">
+            <div class="coupon-info">
+                <div class="coupon-brand">${coupon.brand}</div>
+                <div class="coupon-name">${coupon.name}</div>
+                <div class="coupon-meta">
+                    <span class="coupon-amount">${coupon.amount ? coupon.amount.toLocaleString() + '원' : ''}</span>
+                    ${expiryBadge}
                 </div>
-            `;
-        }).join('');
-        
-        // Replace only the coupon cards, keeping the empty state
-        const existingCards = grid.querySelectorAll('.coupon-card');
-        existingCards.forEach(card => card.remove());
-        
-        grid.insertAdjacentHTML('afterbegin', couponCards);
+            </div>
+        `;
+
+        return card;
     }
-    
-    updateStats() {
-        const total = this.coupons.length;
-        const unused = this.coupons.filter(c => !c.used && this.getDaysUntilExpiry(c.expiry) >= 0).length;
-        const expiring = this.coupons.filter(c => {
-            const days = this.getDaysUntilExpiry(c.expiry);
-            return !c.used && days >= 0 && days <= 7;
-        }).length;
+
+    getStatusBadge(coupon) {
+        if (coupon.used) {
+            return '<div class="status-badge used">사용완료</div>';
+        }
+        if (this.isExpired(coupon.expiry)) {
+            return '<div class="status-badge expired">만료</div>';
+        }
+        return '';
+    }
+
+    getExpiryBadge(coupon) {
+        if (!coupon.expiry) return '';
         
-        document.getElementById('total-count').textContent = total;
-        document.getElementById('unused-count').textContent = unused;
-        document.getElementById('expiring-count').textContent = expiring;
-        
-        // Update brand filter options
-        const brands = [...new Set(this.coupons.map(c => c.brand))];
+        const daysLeft = this.getDaysUntilExpiry(coupon.expiry);
+        if (daysLeft < 0) {
+            return '<span class="expiry-badge expired">만료됨</span>';
+        } else if (daysLeft <= 7) {
+            return `<span class="expiry-badge urgent">D-${daysLeft}</span>`;
+        } else {
+            return `<span class="expiry-badge">D-${daysLeft}</span>`;
+        }
+    }
+
+    getDaysUntilExpiry(expiry) {
+        if (!expiry) return 999;
+        const today = new Date();
+        const expiryDate = new Date(expiry);
+        const diffTime = expiryDate - today;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    isExpired(expiry) {
+        if (!expiry) return false;
+        return new Date(expiry) < new Date();
+    }
+
+    updateBrandFilter(coupons) {
         const brandFilter = document.getElementById('brand-filter');
-        brandFilter.innerHTML = '<option value="">전체</option>' + 
-            brands.map(brand => `<option value="${brand}">${brand}</option>`).join('');
+        const brands = [...new Set(coupons.map(c => c.brand))].sort();
+        
+        brandFilter.innerHTML = '<option value="">전체</option>';
+        brands.forEach(brand => {
+            const option = document.createElement('option');
+            option.value = brand;
+            option.textContent = brand;
+            brandFilter.appendChild(option);
+        });
     }
-    
-    // Filtering
-    filterCoupons() {
+
+    async filterCoupons() {
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
         const brandFilter = document.getElementById('brand-filter').value;
         const statusFilter = document.getElementById('status-filter').value;
+
+        const allCoupons = await this.getCouponsFromDB();
         
-        const cards = document.querySelectorAll('.coupon-card');
-        cards.forEach(card => {
-            const couponId = card.dataset.id;
-            const coupon = this.coupons.find(c => c.id === couponId);
-            
-            if (!coupon) return;
-            
-            const matchesSearch = !searchTerm || 
-                coupon.brand.toLowerCase().includes(searchTerm) || 
-                coupon.name.toLowerCase().includes(searchTerm);
-            
+        const filteredCoupons = allCoupons.filter(coupon => {
+            const matchesSearch = coupon.brand.toLowerCase().includes(searchTerm) || 
+                                coupon.name.toLowerCase().includes(searchTerm);
             const matchesBrand = !brandFilter || coupon.brand === brandFilter;
             
             let matchesStatus = true;
-            if (statusFilter === 'unused') {
-                matchesStatus = !coupon.used && this.getDaysUntilExpiry(coupon.expiry) >= 0;
-            } else if (statusFilter === 'used') {
+            if (statusFilter === 'used') {
                 matchesStatus = coupon.used;
+            } else if (statusFilter === 'unused') {
+                matchesStatus = !coupon.used && !this.isExpired(coupon.expiry);
             } else if (statusFilter === 'expired') {
-                matchesStatus = this.getDaysUntilExpiry(coupon.expiry) < 0;
+                matchesStatus = this.isExpired(coupon.expiry);
             }
-            
-            card.style.display = matchesSearch && matchesBrand && matchesStatus ? 'block' : 'none';
+
+            return matchesSearch && matchesBrand && matchesStatus;
         });
+
+        this.displayCoupons(filteredCoupons);
     }
-    
-    // Coupon detail modal
-    showCouponDetail(couponId) {
-        const coupon = this.coupons.find(c => c.id === couponId);
-        if (!coupon) return;
-        
+
+    async updateStats() {
+        try {
+            const coupons = await this.getCouponsFromDB();
+            const totalCount = coupons.length;
+            const unusedCount = coupons.filter(c => !c.used && !this.isExpired(c.expiry)).length;
+            const expiringCount = coupons.filter(c => !c.used && this.getDaysUntilExpiry(c.expiry) <= 7 && this.getDaysUntilExpiry(c.expiry) >= 0).length;
+
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('unused-count').textContent = unusedCount;
+            document.getElementById('expiring-count').textContent = expiringCount;
+        } catch (error) {
+            console.error('통계 업데이트 오류:', error);
+        }
+    }
+
+    showCouponDetail(coupon) {
         this.currentCoupon = coupon;
         
-        // Fill modal content
         document.getElementById('modal-coupon-title').textContent = coupon.name;
         document.getElementById('modal-coupon-image').src = coupon.imgSrc;
         document.getElementById('modal-coupon-brand').textContent = coupon.brand;
         document.getElementById('modal-coupon-name').textContent = coupon.name;
-        document.getElementById('modal-coupon-amount').textContent = coupon.amount ? `${coupon.amount.toLocaleString()}원` : '정보 없음';
-        document.getElementById('modal-coupon-expiry').textContent = coupon.expiry ? 
-            new Date(coupon.expiry).toLocaleDateString('ko-KR') : '정보 없음';
-        document.getElementById('modal-coupon-code').textContent = coupon.code || '정보 없음';
+        document.getElementById('modal-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        document.getElementById('modal-coupon-expiry').textContent = coupon.expiry || '정보 없음';
+        document.getElementById('modal-coupon-code').textContent = coupon.code;
         
-        // Update buttons
         const toggleBtn = document.getElementById('toggle-used');
         toggleBtn.textContent = coupon.used ? '사용 취소' : '사용 완료';
         toggleBtn.className = coupon.used ? 'secondary-btn corn-secondary' : 'primary-btn corn-primary';
         
-        // Setup button events
-        this.setupCouponModalEvents(coupon);
-        
         this.showModal('coupon');
     }
-    
-    setupCouponModalEvents(coupon) {
-        // Remove existing event listeners
-        const toggleBtn = document.getElementById('toggle-used');
-        const shareBtn = document.getElementById('share-coupon');
-        const deleteBtn = document.getElementById('delete-coupon');
-        const copyBtn = document.getElementById('copy-link');
-        
-        // Clone buttons to remove existing event listeners
-        toggleBtn.replaceWith(toggleBtn.cloneNode(true));
-        shareBtn.replaceWith(shareBtn.cloneNode(true));
-        deleteBtn.replaceWith(deleteBtn.cloneNode(true));
-        copyBtn.replaceWith(copyBtn.cloneNode(true));
-        
-        // Add new event listeners
-        document.getElementById('toggle-used').addEventListener('click', () => {
-            this.toggleCouponUsed(coupon.id);
-        });
-        
-        document.getElementById('share-coupon').addEventListener('click', () => {
-            this.generateShareLink(coupon.id);
-        });
-        
-        document.getElementById('delete-coupon').addEventListener('click', () => {
-            this.deleteCouponConfirm(coupon.id);
-        });
-        
-        document.getElementById('copy-link').addEventListener('click', () => {
-            this.copyShareLink();
-        });
-    }
-    
-    async toggleCouponUsed(couponId) {
+
+    async toggleCouponUsed() {
+        if (!this.currentCoupon) return;
+
         try {
-            const coupon = this.coupons.find(c => c.id === couponId);
-            if (!coupon) return;
+            this.currentCoupon.used = !this.currentCoupon.used;
+            this.currentCoupon.updatedAt = Date.now();
             
-            coupon.used = !coupon.used;
-            coupon.updatedAt = Date.now();
+            await this.updateCouponInDB(this.currentCoupon);
             
-            await this.saveCoupon(coupon);
-            this.broadcastCouponUpdate(coupon);
+            const toggleBtn = document.getElementById('toggle-used');
+            toggleBtn.textContent = this.currentCoupon.used ? '사용 취소' : '사용 완료';
+            toggleBtn.className = this.currentCoupon.used ? 'secondary-btn corn-secondary' : 'primary-btn corn-primary';
             
-            this.renderCoupons();
+            this.showToast(this.currentCoupon.used ? '사용 완료로 변경되었습니다 🌽' : '사용 취소되었습니다 🌽', 'success');
+            
+            this.loadCoupons();
             this.updateStats();
-            this.hideModal('coupon');
             
-            this.showToast(
-                coupon.used ? '사용 완료로 표시했습니다 🌽' : '사용 취소했습니다 🌽', 
-                'success'
-            );
+            // BroadcastChannel로 다른 탭에 알림
+            this.channel.postMessage({
+                type: 'coupon-updated',
+                couponId: this.currentCoupon.id,
+                used: this.currentCoupon.used
+            });
+            
         } catch (error) {
-            this.showToast('상태 변경에 실패했습니다', 'error');
+            console.error('쿠폰 상태 업데이트 오류:', error);
+            this.showToast('상태 변경에 실패했습니다 🌽', 'error');
         }
     }
-    
-    async deleteCouponConfirm(couponId) {
-        if (confirm('정말로 이 기프티콘을 삭제하시겠습니까?')) {
-            try {
-                await this.deleteCoupon(couponId);
-                this.coupons = this.coupons.filter(c => c.id !== couponId);
-                this.broadcastCouponDelete(couponId);
-                
-                this.renderCoupons();
-                this.updateStats();
-                this.hideModal('coupon');
-                
-                this.showToast('기프티콘이 삭제되었습니다', 'success');
-            } catch (error) {
-                this.showToast('삭제에 실패했습니다', 'error');
-            }
+
+    async updateCouponInDB(coupon) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['coupons'], 'readwrite');
+            const store = transaction.objectStore('coupons');
+            const request = store.put(coupon);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async deleteCoupon() {
+        if (!this.currentCoupon) return;
+
+        if (!confirm('정말로 이 쿠폰을 삭제하시겠습니까? 🌽')) return;
+
+        try {
+            await this.deleteCouponFromDB(this.currentCoupon.id);
+            this.showToast('쿠폰이 삭제되었습니다 🌽', 'success');
+            this.hideModal('coupon');
+            this.loadCoupons();  // 목록 새로고침
+            this.updateStats();
+        } catch (error) {
+            console.error('쿠폰 삭제 오류:', error);
+            this.showToast('삭제에 실패했습니다 🌽', 'error');
         }
     }
-    
-    // Share functionality - FIXED
-    generateShareLink(couponId) {
-        const baseUrl = window.location.origin + window.location.pathname;
-        const shareUrl = `${baseUrl}?share=${couponId}`;
+
+    async deleteCouponFromDB(couponId) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['coupons'], 'readwrite');
+            const store = transaction.objectStore('coupons');
+            const request = store.delete(couponId);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    shareCoupon() {
+        if (!this.currentCoupon) return;
+
+        // 공유 쿠폰을 메모리에 저장
+        this.sharedCoupons.set(this.currentCoupon.id, {
+            ...this.currentCoupon,
+            sharedAt: Date.now()
+        });
+
+        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${this.currentCoupon.id}`;
         
-        document.getElementById('share-url').value = shareUrl;
-        document.getElementById('share-section').classList.remove('hidden');
-        
-        // Generate QR code
+        // QR 코드 생성
         const canvas = document.getElementById('qr-canvas');
         QRCode.toCanvas(canvas, shareUrl, { width: 200 }, (error) => {
             if (error) {
-                console.error('QR code generation failed:', error);
-                this.showToast('QR 코드 생성에 실패했습니다', 'error');
-            } else {
-                this.showToast('공유 링크가 생성되었습니다 🌽', 'success');
+                console.error('QR 코드 생성 오류:', error);
+                this.showToast('QR 코드 생성에 실패했습니다 🌽', 'error');
             }
         });
+
+        document.getElementById('share-url').value = shareUrl;
+        document.getElementById('share-section').classList.remove('hidden');
+        
+        this.showToast('공유 링크가 생성되었습니다! 🌽🔗', 'success');
     }
-    
+
     copyShareLink() {
-        const input = document.getElementById('share-url');
-        input.select();
+        const shareUrl = document.getElementById('share-url');
+        shareUrl.select();
         document.execCommand('copy');
-        this.showToast('링크가 복사되었습니다 🌽', 'success');
+        this.showToast('링크가 복사되었습니다! 🌽📋', 'success');
     }
-    
-    // Share page handling - FIXED
-    checkShareURL() {
+
+    checkSharedCoupon() {
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('share');
         
         if (shareId) {
-            // Wait for data to load first
-            setTimeout(() => {
-                this.showSharePage(shareId);
-            }, 500);
+            this.loadSharedCoupon(shareId);
         }
     }
-    
-    async showSharePage(couponId) {
-        try {
-            const coupon = this.coupons.find(c => c.id === couponId);
-            if (!coupon) {
-                this.showToast('공유된 쿠폰을 찾을 수 없습니다', 'error');
-                return;
-            }
-            
-            // Fill share page content
-            document.getElementById('share-coupon-image').src = coupon.imgSrc;
-            document.getElementById('share-coupon-title').textContent = coupon.name;
-            document.getElementById('share-coupon-brand').textContent = coupon.brand;
-            document.getElementById('share-coupon-amount').textContent = coupon.amount ? `${coupon.amount.toLocaleString()}원` : '정보 없음';
-            document.getElementById('share-coupon-expiry').textContent = coupon.expiry ? 
-                new Date(coupon.expiry).toLocaleDateString('ko-KR') : '정보 없음';
-            
-            const usageToggle = document.getElementById('share-usage-toggle');
-            usageToggle.checked = coupon.used;
-            
-            // Remove existing event listeners
-            const newToggle = usageToggle.cloneNode(true);
-            usageToggle.parentNode.replaceChild(newToggle, usageToggle);
-            
-            // Setup toggle event
-            newToggle.addEventListener('change', async (e) => {
-                try {
-                    coupon.used = e.target.checked;
-                    coupon.updatedAt = Date.now();
-                    
-                    await this.saveCoupon(coupon);
-                    this.broadcastCouponUpdate(coupon);
-                    
-                    this.showToast(
-                        coupon.used ? '사용 완료로 표시했습니다 🌽' : '사용 취소했습니다 🌽', 
-                        'success'
-                    );
-                } catch (error) {
-                    this.showToast('상태 변경에 실패했습니다', 'error');
-                    e.target.checked = !e.target.checked; // Revert
+
+    loadSharedCoupon(shareId) {
+        // 메모리에서 공유 쿠폰 찾기
+        const sharedCoupon = this.sharedCoupons.get(shareId);
+        
+        if (sharedCoupon) {
+            this.displaySharedCoupon(sharedCoupon);
+        } else {
+            // 로컬 DB에서 찾기 (같은 브라우저에서 공유한 경우)
+            this.getCouponById(shareId).then(coupon => {
+                if (coupon) {
+                    this.displaySharedCoupon(coupon);
+                } else {
+                    this.showToast('공유된 쿠폰을 찾을 수 없습니다 🌽', 'error');
                 }
             });
-            
-            // Show share page
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('share-page').classList.remove('hidden');
-            
-            // Setup back button - Remove existing listeners first
-            const backBtn = document.getElementById('back-to-app');
-            const newBackBtn = backBtn.cloneNode(true);
-            backBtn.parentNode.replaceChild(newBackBtn, backBtn);
-            
-            newBackBtn.addEventListener('click', () => {
-                this.hideSharePage();
-            });
-            
-        } catch (error) {
-            console.error('Share page error:', error);
-            this.showToast('공유 페이지 로드에 실패했습니다', 'error');
         }
     }
-    
+
+    async getCouponById(id) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['coupons'], 'readonly');
+            const store = transaction.objectStore('coupons');
+            const request = store.get(id);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    displaySharedCoupon(coupon) {
+        this.sharedCoupon = coupon;
+        
+        document.getElementById('share-coupon-image').src = coupon.imgSrc;
+        document.getElementById('share-coupon-title').textContent = coupon.name;
+        document.getElementById('share-coupon-brand').textContent = coupon.brand;
+        document.getElementById('share-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        document.getElementById('share-coupon-expiry').textContent = coupon.expiry || '정보 없음';
+        document.getElementById('share-usage-toggle').checked = coupon.used;
+        
+        document.getElementById('share-page').classList.remove('hidden');
+        document.getElementById('app').style.display = 'none';
+    }
+
     hideSharePage() {
         document.getElementById('share-page').classList.add('hidden');
         document.getElementById('app').style.display = 'block';
         
-        // Clear URL parameters
-        window.history.replaceState({}, document.title, window.location.pathname);
+        // URL에서 share 파라미터 제거
+        const url = new URL(window.location);
+        url.searchParams.delete('share');
+        window.history.replaceState({}, document.title, url);
     }
-    
-    // Notifications
-    setupNotifications() {
-        if ('Notification' in window) {
-            // Check current permission
-            const enabled = Notification.permission === 'granted';
-            document.getElementById('notifications-enabled').checked = enabled;
-            
-            if (enabled) {
-                this.startNotificationTimer();
+
+    async updateSharedCouponUsage(used) {
+        if (!this.sharedCoupon) return;
+
+        try {
+            // 로컬 DB에서 쿠폰 업데이트 시도
+            const localCoupon = await this.getCouponById(this.sharedCoupon.id);
+            if (localCoupon) {
+                localCoupon.used = used;
+                localCoupon.updatedAt = Date.now();
+                await this.updateCouponInDB(localCoupon);
+                
+                // BroadcastChannel로 다른 탭에 알림
+                this.channel.postMessage({
+                    type: 'coupon-updated',
+                    couponId: localCoupon.id,
+                    used: used
+                });
             }
+
+            // 공유 쿠폰 상태도 업데이트
+            this.sharedCoupon.used = used;
+            this.sharedCoupon.updatedAt = Date.now();
+            this.sharedCoupons.set(this.sharedCoupon.id, this.sharedCoupon);
+            
+            this.showToast(used ? '사용 완료로 변경되었습니다 🌽' : '사용 취소되었습니다 🌽', 'success');
+            
+        } catch (error) {
+            console.error('공유 쿠폰 상태 업데이트 오류:', error);
+            this.showToast('상태 변경에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    loadSettings() {
+        const apiKeyInput = document.getElementById('api-key-input');
+        if (this.apiKey) {
+            apiKeyInput.value = '**'.repeat(10); // 보안을 위해 마스킹
         }
         
-        // Load notification settings
-        const notify7days = localStorage.getItem('conkeep-notify-7days') !== 'false';
-        const notify1day = localStorage.getItem('conkeep-notify-1day') !== 'false';
+        // 알림 설정 로드
+        const notificationsEnabled = localStorage.getItem('notifications-enabled') === 'true';
+        const notify7days = localStorage.getItem('notify-7days') !== 'false';
+        const notify1day = localStorage.getItem('notify-1day') !== 'false';
         
+        document.getElementById('notifications-enabled').checked = notificationsEnabled;
         document.getElementById('notify-7days').checked = notify7days;
         document.getElementById('notify-1day').checked = notify1day;
-        
-        // Save settings when changed
-        document.getElementById('notify-7days').addEventListener('change', (e) => {
-            localStorage.setItem('conkeep-notify-7days', e.target.checked);
-        });
-        
-        document.getElementById('notify-1day').addEventListener('change', (e) => {
-            localStorage.setItem('conkeep-notify-1day', e.target.checked);
-        });
     }
-    
-    async requestNotificationPermission() {
-        if ('Notification' in window) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                this.showToast('알림이 활성화되었습니다 🌽', 'success');
-                this.startNotificationTimer();
-            } else {
-                this.showToast('알림 권한이 거부되었습니다', 'warning');
-                document.getElementById('notifications-enabled').checked = false;
-            }
+
+    saveApiKey() {
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiKey = apiKeyInput.value.trim();
+        
+        if (apiKey && apiKey !== '**'.repeat(10)) {
+            this.apiKey = apiKey;
+            localStorage.setItem('gemini-api-key', apiKey);
+            this.showToast('API 키가 저장되었습니다 🌽🤖', 'success');
         }
-    }
-    
-    startNotificationTimer() {
-        // Check every hour
-        setInterval(() => {
-            this.checkExpiringCoupons();
-        }, 60 * 60 * 1000);
         
-        // Initial check
-        this.checkExpiringCoupons();
-    }
-    
-    checkExpiringCoupons() {
-        if (Notification.permission !== 'granted') return;
-        
+        // 알림 설정 저장
+        const notificationsEnabled = document.getElementById('notifications-enabled').checked;
         const notify7days = document.getElementById('notify-7days').checked;
         const notify1day = document.getElementById('notify-1day').checked;
         
-        const now = new Date();
-        const today = now.toDateString();
+        localStorage.setItem('notifications-enabled', notificationsEnabled);
+        localStorage.setItem('notify-7days', notify7days);
+        localStorage.setItem('notify-1day', notify1day);
         
-        this.coupons.forEach(coupon => {
-            if (coupon.used || !coupon.expiry) return;
+        if (notificationsEnabled) {
+            this.requestNotificationPermission();
+        }
+    }
+
+    async exportData() {
+        try {
+            const coupons = await this.getCouponsFromDB();
+            const dataStr = JSON.stringify(coupons, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
             
-            const daysUntil = this.getDaysUntilExpiry(coupon.expiry);
-            const lastNotified = localStorage.getItem(`conkeep-notified-${coupon.id}`);
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `conkeep-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
             
-            let shouldNotify = false;
-            let message = '';
+            this.showToast('데이터가 내보내졌습니다 🌽💾', 'success');
+        } catch (error) {
+            console.error('데이터 내보내기 오류:', error);
+            this.showToast('내보내기에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async clearAllData() {
+        if (!confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다! 🌽⚠️')) {
+            return;
+        }
+
+        try {
+            const transaction = this.db.transaction(['coupons'], 'readwrite');
+            const store = transaction.objectStore('coupons');
+            await store.clear();
             
-            if (notify7days && daysUntil === 7 && lastNotified !== `7-${today}`) {
-                shouldNotify = true;
-                message = `${coupon.brand} ${coupon.name}이(가) 7일 후 만료됩니다 🌽`;
-                localStorage.setItem(`conkeep-notified-${coupon.id}`, `7-${today}`);
-            } else if (notify1day && daysUntil === 1 && lastNotified !== `1-${today}`) {
-                shouldNotify = true;
-                message = `${coupon.brand} ${coupon.name}이(가) 내일 만료됩니다 🌽`;
-                localStorage.setItem(`conkeep-notified-${coupon.id}`, `1-${today}`);
+            this.loadCoupons();
+            this.updateStats();
+            this.hideModal('settings');
+            this.showToast('모든 데이터가 삭제되었습니다 🌽', 'success');
+        } catch (error) {
+            console.error('데이터 삭제 오류:', error);
+            this.showToast('삭제에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    // 알림 관련 메서드
+    checkNotificationPermission() {
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                // 이미 허용됨
+            } else if (Notification.permission !== 'denied') {
+                // 권한 요청 가능
             }
-            
-            if (shouldNotify) {
-                new Notification('콘킾 - 만료 알림 🌽', {
-                    body: message,
-                    icon: '/favicon.ico',
-                    tag: `expiry-${coupon.id}`
-                });
-            }
-        });
+        }
     }
-    
-    // Utility functions
-    getDaysUntilExpiry(expiryDate) {
-        if (!expiryDate) return Infinity;
-        
-        const now = new Date();
-        const expiry = new Date(expiryDate);
-        const diffTime = expiry - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        return diffDays;
+
+    requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    this.showToast('알림 권한이 허용되었습니다 🌽🔔', 'success');
+                } else {
+                    this.showToast('알림 권한이 거부되었습니다 🌽', 'warning');
+                }
+            });
+        }
     }
-    
-    generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+
+    startNotificationScheduler() {
+        // 1시간마다 만료 확인
+        setInterval(() => {
+            this.checkExpiringCoupons();
+        }, 60 * 60 * 1000);
+
+        // 앱 시작시에도 한 번 확인
+        setTimeout(() => {
+            this.checkExpiringCoupons();
+        }, 5000);
     }
-    
-    // Modal management
-    showModal(modalId) {
-        document.getElementById(`${modalId}-modal`).classList.remove('hidden');
+
+    async checkExpiringCoupons() {
+        const notificationsEnabled = localStorage.getItem('notifications-enabled') === 'true';
+        if (!notificationsEnabled || Notification.permission !== 'granted') {
+            return;
+        }
+
+        try {
+            const coupons = await this.getCouponsFromDB();
+            const notify7days = localStorage.getItem('notify-7days') !== 'false';
+            const notify1day = localStorage.getItem('notify-1day') !== 'false';
+
+            coupons.forEach(coupon => {
+                if (coupon.used || !coupon.expiry) return;
+
+                const daysLeft = this.getDaysUntilExpiry(coupon.expiry);
+                
+                if ((notify7days && daysLeft === 7) || (notify1day && daysLeft === 1)) {
+                    new Notification(`🌽 ${coupon.brand} 쿠폰 만료 예정`, {
+                        body: `${coupon.name} - ${daysLeft}일 후 만료`,
+                        icon: '/favicon.ico'
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('만료 알림 확인 오류:', error);
+        }
     }
-    
-    hideModal(modalId) {
-        document.getElementById(`${modalId}-modal`).classList.add('hidden');
-    }
-    
-    // Toast notifications
+
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
-        const icon = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
-        }[type] || 'ℹ️';
-        
-        toast.innerHTML = `
-            <span>${icon}</span>
-            <span>${message}</span>
-        `;
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+        toast.innerHTML = `${icon} ${message}`;
         
         container.appendChild(toast);
         
-        // Auto remove after 3 seconds
         setTimeout(() => {
             toast.remove();
         }, 3000);
     }
-    
-    // Data management
-    async exportData() {
-        try {
-            const data = {
-                coupons: this.coupons,
-                exportDate: new Date().toISOString(),
-                version: '1.0'
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `conkeep-backup-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            
-            URL.revokeObjectURL(url);
-            this.showToast('데이터가 내보내졌습니다 🌽', 'success');
-        } catch (error) {
-            this.showToast('데이터 내보내기에 실패했습니다', 'error');
-        }
-    }
-    
-    async clearAllData() {
-        if (confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            try {
-                // Clear IndexedDB
-                const transaction = this.db.transaction(['coupons'], 'readwrite');
-                const store = transaction.objectStore('coupons');
-                await new Promise((resolve, reject) => {
-                    const request = store.clear();
-                    request.onsuccess = resolve;
-                    request.onerror = () => reject(request.error);
-                });
-                
-                // Clear localStorage
-                localStorage.removeItem('conkeep_api_key');
-                localStorage.removeItem('conkeep-theme');
-                
-                // Reset app state
-                this.coupons = [];
-                this.renderCoupons();
-                this.updateStats();
-                
-                this.showToast('모든 데이터가 삭제되었습니다', 'success');
-            } catch (error) {
-                this.showToast('데이터 삭제에 실패했습니다', 'error');
-            }
-        }
-    }
-    
-    // Shared coupons (placeholder for future feature)
-    loadSharedCoupons() {
-        const sharedContainer = document.getElementById('shared-coupons');
-        const sharedCoupons = this.coupons.filter(c => c.shared);
-        
-        if (sharedCoupons.length === 0) {
-            sharedContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">🔗🌽</div>
-                    <h3>공유된 기프티콘이 없습니다</h3>
-                    <p>기프티콘을 공유하여 가족과 함께 사용하세요!</p>
-                </div>
-            `;
-        } else {
-            // Render shared coupons (similar to main grid)
-            const html = sharedCoupons.map(coupon => {
-                return `<div class="coupon-card corn-card" onclick="app.showCouponDetail('${coupon.id}')">
-                    <img src="${coupon.imgSrc}" alt="${coupon.name}" class="coupon-image" loading="lazy">
-                    <div class="coupon-info">
-                        <div class="coupon-brand">${coupon.brand}</div>
-                        <div class="coupon-name">${coupon.name}</div>
-                    </div>
-                </div>`;
-            }).join('');
-            sharedContainer.innerHTML = html;
-        }
+
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 }
 
-// Global functions for inline event handlers
-window.switchTab = (tabName) => {
-    if (window.app) {
-        window.app.switchTab(tabName);
-    }
-};
-
-// Initialize app when DOM is loaded
+// 앱 초기화
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new ConKeepApp();
+    window.conKeepApp = new ConKeepApp();
+    
+    // 초기 테마 설정
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        document.querySelector('.theme-icon').textContent = '☀️';
+    }
 });
 
-// Service Worker registration for PWA
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-                console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
+// 전역 함수 (HTML에서 호출용)
+function switchTab(tabName) {
+    if (window.conKeepApp) {
+        window.conKeepApp.switchTab(tabName);
+    }
 }
