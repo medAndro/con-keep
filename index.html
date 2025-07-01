@@ -24,6 +24,7 @@
     <!-- Loading Screen -->
     <div id="loading-screen" class="loading-screen">
         <div class="loading-spinner"></div>
+        <div class="corn-mascot">🌽</div>
         <p>콘킾 로딩중...</p>
     </div>
 
@@ -33,14 +34,15 @@
         <header class="app-header">
             <div class="header-content">
                 <h1 class="app-title">
-                    <span class="logo">🎁</span>
+                    <span class="logo">🌽</span>
                     콘킾
+                    <span class="subtitle">Corn Keep</span>
                 </h1>
                 <div class="header-actions">
-                    <button id="theme-toggle" class="icon-btn" aria-label="테마 변경">
+                    <button id="theme-toggle" class="icon-btn corn-btn" aria-label="테마 변경">
                         <span class="theme-icon">🌙</span>
                     </button>
-                    <button id="settings-btn" class="icon-btn" aria-label="설정">
+                    <button id="settings-btn" class="icon-btn corn-btn" aria-label="설정">
                         <span>⚙️</span>
                     </button>
                 </div>
@@ -49,15 +51,15 @@
 
         <!-- Navigation -->
         <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="dashboard">
+            <button class="tab-btn active corn-tab" data-tab="dashboard">
                 <span>📊</span>
                 <span>대시보드</span>
             </button>
-            <button class="tab-btn" data-tab="add">
+            <button class="tab-btn corn-tab" data-tab="add">
                 <span>➕</span>
                 <span>등록</span>
             </button>
-            <button class="tab-btn" data-tab="shared">
+            <button class="tab-btn corn-tab" data-tab="shared">
                 <span>🔗</span>
                 <span>공유</span>
             </button>
@@ -66,10 +68,10 @@
         <!-- Dashboard Tab -->
         <main id="dashboard-tab" class="tab-content active">
             <!-- Search & Filter -->
-            <div class="search-section">
+            <div class="search-section corn-section">
                 <div class="search-bar">
                     <input type="text" id="search-input" placeholder="브랜드명이나 상품명으로 검색..." />
-                    <button id="filter-btn" class="filter-btn">🔽</button>
+                    <button id="filter-btn" class="filter-btn corn-btn">🔽</button>
                 </div>
                 <div id="filter-panel" class="filter-panel hidden">
                     <div class="filter-group">
@@ -92,27 +94,27 @@
 
             <!-- Stats -->
             <div class="stats-row">
-                <div class="stat-card">
+                <div class="stat-card corn-card">
                     <div class="stat-number" id="total-count">0</div>
-                    <div class="stat-label">전체</div>
+                    <div class="stat-label">전체 🌽</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card corn-card">
                     <div class="stat-number" id="unused-count">0</div>
-                    <div class="stat-label">미사용</div>
+                    <div class="stat-label">미사용 ✨</div>
                 </div>
-                <div class="stat-card urgent">
+                <div class="stat-card corn-card urgent">
                     <div class="stat-number" id="expiring-count">0</div>
-                    <div class="stat-label">만료임박</div>
+                    <div class="stat-label">만료임박 ⚠️</div>
                 </div>
             </div>
 
             <!-- Coupons Grid -->
             <div id="coupons-grid" class="coupons-grid">
                 <div class="empty-state" id="empty-state">
-                    <div class="empty-icon">🎁</div>
+                    <div class="empty-icon">🌽</div>
                     <h3>등록된 기프티콘이 없습니다</h3>
                     <p>새 기프티콘을 등록해보세요!</p>
-                    <button class="primary-btn" onclick="switchTab('add')">등록하기</button>
+                    <button class="primary-btn corn-primary" onclick="switchTab('add')">등록하기</button>
                 </div>
             </div>
         </main>
@@ -120,15 +122,15 @@
         <!-- Add Coupon Tab -->
         <main id="add-tab" class="tab-content">
             <div class="add-section">
-                <h2>새 기프티콘 등록</h2>
+                <h2>새 기프티콘 등록 🌽</h2>
                 
                 <!-- Upload Area -->
-                <div class="upload-area" id="upload-area">
+                <div class="upload-area corn-upload" id="upload-area">
                     <div class="upload-content">
-                        <div class="upload-icon">📸</div>
+                        <div class="upload-icon">📸🌽</div>
                         <h3>이미지를 업로드하세요</h3>
                         <p>바코드/QR코드가 포함된 기프티콘 이미지</p>
-                        <button class="upload-btn">파일 선택</button>
+                        <button class="upload-btn corn-primary">파일 선택</button>
                     </div>
                     <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;">
                 </div>
@@ -139,15 +141,15 @@
                         <img id="preview-image" alt="업로드된 이미지">
                         <div class="scan-overlay" id="scan-overlay">
                             <div class="scan-line"></div>
-                            <p>바코드 스캔중...</p>
+                            <p>바코드 스캔중... 🌽</p>
                         </div>
                     </div>
                     
-                    <div class="coupon-form">
+                    <div class="coupon-form corn-form">
                         <div class="form-group">
                             <label for="coupon-code">바코드/QR 코드</label>
                             <input type="text" id="coupon-code" readonly>
-                            <button id="rescan-btn" class="secondary-btn">재스캔</button>
+                            <button id="rescan-btn" class="secondary-btn corn-secondary">재스캔</button>
                         </div>
                         
                         <div class="form-group">
@@ -172,16 +174,16 @@
                         </div>
                         
                         <div class="form-actions">
-                            <button id="save-coupon" class="primary-btn">저장하기</button>
-                            <button id="cancel-add" class="secondary-btn">취소</button>
+                            <button id="save-coupon" class="primary-btn corn-primary">저장하기 🌽</button>
+                            <button id="cancel-add" class="secondary-btn corn-secondary">취소</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- AI Analysis Status -->
                 <div id="ai-analysis" class="ai-analysis hidden">
-                    <div class="ai-spinner"></div>
-                    <p>AI가 쿠폰 정보를 분석중입니다...</p>
+                    <div class="ai-spinner corn-spinner"></div>
+                    <p>AI가 쿠폰 정보를 분석중입니다... 🌽🤖</p>
                 </div>
             </div>
         </main>
@@ -189,10 +191,10 @@
         <!-- Shared Tab -->
         <main id="shared-tab" class="tab-content">
             <div class="shared-section">
-                <h2>공유된 기프티콘</h2>
+                <h2>공유된 기프티콘 🔗🌽</h2>
                 <div id="shared-coupons" class="coupons-grid">
                     <div class="empty-state">
-                        <div class="empty-icon">🔗</div>
+                        <div class="empty-icon">🔗🌽</div>
                         <h3>공유된 기프티콘이 없습니다</h3>
                         <p>기프티콘을 공유하여 가족과 함께 사용하세요!</p>
                     </div>
@@ -203,28 +205,28 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content corn-modal">
             <div class="modal-header">
-                <h2>설정</h2>
+                <h2>설정 ⚙️🌽</h2>
                 <button class="close-btn" data-modal="settings">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="setting-group">
-                    <h3>Google Gemini API 키</h3>
+                    <h3>Google Gemini API 키 🤖</h3>
                     <div class="api-key-section">
                         <input type="password" id="api-key-input" placeholder="API 키를 입력하세요">
-                        <button id="save-api-key" class="primary-btn">저장</button>
+                        <button id="save-api-key" class="primary-btn corn-primary">저장</button>
                     </div>
                     <p class="help-text">
                         AI 기능을 사용하려면 Google Gemini API 키가 필요합니다.
-                        <a href="https://makersuite.google.com/app/apikey" target="_blank">여기서 발급받으세요</a>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank">여기서 발급받으세요</a>
                     </p>
                 </div>
                 
                 <div class="setting-group">
-                    <h3>알림 설정</h3>
+                    <h3>알림 설정 🔔</h3>
                     <div class="notification-settings">
-                        <label class="switch">
+                        <label class="switch corn-switch">
                             <input type="checkbox" id="notifications-enabled">
                             <span class="slider"></span>
                             만료 알림 받기
@@ -243,8 +245,8 @@
                 </div>
                 
                 <div class="setting-group">
-                    <h3>데이터 관리</h3>
-                    <button id="export-data" class="secondary-btn">데이터 내보내기</button>
+                    <h3>데이터 관리 💾</h3>
+                    <button id="export-data" class="secondary-btn corn-secondary">데이터 내보내기</button>
                     <button id="clear-data" class="danger-btn">모든 데이터 삭제</button>
                 </div>
             </div>
@@ -253,9 +255,9 @@
 
     <!-- Coupon Detail Modal -->
     <div id="coupon-modal" class="modal hidden">
-        <div class="modal-content coupon-detail">
+        <div class="modal-content coupon-detail corn-modal">
             <div class="modal-header">
-                <h2 id="modal-coupon-title">기프티콘 상세</h2>
+                <h2 id="modal-coupon-title">기프티콘 상세 🌽</h2>
                 <button class="close-btn" data-modal="coupon">&times;</button>
             </div>
             <div class="modal-body">
@@ -285,8 +287,8 @@
                     </div>
                 </div>
                 <div class="coupon-actions">
-                    <button id="toggle-used" class="primary-btn">사용 완료</button>
-                    <button id="share-coupon" class="secondary-btn">공유하기</button>
+                    <button id="toggle-used" class="primary-btn corn-primary">사용 완료</button>
+                    <button id="share-coupon" class="secondary-btn corn-secondary">공유하기</button>
                     <button id="delete-coupon" class="danger-btn">삭제</button>
                 </div>
                 <div id="share-section" class="share-section hidden">
@@ -295,21 +297,21 @@
                     </div>
                     <div class="share-link">
                         <input type="text" id="share-url" readonly>
-                        <button id="copy-link" class="secondary-btn">복사</button>
+                        <button id="copy-link" class="secondary-btn corn-secondary">복사</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Share Page (Hidden by default) -->
+    <!-- Share Page -->
     <div id="share-page" class="share-page hidden">
-        <div class="share-container">
+        <div class="share-container corn-share">
             <div class="share-header">
-                <h1>공유된 기프티콘</h1>
+                <h1>공유된 기프티콘 🔗🌽</h1>
                 <p>콘킾에서 공유됨</p>
             </div>
-            <div class="shared-coupon-card">
+            <div class="shared-coupon-card corn-card">
                 <img id="share-coupon-image" alt="쿠폰 이미지">
                 <div class="share-coupon-info">
                     <h2 id="share-coupon-title"></h2>
@@ -319,7 +321,7 @@
                         <p><strong>금액:</strong> <span id="share-coupon-amount"></span></p>
                     </div>
                     <div class="usage-toggle">
-                        <label class="switch">
+                        <label class="switch corn-switch">
                             <input type="checkbox" id="share-usage-toggle">
                             <span class="slider"></span>
                             사용 완료
@@ -328,7 +330,7 @@
                 </div>
             </div>
             <div class="share-actions">
-                <button id="back-to-app" class="primary-btn">앱으로 돌아가기</button>
+                <button id="back-to-app" class="primary-btn corn-primary">앱으로 돌아가기</button>
             </div>
         </div>
     </div>

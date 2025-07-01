@@ -16,6 +16,9 @@ class ConKeepApp {
     async init() {
         console.log('Initializing ConKeep App...');
         
+        // Initialize theme
+        this.initTheme();
+        
         // Initialize database
         await this.initDB();
         
@@ -44,6 +47,33 @@ class ConKeepApp {
         this.hideLoadingScreen();
         
         console.log('ConKeep App initialized successfully');
+    }
+    
+    initTheme() {
+        // Load saved theme or detect system preference
+        const savedTheme = localStorage.getItem('conkeep-theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+        
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Update theme icon
+        const icon = document.querySelector('.theme-icon');
+        if (icon) {
+            icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+        
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('conkeep-theme')) {
+                const newTheme = e.matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                const icon = document.querySelector('.theme-icon');
+                if (icon) {
+                    icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+                }
+            }
+        });
     }
     
     hideLoadingScreen() {
@@ -126,7 +156,7 @@ class ConKeepApp {
         try {
             const encrypted = localStorage.getItem('conkeep_api_key');
             if (encrypted) {
-                this.apiKey = await this.decryptAPIKey(encrypted);
+                this.apiKey = atob(encrypted); // Simple base64 decoding for demo
             }
         } catch (error) {
             console.warn('Failed to load API key:', error);
@@ -136,7 +166,7 @@ class ConKeepApp {
     
     async saveAPIKey(key) {
         try {
-            const encrypted = await this.encryptAPIKey(key);
+            const encrypted = btoa(key); // Simple base64 encoding for demo
             localStorage.setItem('conkeep_api_key', encrypted);
             this.apiKey = key;
             this.showToast('API 키가 저장되었습니다', 'success');
@@ -144,31 +174,6 @@ class ConKeepApp {
             console.error('Failed to save API key:', error);
             this.showToast('API 키 저장에 실패했습니다', 'error');
         }
-    }
-    
-    async encryptAPIKey(key) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(key);
-        const cryptoKey = await crypto.subtle.generateKey(
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt', 'decrypt']
-        );
-        
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const encrypted = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: iv },
-            cryptoKey,
-            data
-        );
-        
-        return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
-    }
-    
-    async decryptAPIKey(encryptedKey) {
-        // For demo purposes, we'll use a simpler approach
-        // In production, you'd want proper key derivation
-        return atob(encryptedKey);
     }
     
     // Barcode scanning
@@ -195,7 +200,7 @@ class ConKeepApp {
         }
     }
     
-    // AI Analysis with Gemini Vision API
+    // AI Analysis with Gemini Vision API (FIXED URL)
     async analyzeWithAI(imageBlob) {
         if (!this.apiKey) {
             throw new Error('API 키가 필요합니다');
@@ -205,7 +210,8 @@ class ConKeepApp {
             const base64Image = await this.blobToBase64(imageBlob);
             const base64Data = base64Image.split(',')[1];
             
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${this.apiKey}`, {
+            // FIXED: Correct Gemini API URL
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -214,7 +220,7 @@ class ConKeepApp {
                     contents: [{
                         parts: [
                             {
-                                text: "이 기프티콘 이미지를 분석해서 다음 정보를 JSON 형태로 추출해주세요: 브랜드명(brand), 상품명(name), 금액(amount, 숫자만), 유효기간(expiry, YYYY-MM-DD 형식). 정보가 불분명하면 빈 문자열로 반환하세요."
+                                text: "이 기프티콘 이미지를 분석해서 다음 정보를 JSON 형태로 추출해주세요: 브랜드명(brand), 상품명(name), 금액(amount, 숫자만), 유효기간(expiry, YYYY-MM-DD 형식). 정보가 불분명하면 빈 문자열로 반환하세요. 반드시 JSON 형식으로만 응답하세요."
                             },
                             {
                                 inline_data: {
@@ -232,11 +238,15 @@ class ConKeepApp {
             });
             
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API Error:', response.status, errorText);
                 throw new Error(`API 요청 실패: ${response.status}`);
             }
             
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            
+            console.log('AI Response:', text);
             
             // Extract JSON from response
             const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -301,7 +311,7 @@ class ConKeepApp {
             this.coupons[index] = updatedCoupon;
             this.renderCoupons();
             this.updateStats();
-            this.showToast('쿠폰이 실시간으로 업데이트되었습니다', 'info');
+            this.showToast('쿠폰이 실시간으로 업데이트되었습니다 🌽', 'info');
         }
     }
     
@@ -322,7 +332,7 @@ class ConKeepApp {
             });
         });
         
-        // Theme toggle
+        // Theme toggle - FIXED
         document.getElementById('theme-toggle').addEventListener('click', () => {
             this.toggleTheme();
         });
@@ -459,9 +469,9 @@ class ConKeepApp {
         }
     }
     
-    // Theme management
+    // Theme management - FIXED
     toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         
         document.documentElement.setAttribute('data-theme', newTheme);
@@ -469,7 +479,11 @@ class ConKeepApp {
         
         // Update theme icon
         const icon = document.querySelector('.theme-icon');
-        icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        if (icon) {
+            icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+        
+        this.showToast(`${newTheme === 'dark' ? '다크' : '라이트'} 모드로 전환했습니다 🌽`, 'success');
     }
     
     // File upload handling
@@ -496,7 +510,7 @@ class ConKeepApp {
                 try {
                     const code = await this.scanBarcode(preview);
                     document.getElementById('coupon-code').value = code;
-                    this.showToast('바코드 스캔 완료', 'success');
+                    this.showToast('바코드 스캔 완료 🌽', 'success');
                 } catch (error) {
                     this.showToast(error.message, 'warning');
                 }
@@ -506,6 +520,8 @@ class ConKeepApp {
                 // Start AI analysis
                 if (this.apiKey) {
                     this.analyzeWithAIFromFile(processedFile);
+                } else {
+                    this.showToast('AI 분석을 위해 설정에서 API 키를 입력하세요', 'warning');
                 }
             }, 1000);
             
@@ -556,7 +572,7 @@ class ConKeepApp {
                 document.getElementById('coupon-expiry').value = analysis.expiry;
             }
             
-            this.showToast('AI 분석 완료', 'success');
+            this.showToast('AI 분석 완료 🌽🤖', 'success');
         } catch (error) {
             this.showToast('AI 분석 실패: ' + error.message, 'warning');
         } finally {
@@ -600,7 +616,7 @@ class ConKeepApp {
             this.resetAddForm();
             this.switchTab('dashboard');
             
-            this.showToast('기프티콘이 등록되었습니다', 'success');
+            this.showToast('기프티콘이 등록되었습니다 🌽', 'success');
         } catch (error) {
             this.showToast(error.message, 'error');
         }
@@ -632,7 +648,7 @@ class ConKeepApp {
         try {
             const code = await this.scanBarcode(preview);
             document.getElementById('coupon-code').value = code;
-            this.showToast('바코드 재스캔 완료', 'success');
+            this.showToast('바코드 재스캔 완료 🌽', 'success');
         } catch (error) {
             this.showToast(error.message, 'warning');
         } finally {
@@ -767,7 +783,7 @@ class ConKeepApp {
         // Update buttons
         const toggleBtn = document.getElementById('toggle-used');
         toggleBtn.textContent = coupon.used ? '사용 취소' : '사용 완료';
-        toggleBtn.className = coupon.used ? 'secondary-btn' : 'primary-btn';
+        toggleBtn.className = coupon.used ? 'secondary-btn corn-secondary' : 'primary-btn corn-primary';
         
         // Setup button events
         this.setupCouponModalEvents(coupon);
@@ -822,7 +838,7 @@ class ConKeepApp {
             this.hideModal('coupon');
             
             this.showToast(
-                coupon.used ? '사용 완료로 표시했습니다' : '사용 취소했습니다', 
+                coupon.used ? '사용 완료로 표시했습니다 🌽' : '사용 취소했습니다 🌽', 
                 'success'
             );
         } catch (error) {
@@ -848,7 +864,7 @@ class ConKeepApp {
         }
     }
     
-    // Share functionality
+    // Share functionality - FIXED
     generateShareLink(couponId) {
         const baseUrl = window.location.origin + window.location.pathname;
         const shareUrl = `${baseUrl}?share=${couponId}`;
@@ -862,6 +878,8 @@ class ConKeepApp {
             if (error) {
                 console.error('QR code generation failed:', error);
                 this.showToast('QR 코드 생성에 실패했습니다', 'error');
+            } else {
+                this.showToast('공유 링크가 생성되었습니다 🌽', 'success');
             }
         });
     }
@@ -870,16 +888,19 @@ class ConKeepApp {
         const input = document.getElementById('share-url');
         input.select();
         document.execCommand('copy');
-        this.showToast('링크가 복사되었습니다', 'success');
+        this.showToast('링크가 복사되었습니다 🌽', 'success');
     }
     
-    // Share page handling
+    // Share page handling - FIXED
     checkShareURL() {
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('share');
         
         if (shareId) {
-            this.showSharePage(shareId);
+            // Wait for data to load first
+            setTimeout(() => {
+                this.showSharePage(shareId);
+            }, 500);
         }
     }
     
@@ -902,8 +923,12 @@ class ConKeepApp {
             const usageToggle = document.getElementById('share-usage-toggle');
             usageToggle.checked = coupon.used;
             
+            // Remove existing event listeners
+            const newToggle = usageToggle.cloneNode(true);
+            usageToggle.parentNode.replaceChild(newToggle, usageToggle);
+            
             // Setup toggle event
-            usageToggle.addEventListener('change', async (e) => {
+            newToggle.addEventListener('change', async (e) => {
                 try {
                     coupon.used = e.target.checked;
                     coupon.updatedAt = Date.now();
@@ -912,7 +937,7 @@ class ConKeepApp {
                     this.broadcastCouponUpdate(coupon);
                     
                     this.showToast(
-                        coupon.used ? '사용 완료로 표시했습니다' : '사용 취소했습니다', 
+                        coupon.used ? '사용 완료로 표시했습니다 🌽' : '사용 취소했습니다 🌽', 
                         'success'
                     );
                 } catch (error) {
@@ -925,12 +950,17 @@ class ConKeepApp {
             document.getElementById('app').style.display = 'none';
             document.getElementById('share-page').classList.remove('hidden');
             
-            // Setup back button
-            document.getElementById('back-to-app').addEventListener('click', () => {
+            // Setup back button - Remove existing listeners first
+            const backBtn = document.getElementById('back-to-app');
+            const newBackBtn = backBtn.cloneNode(true);
+            backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+            
+            newBackBtn.addEventListener('click', () => {
                 this.hideSharePage();
             });
             
         } catch (error) {
+            console.error('Share page error:', error);
             this.showToast('공유 페이지 로드에 실패했습니다', 'error');
         }
     }
@@ -976,7 +1006,7 @@ class ConKeepApp {
         if ('Notification' in window) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
-                this.showToast('알림이 활성화되었습니다', 'success');
+                this.showToast('알림이 활성화되었습니다 🌽', 'success');
                 this.startNotificationTimer();
             } else {
                 this.showToast('알림 권한이 거부되었습니다', 'warning');
@@ -1015,16 +1045,16 @@ class ConKeepApp {
             
             if (notify7days && daysUntil === 7 && lastNotified !== `7-${today}`) {
                 shouldNotify = true;
-                message = `${coupon.brand} ${coupon.name}이(가) 7일 후 만료됩니다`;
+                message = `${coupon.brand} ${coupon.name}이(가) 7일 후 만료됩니다 🌽`;
                 localStorage.setItem(`conkeep-notified-${coupon.id}`, `7-${today}`);
             } else if (notify1day && daysUntil === 1 && lastNotified !== `1-${today}`) {
                 shouldNotify = true;
-                message = `${coupon.brand} ${coupon.name}이(가) 내일 만료됩니다`;
+                message = `${coupon.brand} ${coupon.name}이(가) 내일 만료됩니다 🌽`;
                 localStorage.setItem(`conkeep-notified-${coupon.id}`, `1-${today}`);
             }
             
             if (shouldNotify) {
-                new Notification('콘킾 - 만료 알림', {
+                new Notification('콘킾 - 만료 알림 🌽', {
                     body: message,
                     icon: '/favicon.ico',
                     tag: `expiry-${coupon.id}`
@@ -1106,7 +1136,7 @@ class ConKeepApp {
             a.click();
             
             URL.revokeObjectURL(url);
-            this.showToast('데이터가 내보내졌습니다', 'success');
+            this.showToast('데이터가 내보내졌습니다 🌽', 'success');
         } catch (error) {
             this.showToast('데이터 내보내기에 실패했습니다', 'error');
         }
@@ -1148,7 +1178,7 @@ class ConKeepApp {
         if (sharedCoupons.length === 0) {
             sharedContainer.innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-icon">🔗</div>
+                    <div class="empty-icon">🔗🌽</div>
                     <h3>공유된 기프티콘이 없습니다</h3>
                     <p>기프티콘을 공유하여 가족과 함께 사용하세요!</p>
                 </div>
@@ -1156,8 +1186,13 @@ class ConKeepApp {
         } else {
             // Render shared coupons (similar to main grid)
             const html = sharedCoupons.map(coupon => {
-                // Similar rendering logic as renderCoupons
-                return `<div class="coupon-card" onclick="app.showCouponDetail('${coupon.id}')">...</div>`;
+                return `<div class="coupon-card corn-card" onclick="app.showCouponDetail('${coupon.id}')">
+                    <img src="${coupon.imgSrc}" alt="${coupon.name}" class="coupon-image" loading="lazy">
+                    <div class="coupon-info">
+                        <div class="coupon-brand">${coupon.brand}</div>
+                        <div class="coupon-name">${coupon.name}</div>
+                    </div>
+                </div>`;
             }).join('');
             sharedContainer.innerHTML = html;
         }
