@@ -6,6 +6,16 @@ export class AIAnalyzer {
     }
 
     async analyzeImage(imageData, apiKey) {
+        // StorageManager를 직접 임포트해서 사용
+        if (!apiKey) {
+            try {
+                const StorageManager = await import('./storage.js').then(module => module.StorageManager);
+                apiKey = StorageManager.getApiKey();
+            } catch (error) {
+                console.error('StorageManager 로드 오류:', error);
+            }
+        }
+
         if (!apiKey) {
             this.toastManager.showToast('Gemini API 키가 필요합니다. 설정에서 등록해주세요 🌽', 'warning');
             return null;
@@ -17,7 +27,9 @@ export class AIAnalyzer {
         }
 
         const aiAnalysis = document.getElementById('ai-analysis');
-        aiAnalysis.classList.remove('hidden');
+        if (aiAnalysis) {
+            aiAnalysis.classList.remove('hidden');
+        }
 
         try {
             const base64Data = imageData.split(',')[1];
@@ -85,7 +97,9 @@ export class AIAnalyzer {
             this.toastManager.showToast('AI 분석에 실패했습니다. 수동으로 입력해주세요 🌽', 'warning');
             return null;
         } finally {
-            aiAnalysis.classList.add('hidden');
+            if (aiAnalysis) {
+                aiAnalysis.classList.add('hidden');
+            }
         }
     }
 }
