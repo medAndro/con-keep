@@ -1,0 +1,754 @@
+// Main application coordinator
+import { DatabaseManager } from './utils/database.js';
+import { BarcodeScanner } from './utils/scanner.js';
+import { AIAnalyzer } from './utils/ai-analyzer.js';
+import { StorageManager } from './utils/storage.js';
+import { NotificationManager } from './utils/notifications.js';
+import { SharingManager } from './utils/sharing.js';
+import { ToastManager } from './components/ToastManager.js';
+import { CouponCard } from './components/CouponCard.js';
+
+// ConKeep - 옥수수 테마 기프티콘 관리 앱
+class ConKeepApp {
+    constructor() {
+        this.currentCoupon = null;
+        this.sharedCoupon = null;
+        this.uploadedImageData = null;
+        this.currentScanResult = null;
+        
+        // Initialize managers
+        this.toastManager = new ToastManager();
+        this.databaseManager = new DatabaseManager();
+        this.scanner = new BarcodeScanner(this.toastManager);
+        this.aiAnalyzer = new AIAnalyzer(this.toastManager);
+        this.notificationManager = new NotificationManager(this.databaseManager);
+        this.sharingManager = new SharingManager(this.toastManager);
+        
+        this.init();
+    }
+
+    async init() {
+        await this.databaseManager.initDB();
+        this.setupEventListeners();
+        this.setupBroadcastChannel();
+        this.loadCoupons();
+        this.updateStats();
+        this.notificationManager.startScheduler();
+        this.checkSharedCoupon();
+        
+        // 로딩 완료
+        setTimeout(() => {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+        }, 1500);
+    }
+
+    setupEventListeners() {
+        // 탭 전환
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = e.currentTarget.dataset.tab;
+                this.switchTab(tab);
+            });
+        });
+
+        // 테마 토글
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            this.toggleTheme();
+        });
+
+        // 설정 버튼
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            this.showModal('settings');
+        });
+
+        // 파일 업로드
+        this.setupFileUpload();
+
+        // 쿠폰 관련 버튼들
+        document.getElementById('save-coupon').addEventListener('click', () => {
+            this.saveCoupon();
+        });
+
+        document.getElementById('cancel-add').addEventListener('click', () => {
+            this.resetAddForm();
+        });
+
+        document.getElementById('rescan-btn').addEventListener('click', () => {
+            this.rescanBarcode();
+        });
+
+        // 검색 및 필터
+        this.setupSearchAndFilter();
+
+        // 모달 관련
+        this.setupModalHandlers();
+
+        // 설정 관련
+        this.setupSettingsHandlers();
+
+        // 쿠폰 상세 모달
+        this.setupCouponDetailHandlers();
+
+        // 공유 페이지
+        this.setupSharingHandlers();
+    }
+
+    setupFileUpload() {
+        const fileInput = document.getElementById('file-input');
+        const uploadArea = document.getElementById('upload-area');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleFileUpload(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFileUpload(e.target.files[0]);
+            }
+        });
+    }
+
+    setupSearchAndFilter() {
+        document.getElementById('search-input').addEventListener('input', () => {
+            this.filterCoupons();
+        });
+
+        document.getElementById('filter-btn').addEventListener('click', () => {
+            const panel = document.getElementById('filter-panel');
+            panel.classList.toggle('hidden');
+        });
+
+        document.getElementById('brand-filter').addEventListener('change', () => {
+            this.filterCoupons();
+        });
+
+        document.getElementById('status-filter').addEventListener('change', () => {
+            this.filterCoupons();
+        });
+    }
+
+    setupModalHandlers() {
+        document.querySelectorAll('.close-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.dataset.modal;
+                this.hideModal(modal);
+            });
+        });
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+    }
+
+    setupSettingsHandlers() {
+        document.getElementById('save-api-key').addEventListener('click', () => {
+            this.saveApiKey();
+        });
+
+        document.getElementById('export-data').addEventListener('click', () => {
+            this.exportData();
+        });
+
+        document.getElementById('clear-data').addEventListener('click', () => {
+            this.clearAllData();
+        });
+    }
+
+    setupCouponDetailHandlers() {
+        document.getElementById('toggle-used').addEventListener('click', () => {
+            this.toggleCouponUsed();
+        });
+
+        document.getElementById('share-coupon').addEventListener('click', () => {
+            this.shareCoupon();
+        });
+
+        document.getElementById('delete-coupon').addEventListener('click', () => {
+            this.deleteCoupon();
+        });
+
+        document.getElementById('copy-link').addEventListener('click', () => {
+            this.sharingManager.copyShareLink();
+        });
+    }
+
+    setupSharingHandlers() {
+        document.getElementById('back-to-app').addEventListener('click', () => {
+            this.hideSharePage();
+        });
+
+        document.getElementById('share-usage-toggle').addEventListener('change', (e) => {
+            this.updateSharedCouponUsage(e.target.checked);
+        });
+    }
+
+    setupBroadcastChannel() {
+        this.channel = new BroadcastChannel('coupon-sync');
+        this.channel.addEventListener('message', (event) => {
+            if (event.data.type === 'coupon-updated') {
+                this.loadCoupons();
+                this.updateStats();
+            }
+        });
+    }
+
+    switchTab(tabName) {
+        // 탭 버튼 활성화
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // 탭 콘텐츠 표시
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        // 등록 탭일 때 폼 초기화
+        if (tabName === 'add') {
+            this.resetAddForm();
+        }
+    }
+
+    toggleTheme() {
+        const body = document.body;
+        const themeIcon = document.querySelector('.theme-icon');
+        
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.removeAttribute('data-theme');
+            themeIcon.textContent = '🌙';
+            StorageManager.setTheme('light');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            themeIcon.textContent = '☀️';
+            StorageManager.setTheme('dark');
+        }
+    }
+
+    showModal(modalName) {
+        const modal = document.getElementById(`${modalName}-modal`);
+        modal.classList.remove('hidden');
+        
+        if (modalName === 'settings') {
+            this.loadSettings();
+        }
+    }
+
+    hideModal(modalName) {
+        const modal = document.getElementById(`${modalName}-modal`);
+        modal.classList.add('hidden');
+    }
+
+    resetAddForm() {
+        // 모든 상태 초기화
+        this.uploadedImageData = null;
+        this.currentScanResult = null;
+        this.currentCoupon = null;
+        
+        // UI 요소 초기화
+        const previewSection = document.getElementById('preview-section');
+        const aiAnalysis = document.getElementById('ai-analysis');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        
+        previewSection.classList.add('hidden');
+        aiAnalysis.classList.add('hidden');
+        uploadArea.classList.remove('hidden');
+        
+        // 폼 필드 초기화
+        document.getElementById('coupon-code').value = '';
+        document.getElementById('coupon-brand').value = '';
+        document.getElementById('coupon-name').value = '';
+        document.getElementById('coupon-amount').value = '';
+        document.getElementById('coupon-expiry').value = '';
+        
+        // 이미지 초기화
+        const previewImage = document.getElementById('preview-image');
+        if (previewImage) {
+            previewImage.src = '';
+        }
+        
+        // 파일 입력 초기화
+        fileInput.value = '';
+        
+        this.toastManager.showToast('등록 폼이 초기화되었습니다 🌽', 'success');
+    }
+
+    async handleFileUpload(file) {
+        if (!file.type.startsWith('image/')) {
+            this.toastManager.showToast('이미지 파일만 업로드 가능합니다 🌽', 'error');
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                this.uploadedImageData = e.target.result;
+                
+                // 이미지 미리보기 표시
+                document.getElementById('preview-image').src = this.uploadedImageData;
+                document.getElementById('upload-area').classList.add('hidden');
+                document.getElementById('preview-section').classList.remove('hidden');
+                
+                // 바코드 스캔 시작
+                const scanResult = await this.scanner.scanBarcode(this.uploadedImageData);
+                if (scanResult) {
+                    this.currentScanResult = scanResult;
+                    document.getElementById('coupon-code').value = scanResult;
+                    
+                    // AI 분석 시작
+                    const aiResult = await this.aiAnalyzer.analyzeImage(this.uploadedImageData, StorageManager.getApiKey());
+                    if (aiResult) {
+                        this.fillCouponForm(aiResult);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+            
+        } catch (error) {
+            console.error('파일 업로드 오류:', error);
+            this.toastManager.showToast('파일 업로드에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async rescanBarcode() {
+        if (this.uploadedImageData) {
+            const scanResult = await this.scanner.scanBarcode(this.uploadedImageData);
+            if (scanResult) {
+                this.currentScanResult = scanResult;
+                document.getElementById('coupon-code').value = scanResult;
+            }
+        } else {
+            this.toastManager.showToast('스캔할 이미지가 없습니다 🌽', 'error');
+        }
+    }
+
+    fillCouponForm(couponInfo) {
+        if (couponInfo.brand) {
+            document.getElementById('coupon-brand').value = couponInfo.brand;
+        }
+        if (couponInfo.name) {
+            document.getElementById('coupon-name').value = couponInfo.name;
+        }
+        if (couponInfo.amount) {
+            document.getElementById('coupon-amount').value = couponInfo.amount;
+        }
+        if (couponInfo.expiry) {
+            document.getElementById('coupon-expiry').value = couponInfo.expiry;
+        }
+    }
+
+    async saveCoupon() {
+        const code = document.getElementById('coupon-code').value.trim();
+        const brand = document.getElementById('coupon-brand').value.trim();
+        const name = document.getElementById('coupon-name').value.trim();
+        const amount = document.getElementById('coupon-amount').value;
+        const expiry = document.getElementById('coupon-expiry').value;
+
+        if (!code || !brand || !name) {
+            this.toastManager.showToast('필수 항목을 입력해주세요 🌽', 'error');
+            return;
+        }
+
+        // 중복 확인
+        if (await this.databaseManager.isDuplicateCoupon(code)) {
+            this.toastManager.showToast('이미 등록된 쿠폰입니다 🌽', 'warning');
+            return;
+        }
+
+        const coupon = {
+            id: this.generateId(),
+            imgSrc: this.uploadedImageData,
+            code: code,
+            brand: brand,
+            name: name,
+            amount: amount ? parseInt(amount) : null,
+            expiry: expiry,
+            used: false,
+            shared: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+
+        try {
+            await this.databaseManager.addCoupon(coupon);
+            this.toastManager.showToast('기프티콘이 등록되었습니다! 🌽✨', 'success');
+            this.resetAddForm();
+            this.switchTab('dashboard');
+            this.loadCoupons();
+            this.updateStats();
+        } catch (error) {
+            console.error('쿠폰 저장 오류:', error);
+            this.toastManager.showToast('저장에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async loadCoupons() {
+        try {
+            const coupons = await this.databaseManager.getAllCoupons();
+            this.displayCoupons(coupons);
+            this.updateBrandFilter(coupons);
+        } catch (error) {
+            console.error('쿠폰 로드 오류:', error);
+        }
+    }
+
+    displayCoupons(coupons) {
+        const grid = document.getElementById('coupons-grid');
+        const emptyState = document.getElementById('empty-state');
+
+        if (coupons.length === 0) {
+            grid.innerHTML = '';
+            grid.appendChild(emptyState);
+            return;
+        }
+
+        emptyState.remove();
+        grid.innerHTML = '';
+
+        // 만료일 순으로 정렬
+        coupons.sort((a, b) => {
+            if (!a.expiry && !b.expiry) return 0;
+            if (!a.expiry) return 1;
+            if (!b.expiry) return -1;
+            return new Date(a.expiry) - new Date(b.expiry);
+        });
+
+        coupons.forEach(coupon => {
+            const couponCard = new CouponCard(coupon, (c) => this.showCouponDetail(c));
+            const cardElement = couponCard.createElement();
+            grid.appendChild(cardElement);
+        });
+    }
+
+    updateBrandFilter(coupons) {
+        const brandFilter = document.getElementById('brand-filter');
+        const brands = [...new Set(coupons.map(c => c.brand))].sort();
+        
+        brandFilter.innerHTML = '<option value="">전체</option>';
+        brands.forEach(brand => {
+            const option = document.createElement('option');
+            option.value = brand;
+            option.textContent = brand;
+            brandFilter.appendChild(option);
+        });
+    }
+
+    async filterCoupons() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const brandFilter = document.getElementById('brand-filter').value;
+        const statusFilter = document.getElementById('status-filter').value;
+
+        const allCoupons = await this.databaseManager.getAllCoupons();
+        
+        const filteredCoupons = allCoupons.filter(coupon => {
+            const matchesSearch = coupon.brand.toLowerCase().includes(searchTerm) || 
+                                coupon.name.toLowerCase().includes(searchTerm);
+            const matchesBrand = !brandFilter || coupon.brand === brandFilter;
+            
+            let matchesStatus = true;
+            if (statusFilter === 'used') {
+                matchesStatus = coupon.used;
+            } else if (statusFilter === 'unused') {
+                matchesStatus = !coupon.used && !this.isExpired(coupon.expiry);
+            } else if (statusFilter === 'expired') {
+                matchesStatus = this.isExpired(coupon.expiry);
+            }
+
+            return matchesSearch && matchesBrand && matchesStatus;
+        });
+
+        this.displayCoupons(filteredCoupons);
+    }
+
+    async updateStats() {
+        try {
+            const coupons = await this.databaseManager.getAllCoupons();
+            const totalCount = coupons.length;
+            const unusedCount = coupons.filter(c => !c.used && !this.isExpired(c.expiry)).length;
+            const expiringCount = coupons.filter(c => !c.used && this.getDaysUntilExpiry(c.expiry) <= 7 && this.getDaysUntilExpiry(c.expiry) >= 0).length;
+
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('unused-count').textContent = unusedCount;
+            document.getElementById('expiring-count').textContent = expiringCount;
+        } catch (error) {
+            console.error('통계 업데이트 오류:', error);
+        }
+    }
+
+    showCouponDetail(coupon) {
+        this.currentCoupon = coupon;
+        
+        document.getElementById('modal-coupon-title').textContent = coupon.name;
+        document.getElementById('modal-coupon-image').src = coupon.imgSrc;
+        document.getElementById('modal-coupon-brand').textContent = coupon.brand;
+        document.getElementById('modal-coupon-name').textContent = coupon.name;
+        document.getElementById('modal-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        document.getElementById('modal-coupon-expiry').textContent = coupon.expiry || '정보 없음';
+        document.getElementById('modal-coupon-code').textContent = coupon.code;
+        
+        const toggleBtn = document.getElementById('toggle-used');
+        toggleBtn.textContent = coupon.used ? '사용 취소' : '사용 완료';
+        toggleBtn.className = coupon.used ? 'secondary-btn corn-secondary' : 'primary-btn corn-primary';
+        
+        this.showModal('coupon');
+    }
+
+    async toggleCouponUsed() {
+        if (!this.currentCoupon) return;
+
+        try {
+            this.currentCoupon.used = !this.currentCoupon.used;
+            this.currentCoupon.updatedAt = Date.now();
+            
+            await this.databaseManager.updateCoupon(this.currentCoupon);
+            
+            const toggleBtn = document.getElementById('toggle-used');
+            toggleBtn.textContent = this.currentCoupon.used ? '사용 취소' : '사용 완료';
+            toggleBtn.className = this.currentCoupon.used ? 'secondary-btn corn-secondary' : 'primary-btn corn-primary';
+            
+            this.toastManager.showToast(this.currentCoupon.used ? '사용 완료로 변경되었습니다 🌽' : '사용 취소되었습니다 🌽', 'success');
+            
+            this.loadCoupons();
+            this.updateStats();
+            
+            // BroadcastChannel로 다른 탭에 알림
+            this.channel.postMessage({
+                type: 'coupon-updated',
+                couponId: this.currentCoupon.id,
+                used: this.currentCoupon.used
+            });
+            
+        } catch (error) {
+            console.error('쿠폰 상태 업데이트 오류:', error);
+            this.toastManager.showToast('상태 변경에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async deleteCoupon() {
+        if (!this.currentCoupon) return;
+
+        if (!confirm('정말로 이 쿠폰을 삭제하시겠습니까? 🌽')) return;
+
+        try {
+            await this.databaseManager.deleteCoupon(this.currentCoupon.id);
+            this.toastManager.showToast('쿠폰이 삭제되었습니다 🌽', 'success');
+            this.hideModal('coupon');
+            this.loadCoupons();
+            this.updateStats();
+        } catch (error) {
+            console.error('쿠폰 삭제 오류:', error);
+            this.toastManager.showToast('삭제에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    shareCoupon() {
+        if (!this.currentCoupon) return;
+        this.sharingManager.shareCoupon(this.currentCoupon);
+    }
+
+    checkSharedCoupon() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareId = urlParams.get('share');
+        
+        if (shareId) {
+            this.loadSharedCoupon(shareId);
+        }
+    }
+
+    async loadSharedCoupon(shareId) {
+        const sharedCoupon = this.sharingManager.getSharedCoupon(shareId);
+        
+        if (sharedCoupon) {
+            this.displaySharedCoupon(sharedCoupon);
+        } else {
+            const coupon = await this.databaseManager.getCouponById(shareId);
+            if (coupon) {
+                this.displaySharedCoupon(coupon);
+            } else {
+                this.toastManager.showToast('공유된 쿠폰을 찾을 수 없습니다 🌽', 'error');
+            }
+        }
+    }
+
+    displaySharedCoupon(coupon) {
+        this.sharedCoupon = coupon;
+        
+        document.getElementById('share-coupon-image').src = coupon.imgSrc;
+        document.getElementById('share-coupon-title').textContent = coupon.name;
+        document.getElementById('share-coupon-brand').textContent = coupon.brand;
+        document.getElementById('share-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        document.getElementById('share-coupon-expiry').textContent = coupon.expiry || '정보 없음';
+        document.getElementById('share-usage-toggle').checked = coupon.used;
+        
+        document.getElementById('share-page').classList.remove('hidden');
+        document.getElementById('app').style.display = 'none';
+    }
+
+    hideSharePage() {
+        document.getElementById('share-page').classList.add('hidden');
+        document.getElementById('app').style.display = 'block';
+        
+        const url = new URL(window.location);
+        url.searchParams.delete('share');
+        window.history.replaceState({}, document.title, url);
+    }
+
+    async updateSharedCouponUsage(used) {
+        if (!this.sharedCoupon) return;
+
+        try {
+            const localCoupon = await this.databaseManager.getCouponById(this.sharedCoupon.id);
+            if (localCoupon) {
+                localCoupon.used = used;
+                localCoupon.updatedAt = Date.now();
+                await this.databaseManager.updateCoupon(localCoupon);
+                
+                this.channel.postMessage({
+                    type: 'coupon-updated',
+                    couponId: localCoupon.id,
+                    used: used
+                });
+            }
+
+            this.sharedCoupon.used = used;
+            this.sharedCoupon.updatedAt = Date.now();
+            this.sharingManager.updateSharedCoupon(this.sharedCoupon.id, this.sharedCoupon);
+            
+            this.toastManager.showToast(used ? '사용 완료로 변경되었습니다 🌽' : '사용 취소되었습니다 🌽', 'success');
+            
+        } catch (error) {
+            console.error('공유 쿠폰 상태 업데이트 오류:', error);
+            this.toastManager.showToast('상태 변경에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    loadSettings() {
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiKey = StorageManager.getApiKey();
+        if (apiKey) {
+            apiKeyInput.value = '**'.repeat(10);
+        }
+        
+        const settings = StorageManager.getNotificationSettings();
+        document.getElementById('notifications-enabled').checked = settings.enabled;
+        document.getElementById('notify-7days').checked = settings.notify7days;
+        document.getElementById('notify-1day').checked = settings.notify1day;
+    }
+
+    saveApiKey() {
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiKey = apiKeyInput.value.trim();
+        
+        if (apiKey && apiKey !== '**'.repeat(10)) {
+            StorageManager.setApiKey(apiKey);
+            this.toastManager.showToast('API 키가 저장되었습니다 🌽🤖', 'success');
+        }
+        
+        const settings = {
+            enabled: document.getElementById('notifications-enabled').checked,
+            notify7days: document.getElementById('notify-7days').checked,
+            notify1day: document.getElementById('notify-1day').checked
+        };
+        
+        StorageManager.setNotificationSettings(settings);
+        
+        if (settings.enabled) {
+            this.notificationManager.requestPermission();
+        }
+    }
+
+    async exportData() {
+        try {
+            const coupons = await this.databaseManager.getAllCoupons();
+            const dataStr = JSON.stringify(coupons, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `conkeep-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            this.toastManager.showToast('데이터가 내보내졌습니다 🌽💾', 'success');
+        } catch (error) {
+            console.error('데이터 내보내기 오류:', error);
+            this.toastManager.showToast('내보내기에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    async clearAllData() {
+        if (!confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다! 🌽⚠️')) {
+            return;
+        }
+
+        try {
+            await this.databaseManager.clearAllCoupons();
+            
+            this.loadCoupons();
+            this.updateStats();
+            this.hideModal('settings');
+            this.toastManager.showToast('모든 데이터가 삭제되었습니다 🌽', 'success');
+        } catch (error) {
+            console.error('데이터 삭제 오류:', error);
+            this.toastManager.showToast('삭제에 실패했습니다 🌽', 'error');
+        }
+    }
+
+    getDaysUntilExpiry(expiry) {
+        if (!expiry) return 999;
+        const today = new Date();
+        const expiryDate = new Date(expiry);
+        const diffTime = expiryDate - today;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    isExpired(expiry) {
+        if (!expiry) return false;
+        return new Date(expiry) < new Date();
+    }
+
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+}
+
+// 앱 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    window.conKeepApp = new ConKeepApp();
+    
+    // 초기 테마 설정
+    const savedTheme = StorageManager.getTheme();
+    if (savedTheme === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        document.querySelector('.theme-icon').textContent = '☀️';
+    }
+});
+
+// 전역 함수 (HTML에서 호출용)
+function switchTab(tabName) {
+    if (window.conKeepApp) {
+        window.conKeepApp.switchTab(tabName);
+    }
+}
