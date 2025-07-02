@@ -150,9 +150,17 @@
                         <input type="text" id="coupon-name" placeholder="예: 아메리카노 Tall">
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label>쿠폰 종류 *</label>
+                    <div id="coupon-type-group" class="toggle-group">
+                        <button type="button" class="toggle-btn active" data-value="monetary">금액권</button>
+                        <button type="button" class="toggle-btn" data-value="exchange">교환권</button>
+                    </div>
+                </div>
                 
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group" id="amount-group">
                         <label for="coupon-amount">금액</label>
                         <input type="number" id="coupon-amount" placeholder="원">
                     </div>

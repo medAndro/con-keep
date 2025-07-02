@@ -13,15 +13,17 @@ export class CouponCard {
 
         const statusBadge = this.getStatusBadge();
         const expiryBadge = this.getExpiryBadge();
+        const typeBadge = this.getTypeBadge();
 
         card.innerHTML = `
             ${statusBadge}
+            ${typeBadge}
             <img src="${this.coupon.imgSrc}" alt="${this.coupon.name}" class="coupon-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDMwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjhGOUZBIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZDNzU3RCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuydtOuvuOyngCDsl4bsnYw8L3RleHQ+Cjwvc3ZnPg=='">
             <div class="coupon-info">
                 <div class="coupon-brand">${this.coupon.brand}</div>
                 <div class="coupon-name">${this.coupon.name}</div>
                 <div class="coupon-meta">
-                    <span class="coupon-amount">${this.coupon.amount ? this.coupon.amount.toLocaleString() + '원' : ''}</span>
+                    ${this.coupon.couponType === 'monetary' ? `<span class="coupon-amount">${this.coupon.amount ? this.coupon.amount.toLocaleString() + '원' : ''}</span>` : ''}
                     ${expiryBadge}
                 </div>
             </div>
@@ -36,6 +38,15 @@ export class CouponCard {
         }
         if (this.isExpired()) {
             return '<div class="status-badge expired">만료</div>';
+        }
+        return '';
+    }
+
+    getTypeBadge() {
+        if (this.coupon.couponType === 'monetary') {
+            return '<div class="type-badge monetary">금액권</div>';
+        } else if (this.coupon.couponType === 'exchange') {
+            return '<div class="type-badge exchange">교환권</div>';
         }
         return '';
     }

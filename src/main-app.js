@@ -80,6 +80,23 @@ class ConKeepApp {
             this.rescanBarcode();
         });
 
+        // 쿠폰 종류 선택
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const group = e.target.closest('.toggle-group');
+                group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+
+                const couponType = e.target.dataset.value;
+                const amountGroup = document.getElementById('amount-group');
+                if (couponType === 'exchange') {
+                    amountGroup.classList.add('hidden');
+                } else {
+                    amountGroup.classList.remove('hidden');
+                }
+            });
+        });
+
         // 검색 및 필터
         this.setupSearchAndFilter();
 
@@ -292,6 +309,11 @@ class ConKeepApp {
                 field.disabled = false;
             }
         });
+
+        // 쿠폰 종류 초기화
+        document.querySelectorAll('#coupon-type-group .toggle-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('#coupon-type-group .toggle-btn[data-value="monetary"]').classList.add('active');
+        document.getElementById('amount-group').classList.remove('hidden');
         
         // 이미지 초기화
         const previewImage = document.getElementById('preview-image');
@@ -409,7 +431,9 @@ class ConKeepApp {
         const code = document.getElementById('coupon-code').value.trim();
         const brand = document.getElementById('coupon-brand').value.trim();
         const name = document.getElementById('coupon-name').value.trim();
-        const amount = document.getElementById('coupon-amount').value;
+        const couponType = document.querySelector('#coupon-type-group .toggle-btn.active').dataset.value;
+        const amountInput = document.getElementById('coupon-amount');
+        const amount = couponType === 'monetary' ? amountInput.value : null;
         const expiry = document.getElementById('coupon-expiry').value;
 
         if (!code || !brand || !name) {
@@ -429,6 +453,7 @@ class ConKeepApp {
             code: code,
             brand: brand,
             name: name,
+            couponType: couponType,
             amount: amount ? parseInt(amount) : null,
             expiry: expiry,
             used: false,
