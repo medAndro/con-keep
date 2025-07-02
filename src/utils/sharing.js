@@ -43,13 +43,26 @@ export class SharingManager {
 
         const shareUrl = `${window.location.origin}${window.location.pathname}?share=${coupon.id}`;
         
-        // 공유 URL 설정
+        // QR 코드 생성
+        const canvas = document.getElementById('qr-canvas');
+        if (canvas && typeof QRCode !== 'undefined') {
+            QRCode.toCanvas(canvas, shareUrl, { width: 200 }, (error) => {
+                if (error) {
+                    console.error('QR 코드 생성 오류:', error);
+                    this.toastManager.showToast('QR 코드 생성에 실패했습니다 🌽', 'error');
+                } else {
+                    console.log('QR 코드 생성 완료');
+                }
+            });
+        } else {
+            console.error('QR 코드 캔버스 또는 QRCode 라이브러리를 찾을 수 없습니다');
+        }
+
         const shareUrlInput = document.getElementById('share-url');
         if (shareUrlInput) {
             shareUrlInput.value = shareUrl;
         }
 
-        // 공유 섹션 표시
         const shareSection = document.getElementById('share-section');
         if (shareSection) {
             shareSection.classList.remove('hidden');
@@ -71,46 +84,6 @@ export class SharingManager {
                 console.error('복사 오류:', error);
                 this.toastManager.showToast('링크 복사에 실패했습니다 🌽', 'error');
             }
-        }
-    }
-
-    shareToKakao() {
-        const shareUrl = document.getElementById('share-url')?.value;
-        if (!shareUrl) return;
-
-        try {
-            // 카카오톡 공유 (웹 브라우저에서 카카오톡 앱으로 전환)
-            const kakaoUrl = `https://sharer.kakao.com/talk/friends/?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('🌽 기프티콘을 공유합니다!')}`;
-            window.open(kakaoUrl, '_blank');
-        } catch (error) {
-            console.error('카카오톡 공유 오류:', error);
-            this.copyShareLink(); // 실패시 링크 복사로 대체
-        }
-    }
-
-    shareToSMS() {
-        const shareUrl = document.getElementById('share-url')?.value;
-        if (!shareUrl) return;
-
-        try {
-            const smsUrl = `sms:?body=${encodeURIComponent('🌽 기프티콘을 공유합니다: ' + shareUrl)}`;
-            window.location.href = smsUrl;
-        } catch (error) {
-            console.error('SMS 공유 오류:', error);
-            this.copyShareLink();
-        }
-    }
-
-    shareToEmail() {
-        const shareUrl = document.getElementById('share-url')?.value;
-        if (!shareUrl) return;
-
-        try {
-            const emailUrl = `mailto:?subject=${encodeURIComponent('기프티콘 공유')}&body=${encodeURIComponent('🌽 기프티콘을 공유합니다: ' + shareUrl)}`;
-            window.location.href = emailUrl;
-        } catch (error) {
-            console.error('이메일 공유 오류:', error);
-            this.copyShareLink();
         }
     }
 
