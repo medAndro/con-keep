@@ -8,6 +8,9 @@ import { SharingManager } from './utils/sharing.js';
 import { ToastManager } from './components/ToastManager.js';
 import { CouponCard } from './components/CouponCard.js';
 import { ShareModal } from './components/ShareModal.js';
+import { CouponCategorySelector } from './components/CouponCategorySelector.js';
+import { NotificationSettings } from './components/NotificationSettings.js';
+import { CouponSorter } from './components/CouponSorter.js';
 
 // ConKeep - 옥수수 테마 기프티콘 관리 앱
 class ConKeepApp {
@@ -26,6 +29,15 @@ class ConKeepApp {
         this.sharingManager = new SharingManager(this.toastManager);
         this.shareModal = new ShareModal(this.toastManager);
         
+        // Initialize new components
+        this.categorySelector = new CouponCategorySelector((category) => {
+            console.log('카테고리 변경:', category);
+        });
+        this.notificationSettings = new NotificationSettings();
+        this.couponSorter = new CouponSorter((sortConfig) => {
+            this.applySorting(sortConfig);
+        });
+        
         this.init();
     }
 
@@ -33,6 +45,7 @@ class ConKeepApp {
         await this.databaseManager.initDB();
         this.setupEventListeners();
         this.setupBroadcastChannel();
+        this.setupNewComponents();
         this.loadCoupons();
         this.updateStats();
         this.notificationManager.startScheduler();
@@ -43,6 +56,26 @@ class ConKeepApp {
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
         }, 1500);
+    }
+
+    setupNewComponents() {
+        // 카테고리 선택기를 등록 폼에 추가
+        const categoryContainer = document.getElementById('category-container');
+        if (categoryContainer) {
+            categoryContainer.appendChild(this.categorySelector.createElement());
+        }
+
+        // 알림 설정을 설정 모달에 추가
+        const notificationContainer = document.getElementById('notification-settings-container');
+        if (notificationContainer) {
+            notificationContainer.appendChild(this.notificationSettings.createElement());
+        }
+
+        // 정렬 컨트롤을 대시보드에 추가
+        const sortContainer = document.getElementById('sort-container');
+        if (sortContainer) {
+            sortContainer.appendChild(this.couponSorter.createElement());
+        }
     }
 
     setupEventListeners() {
@@ -411,9 +444,16 @@ class ConKeepApp {
         const name = document.getElementById('coupon-name').value.trim();
         const amount = document.getElementById('coupon-amount').value;
         const expiry = document.getElementById('coupon-expiry').value;
+        const category = this.categorySelector.getSelectedCategory();
 
         if (!code || !brand || !name) {
             this.toastManager.showToast('필수 항목을 입력해주세요 🌽', 'error');
+            return;
+        }
+
+        // 금액권인 경우 금액 필수 체크
+        if (category === 'amount' && !amount) {
+            this.toastManager.showToast('금액권은 금액을 입력해야 합니다 🌽', 'error');
             return;
         }
 
@@ -429,8 +469,9 @@ class ConKeepApp {
             code: code,
             brand: brand,
             name: name,
-            amount: amount ? parseInt(amount) : null,
+            amount: category === 'amount' && amount ? parseInt(amount) : null,
             expiry: expiry,
+            category: category, // 새로운 필드
             used: false,
             shared: false,
             createdAt: Date.now(),
@@ -439,7 +480,7 @@ class ConKeepApp {
 
         try {
             await this.databaseManager.addCoupon(coupon);
-            this.toastManager.showToast('기프티콘이 등록되었습니다! 🌽✨', 'success');
+            this.toastManager.showToast(`${category === 'amount' ? '금액권' : '교환권'}이 등록되었습니다! 🌽✨`, 'success');
             this.resetAddForm();
             this.switchTab('dashboard');
             this.loadCoupons();
@@ -486,21 +527,16 @@ class ConKeepApp {
             emptyState.style.display = 'none';
         }
 
-        // 만료일 순으로 정렬
-        coupons.sort((a, b) => {
-            if (!a.expiry && !b.expiry) return 0;
-            if (!a.expiry) return 1;
-            if (!b.expiry) return -1;
-            return new Date(a.expiry) - new Date(b.expiry);
-        });
+        // 정렬 적용
+        const sortedCoupons = this.couponSorter.sortCoupons(coupons);
 
-        coupons.forEach(coupon => {
+        sortedCoupons.forEach(coupon => {
             const couponCard = new CouponCard(coupon, (c) => this.showCouponDetail(c));
             const cardElement = couponCard.createElement();
             grid.appendChild(cardElement);
         });
 
-        console.log('쿠폰 목록 표시 완료:', coupons.length, '개');
+        console.log('쿠폰 목록 표시 완료:', sortedCoupons.length, '개');
     }
 
     updateBrandFilter(coupons) {
@@ -541,6 +577,11 @@ class ConKeepApp {
         });
 
         this.displayCoupons(filteredCoupons);
+    }
+
+    applySorting(sortConfig) {
+        console.log('정렬 적용:', sortConfig);
+        this.loadCoupons(); // 쿠폰 목록 새로고침
     }
 
     async updateStats() {
@@ -732,10 +773,7 @@ class ConKeepApp {
             apiKeyInput.value = '**'.repeat(10);
         }
         
-        const settings = StorageManager.getNotificationSettings();
-        document.getElementById('notifications-enabled').checked = settings.enabled;
-        document.getElementById('notify-7days').checked = settings.notify7days;
-        document.getElementById('notify-1day').checked = settings.notify1day;
+        // 기존 알림 설정 로직 제거 (NotificationSettings 컴포넌트에서 처리)
     }
 
     saveApiKey() {
@@ -747,13 +785,8 @@ class ConKeepApp {
             this.toastManager.showToast('API 키가 저장되었습니다 🌽🤖', 'success');
         }
         
-        const settings = {
-            enabled: document.getElementById('notifications-enabled').checked,
-            notify7days: document.getElementById('notify-7days').checked,
-            notify1day: document.getElementById('notify-1day').checked
-        };
-        
-        StorageManager.setNotificationSettings(settings);
+        // 알림 설정은 NotificationSettings 컴포넌트에서 자동 저장됨
+        const settings = this.notificationSettings.getSettings();
         
         if (settings.enabled) {
             this.notificationManager.requestPermission();

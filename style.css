@@ -1214,3 +1214,273 @@ body, .app-container, .modal-content, .search-section, .stat-card, .coupon-card 
 [data-theme="dark"] #social-share-buttons {
     background-color: #2c2c2e;
 }
+
+/* 카테고리 선택기 스타일 */
+.coupon-category-selector .category-options {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.category-option {
+    flex: 1;
+    cursor: pointer;
+}
+
+.category-option input[type="radio"] {
+    display: none;
+}
+
+.category-label {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.2s;
+}
+
+.category-option input[type="radio"]:checked + .category-label {
+    border-color: var(--corn-primary);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.category-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.category-text {
+    flex: 1;
+}
+
+.category-title {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 2px;
+}
+
+.category-desc {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* 알림 설정 스타일 */
+.notification-settings .setting-group {
+    margin-bottom: 24px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+}
+
+.notification-settings h3 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.notification-settings h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #d1d5db;
+    border-radius: 12px;
+    transition: background 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle-container input:checked + .toggle-slider {
+    background: var(--corn-primary);
+}
+
+.toggle-container input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.day-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.day-option input:checked {
+    accent-color: var(--corn-primary);
+}
+
+.custom-day-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.custom-day-input input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    background: var(--corn-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.times-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.time-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.time-input-group input[type="time"] {
+    padding: 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}
+
+.remove-time {
+    width: 24px;
+    height: 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* 정렬 컨트롤 스타일 */
+.coupon-sorter {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+}
+
+.sort-controls {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+}
+
+.sort-field, .sort-order {
+    flex: 1;
+}
+
+.sort-field label, .sort-order label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+.sort-field select, .sort-order select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+}
+
+.btn-sort {
+    padding: 8px 16px;
+    background: var(--corn-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* 다크모드 지원 */
+[data-theme="dark"] .category-label {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
+
+[data-theme="dark"] .category-option input[type="radio"]:checked + .category-label {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: var(--corn-primary);
+}
+
+[data-theme="dark"] .notification-settings .setting-group {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
+
+@media (max-width: 640px) {
+    .category-options {
+        flex-direction: column;
+    }
+    
+    .sort-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .days-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
