@@ -4,37 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConKeep - 옥수수 기프티콘 관리</title>
+    <title>ConKeep - 옥수수 테마 기프티콘 관리</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f59e0b">
     <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
-    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
-    <!-- 로딩 스크린 -->
+    <!-- 로딩 화면 -->
     <div id="loading-screen" class="loading-screen">
-        <div class="corn-mascot">🌽</div>
-        <h1>ConKeep</h1>
-        <p>옥수수처럼 달콤한 쿠폰 관리</p>
-        <div class="loading-spinner"></div>
+        <div class="loading-content">
+            <div class="corn-loader">🌽</div>
+            <h2>ConKeep</h2>
+            <p>기프티콘을 관리하는 가장 쉬운 방법</p>
+        </div>
     </div>
 
     <!-- 메인 앱 -->
-    <div id="app" class="app-container" style="display: none;">
+    <div id="app" class="app" style="display: none;">
         <!-- 헤더 -->
-        <header class="app-header">
+        <header class="header">
             <div class="header-content">
-                <div class="app-title">
-                    <span class="logo">🌽</span>
-                    <div>
-                        <div>ConKeep</div>
-                        <div class="subtitle">쿠폰 관리</div>
-                    </div>
-                </div>
+                <h1 class="app-title">
+                    <span class="corn-icon">🌽</span>
+                    ConKeep
+                </h1>
                 <div class="header-actions">
-                    <button id="theme-toggle" class="corn-btn" title="테마 변경">
+                    <button id="theme-toggle" class="icon-btn" title="테마 변경">
                         <span class="theme-icon">🌙</span>
                     </button>
-                    <button id="settings-btn" class="corn-btn" title="설정">
+                    <button id="settings-btn" class="icon-btn" title="설정">
                         ⚙️
                     </button>
                 </div>
@@ -44,31 +43,63 @@
         <!-- 탭 네비게이션 -->
         <nav class="tab-nav">
             <button class="tab-btn active" data-tab="dashboard">
-                <span>📊</span>
-                <span>대시보드</span>
+                <span class="tab-icon">📊</span>
+                대시보드
             </button>
             <button class="tab-btn" data-tab="add">
-                <span>➕</span>
-                <span>등록</span>  
+                <span class="tab-icon">➕</span>
+                등록
             </button>
         </nav>
 
         <!-- 대시보드 탭 -->
         <div id="dashboard-tab" class="tab-content active">
-            <!-- 검색 섹션 -->
-            <div class="search-section">
-                <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="브랜드나 상품명으로 검색하세요 🌽">
+            <!-- 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="total-count">0</div>
+                        <div class="stat-label">전체 쿠폰</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✨</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="unused-count">0</div>
+                        <div class="stat-label">사용 가능</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="expiring-count">0</div>
+                        <div class="stat-label">만료 임박</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 검색 및 필터 -->
+            <div class="search-filter-section">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="브랜드 또는 상품명으로 검색..." class="search-input">
                     <button id="filter-btn" class="filter-btn">🔍</button>
                 </div>
                 
-                <div id="filter-panel" class="hidden" style="margin-top: 12px;">
-                    <div style="display: flex; gap: 12px;">
-                        <select id="brand-filter" style="flex: 1;">
-                            <option value="">전체 브랜드</option>
+                <!-- 정렬 컨트롤 컨테이너 -->
+                <div id="sort-container" class="sort-container"></div>
+                
+                <div id="filter-panel" class="filter-panel hidden">
+                    <div class="filter-group">
+                        <label for="brand-filter">브랜드</label>
+                        <select id="brand-filter" class="filter-select">
+                            <option value="">전체</option>
                         </select>
-                        <select id="status-filter" style="flex: 1;">
-                            <option value="">전체 상태</option>
+                    </div>
+                    <div class="filter-group">
+                        <label for="status-filter">상태</label>
+                        <select id="status-filter" class="filter-select">
+                            <option value="">전체</option>
                             <option value="unused">사용 가능</option>
                             <option value="used">사용 완료</option>
                             <option value="expired">만료됨</option>
@@ -77,94 +108,85 @@
                 </div>
             </div>
 
-            <!-- 통계 섹션 -->
-            <div class="stats-row">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-count">0</div>
-                    <div class="stat-label">전체</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="unused-count">0</div>
-                    <div class="stat-label">사용가능</div>
-                </div>
-                <div class="stat-card urgent">
-                    <div class="stat-number" id="expiring-count">0</div>
-                    <div class="stat-label">만료임박</div>
-                </div>
-            </div>
-
-            <!-- 쿠폰 목록 -->
+            <!-- 쿠폰 그리드 -->
             <div id="coupons-grid" class="coupons-grid">
+                <!-- 빈 상태 -->
                 <div id="empty-state" class="empty-state">
                     <div class="empty-icon">🌽</div>
-                    <p>아직 등록된 쿠폰이 없어요</p>
-                    <p>위의 등록 탭에서 새 쿠폰을 추가해보세요!</p>
+                    <h3>아직 등록된 쿠폰이 없어요</h3>
+                    <p>첫 번째 기프티콘을 등록해보세요!</p>
+                    <button onclick="switchTab('add')" class="primary-btn corn-primary">쿠폰 등록하기</button>
                 </div>
             </div>
         </div>
 
         <!-- 등록 탭 -->
         <div id="add-tab" class="tab-content">
-            <!-- 업로드 영역 -->
-            <div id="upload-area" class="upload-area">
-                <div class="upload-icon">📸</div>
-                <h3>기프티콘 이미지를 업로드하세요</h3>
-                <p>드래그 앤 드롭하거나 클릭해서 선택하세요</p>
-                <button class="upload-btn">파일 선택</button>
-                <input type="file" id="file-input" accept="image/*" style="display: none;">
-            </div>
-
-            <!-- 이미지 미리보기 -->
-            <div id="preview-section" class="hidden">
-                <div class="image-preview">
-                    <img id="preview-image" alt="업로드된 이미지">
-                    <div id="scan-overlay" class="scan-overlay hidden">
-                        <div>🌽 바코드 스캔 중...</div>
-                        <div class="scan-line"></div>
-                        <p>잠시만 기다려주세요</p>
-                    </div>
-                </div>
-                <button id="rescan-btn" class="secondary-btn">다시 스캔</button>
-            </div>
-
-            <!-- AI 분석 중 -->
-            <div id="ai-analysis" class="hidden" style="text-align: center; padding: 20px;">
-                <div class="ai-spinner"></div>
-                <p>🤖 AI가 쿠폰 정보를 분석하고 있습니다...</p>
-            </div>
-
-            <!-- 쿠폰 정보 입력 폼 -->
-            <div class="coupon-form">
-                <div class="form-group">
-                    <label for="coupon-code">바코드 번호 *</label>
-                    <input type="text" id="coupon-code" placeholder="바코드 번호">
-                </div>
+            <div class="add-coupon-container">
+                <h2>새 쿠폰 등록</h2>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="coupon-brand">브랜드 *</label>
-                        <input type="text" id="coupon-brand" placeholder="예: 스타벅스">
-                    </div>
-                    <div class="form-group">
-                        <label for="coupon-name">상품명 *</label>
-                        <input type="text" id="coupon-name" placeholder="예: 아메리카노 Tall">
+                <!-- 카테고리 선택 컨테이너 -->
+                <div id="category-container" class="category-container"></div>
+                
+                <!-- 파일 업로드 영역 -->
+                <div id="upload-area" class="upload-area">
+                    <div class="upload-icon">📷</div>
+                    <p>기프티콘 이미지를 업로드하세요</p>
+                    <small>클릭하거나 드래그하여 업로드</small>
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                </div>
+
+                <!-- 이미지 미리보기 -->
+                <div id="preview-section" class="preview-section hidden">
+                    <img id="preview-image" class="preview-image" alt="미리보기">
+                    <div class="scan-overlay" id="scan-overlay">
+                        <div class="scan-loader">
+                            <div class="corn-loader">🌽</div>
+                            <p>바코드를 스캔하고 있습니다...</p>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="coupon-amount">금액</label>
-                        <input type="number" id="coupon-amount" placeholder="원">
-                    </div>
-                    <div class="form-group">
-                        <label for="coupon-expiry">유효기간</label>
-                        <input type="date" id="coupon-expiry">
-                    </div>
+
+                <!-- AI 분석 결과 -->
+                <div id="ai-analysis" class="ai-analysis hidden">
+                    <h3>🤖 AI 분석 완료</h3>
+                    <p>이미지에서 정보를 추출했습니다. 확인해주세요!</p>
                 </div>
-                
-                <div style="display: flex; gap: 12px; margin-top: 20px;">
-                    <button id="save-coupon" class="primary-btn corn-primary" style="flex: 1;">저장</button>
-                    <button id="cancel-add" class="secondary-btn corn-secondary">취소</button>
+
+                <!-- 쿠폰 정보 입력 폼 -->
+                <div class="coupon-form">
+                    <div class="form-group">
+                        <label for="coupon-code">바코드 번호</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="coupon-code" placeholder="바코드 번호" class="form-input">
+                            <button type="button" id="rescan-btn" class="secondary-btn">다시 스캔</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coupon-brand">브랜드</label>
+                        <input type="text" id="coupon-brand" placeholder="브랜드명" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coupon-name">상품명</label>
+                        <input type="text" id="coupon-name" placeholder="상품명" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coupon-amount">금액 (원)</label>
+                        <input type="number" id="coupon-amount" placeholder="금액을 입력하세요" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coupon-expiry">만료일</label>
+                        <input type="date" id="coupon-expiry" class="form-input">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="cancel-add" class="secondary-btn">취소</button>
+                        <button type="button" id="save-coupon" class="primary-btn corn-primary">저장</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,52 +197,39 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modal-coupon-title">쿠폰 상세</h2>
-                <button class="close-btn" data-modal="coupon">&times;</button>
+                <button class="close-btn" data-modal="coupon">×</button>
             </div>
             <div class="modal-body">
-                <div class="coupon-image-container">
-                    <img id="modal-coupon-image" alt="쿠폰 이미지">
-                </div>
-                
-                <div class="coupon-details">
-                    <div class="detail-row">
-                        <span class="label">브랜드:</span>
-                        <span id="modal-coupon-brand"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">상품명:</span>
-                        <span id="modal-coupon-name"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">금액:</span>
-                        <span id="modal-coupon-amount"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">유효기간:</span>
-                        <span id="modal-coupon-expiry"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">바코드:</span>
-                        <span class="code" id="modal-coupon-code"></span>
-                    </div>
-                </div>
-                
-                <div class="coupon-actions">
-                    <button id="toggle-used" class="primary-btn corn-primary">사용 완료</button>
-                    <button id="share-coupon" class="secondary-btn corn-secondary">공유</button>
-                    <button id="delete-coupon" class="danger-btn">삭제</button>
-                </div>
-                
-                <div id="share-section" class="share-section hidden">
-                    <h3>🌽 쿠폰 공유</h3>
-                    <div class="qr-container">
-                        <canvas id="qr-canvas"></canvas>
-                    </div>
-                    <div class="share-link">
-                        <input type="text" id="share-url" readonly>
-                        <button id="copy-link" class="secondary-btn corn-secondary">복사</button>
+                <div class="coupon-detail">
+                    <img id="modal-coupon-image" class="coupon-image" alt="쿠폰 이미지">
+                    <div class="coupon-info">
+                        <div class="info-row">
+                            <span class="info-label">브랜드:</span>
+                            <span id="modal-coupon-brand"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">상품명:</span>
+                            <span id="modal-coupon-name"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">금액:</span>
+                            <span id="modal-coupon-amount"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">만료일:</span>
+                            <span id="modal-coupon-expiry"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">바코드:</span>
+                            <span id="modal-coupon-code"></span>
+                        </div>
                     </div>
                 </div>
+            </div>
+            <div class="modal-actions">
+                <button id="toggle-used" class="primary-btn corn-primary">사용 완료</button>
+                <button id="share-coupon" class="secondary-btn">공유</button>
+                <button id="delete-coupon" class="danger-btn">삭제</button>
             </div>
         </div>
     </div>
@@ -230,86 +239,74 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>설정</h2>
-                <button class="close-btn" data-modal="settings">&times;</button>
+                <button class="close-btn" data-modal="settings">×</button>
             </div>
             <div class="modal-body">
-                <div class="setting-group">
-                    <h3>🤖 AI 분석 설정</h3>
-                    <div class="api-key-section">
-                        <input type="password" id="api-key-input" placeholder="Gemini API 키 입력">
-                        <button id="save-api-key" class="primary-btn corn-primary">저장</button>
-                    </div>
-                    <div class="help-text">
-                        AI 쿠폰 정보 분석을 위해 Google Gemini API 키가 필요합니다.<br>
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank">여기서 API 키 발급</a>
+                <div class="settings-section">
+                    <h3>AI 분석 설정</h3>
+                    <div class="form-group">
+                        <label for="api-key-input">OpenAI API 키</label>
+                        <input type="password" id="api-key-input" placeholder="API 키를 입력하세요" class="form-input">
+                        <small>AI 분석 기능을 사용하려면 OpenAI API 키가 필요합니다.</small>
                     </div>
                 </div>
-                
-                <div class="setting-group">
-                    <h3>🔔 알림 설정</h3>
-                    <div class="notification-settings">
-                        <label class="switch">
-                            <input type="checkbox" id="notifications-enabled">
-                            <span class="slider"></span>
-                        </label>
-                        <span>만료 알림 사용</span>
-                        
-                        <div class="notification-timing">
-                            <label>
-                                <input type="checkbox" id="notify-7days">
-                                7일 전 알림
-                            </label>
-                            <label>
-                                <input type="checkbox" id="notify-1day">  
-                                1일 전 알림
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="setting-group">
-                    <h3>💾 데이터 관리</h3>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <button id="export-data" class="secondary-btn corn-secondary">데이터 내보내기</button>
+
+                <!-- 알림 설정 컨테이너 -->
+                <div id="notification-settings-container" class="notification-settings-container"></div>
+
+                <div class="settings-section">
+                    <h3>데이터 관리</h3>
+                    <div class="settings-buttons">
+                        <button id="export-data" class="secondary-btn">데이터 내보내기</button>
                         <button id="clear-data" class="danger-btn">모든 데이터 삭제</button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- 공유 페이지 -->
-    <div id="share-page" class="share-page hidden">
-        <div class="share-container">
-            <div class="share-header">
-                <h1>🌽 공유된 쿠폰</h1>
-                <button id="back-to-app" class="secondary-btn corn-secondary">앱으로 돌아가기</button>
-            </div>
-            
-            <div class="shared-coupon-card">
-                <img id="share-coupon-image" alt="공유된 쿠폰">
-                <div class="share-coupon-info">
-                    <h2 id="share-coupon-title"></h2>
-                    <div class="share-details">
-                        <p><strong>브랜드:</strong> <span id="share-coupon-brand"></span></p>
-                        <p><strong>금액:</strong> <span id="share-coupon-amount"></span></p>
-                        <p><strong>유효기간:</strong> <span id="share-coupon-expiry"></span></p>
-                    </div>
-                    
-                    <div class="usage-toggle">
-                        <label class="switch">
-                            <input type="checkbox" id="share-usage-toggle">
-                            <span class="slider"></span>
-                        </label>
-                        <span>사용 완료</span>
-                    </div>
-                </div>
+            <div class="modal-actions">
+                <button id="save-api-key" class="primary-btn corn-primary">저장</button>
             </div>
         </div>
     </div>
 
     <!-- 토스트 컨테이너 -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- 공유 페이지 (숨김 상태) -->
+    <div id="share-page" class="share-page hidden">
+        <div class="share-content">
+            <div class="share-header">
+                <h1>🌽 ConKeep 공유 쿠폰</h1>
+            </div>
+            <div class="shared-coupon">
+                <img id="share-coupon-image" class="shared-coupon-image" alt="공유된 쿠폰">
+                <div class="shared-coupon-info">
+                    <h2 id="share-coupon-title"></h2>
+                    <div class="shared-info-row">
+                        <span class="shared-label">브랜드:</span>
+                        <span id="share-coupon-brand"></span>
+                    </div>
+                    <div class="shared-info-row">
+                        <span class="shared-label">금액:</span>
+                        <span id="share-coupon-amount"></span>
+                    </div>
+                    <div class="shared-info-row">
+                        <span class="shared-label">만료일:</span>
+                        <span id="share-coupon-expiry"></span>
+                    </div>
+                    <div class="shared-usage-control">
+                        <label class="usage-toggle">
+                            <input type="checkbox" id="share-usage-toggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">사용 완료</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공유 모달 컨테이너 -->
+    <div id="share-modal-container"></div>
 
     <script type="module" src="src/main-app.js"></script>
 </body>

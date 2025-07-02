@@ -32,6 +32,8 @@ class ConKeepApp {
         // Initialize new components
         this.categorySelector = new CouponCategorySelector((category) => {
             console.log('카테고리 변경:', category);
+            // 카테고리 변경시 금액 필드 업데이트
+            this.updateAmountFieldForCategory(category);
         });
         this.notificationSettings = new NotificationSettings();
         this.couponSorter = new CouponSorter((sortConfig) => {
@@ -62,18 +64,21 @@ class ConKeepApp {
         // 카테고리 선택기를 등록 폼에 추가
         const categoryContainer = document.getElementById('category-container');
         if (categoryContainer) {
+            categoryContainer.innerHTML = ''; // 기존 내용 제거
             categoryContainer.appendChild(this.categorySelector.createElement());
         }
 
         // 알림 설정을 설정 모달에 추가
         const notificationContainer = document.getElementById('notification-settings-container');
         if (notificationContainer) {
+            notificationContainer.innerHTML = ''; // 기존 내용 제거
             notificationContainer.appendChild(this.notificationSettings.createElement());
         }
 
         // 정렬 컨트롤을 대시보드에 추가
         const sortContainer = document.getElementById('sort-container');
         if (sortContainer) {
+            sortContainer.innerHTML = ''; // 기존 내용 제거
             sortContainer.appendChild(this.couponSorter.createElement());
         }
     }
@@ -606,7 +611,15 @@ class ConKeepApp {
         document.getElementById('modal-coupon-image').src = coupon.imgSrc;
         document.getElementById('modal-coupon-brand').textContent = coupon.brand;
         document.getElementById('modal-coupon-name').textContent = coupon.name;
-        document.getElementById('modal-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        
+        // 카테고리에 따른 금액 표시
+        const amountElement = document.getElementById('modal-coupon-amount');
+        if (coupon.category === 'exchange') {
+            amountElement.textContent = '교환권 (금액 없음)';
+        } else {
+            amountElement.textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        }
+        
         document.getElementById('modal-coupon-expiry').textContent = coupon.expiry || '정보 없음';
         document.getElementById('modal-coupon-code').textContent = coupon.code;
         
