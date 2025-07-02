@@ -1,8 +1,11 @@
 
+import { StorageManager } from './storage.js'; // 원래대로 되돌림
+
 // Notification management utility
 export class NotificationManager {
-    constructor(databaseManager) {
+    constructor(databaseManager, storageManager) { // storageManager 추가
         this.databaseManager = databaseManager;
+        this.storageManager = storageManager; // storageManager 저장
     }
 
     checkPermission() {
@@ -32,7 +35,7 @@ export class NotificationManager {
     }
 
     async checkExpiringCoupons() {
-        const settings = StorageManager.getNotificationSettings();
+        const settings = this.storageManager.getNotificationSettings(); // this.storageManager 사용
         if (!settings.enabled || Notification.permission !== 'granted') {
             return;
         }

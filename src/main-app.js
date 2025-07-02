@@ -22,7 +22,7 @@ class ConKeepApp {
         this.databaseManager = new DatabaseManager();
         this.scanner = new BarcodeScanner(this.toastManager);
         this.aiAnalyzer = new AIAnalyzer(this.toastManager);
-        this.notificationManager = new NotificationManager(this.databaseManager);
+        this.notificationManager = new NotificationManager(this.databaseManager, StorageManager);
         this.sharingManager = new SharingManager(this.toastManager);
         this.shareModal = new ShareModal(this.toastManager);
         

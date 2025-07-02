@@ -2,11 +2,13 @@
 // Local storage utility functions
 export class StorageManager {
     static getApiKey() {
-        return localStorage.getItem('gemini-api-key');
+        const encrypted = localStorage.getItem('gemini-api-key');
+        return encrypted ? atob(encrypted) : null;
     }
 
     static setApiKey(apiKey) {
-        localStorage.setItem('gemini-api-key', apiKey);
+        const encrypted = btoa(apiKey);
+        localStorage.setItem('gemini-api-key', encrypted);
     }
 
     static getTheme() {

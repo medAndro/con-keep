@@ -1,9 +1,9 @@
-
-// 새로운 바코드 리더 구현
+// 새로운 바코드 리더 구현 (ZXing-JS 기반)
 export class BarcodeReader {
     constructor(toastManager) {
         this.toastManager = toastManager;
         this.isReady = false;
+        this.reader = null;
         this.initializeLibrary();
     }
 
@@ -24,7 +24,7 @@ export class BarcodeReader {
                 console.log('바코드 리더 초기화 완료');
                 return true;
             } else {
-                console.error('ZXing 라이브러리를 찾을 수 없습니다');
+                console.error('ZXing 라이브러리를 찾을 수 없습니다. 스크립트 로드 확인 필요.');
                 return false;
             }
         } catch (error) {
@@ -45,14 +45,17 @@ export class BarcodeReader {
         }
 
         try {
-            const canvas = await this.createCanvasFromImage(imageSrc);
-            if (!canvas) {
-                console.error('캔버스 생성 실패');
-                return null;
-            }
+            const img = new Image();
+            img.crossOrigin = 'anonymous'; // CORS 문제 방지
+            img.src = imageSrc;
+
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
 
             // 여러 스캔 방법 시도
-            const result = await this.tryMultipleScanMethods(canvas);
+            const result = await this.tryMultipleScanMethods(img);
             
             if (result) {
                 console.log('바코드 인식 성공:', result);
@@ -70,146 +73,102 @@ export class BarcodeReader {
         }
     }
 
-    async createCanvasFromImage(imageSrc) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            
-            img.onload = () => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    // 적절한 크기로 캔버스 설정
-                    const maxSize = 1200;
-                    let { width, height } = img;
-                    
-                    if (width > maxSize || height > maxSize) {
-                        const ratio = Math.min(maxSize / width, maxSize / height);
-                        width *= ratio;
-                        height *= ratio;
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    // 이미지를 캔버스에 그리기
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    console.log('캔버스 생성 완료:', width, 'x', height);
-                    resolve(canvas);
-                } catch (error) {
-                    console.error('캔버스 생성 오류:', error);
-                    resolve(null);
-                }
-            };
-            
-            img.onerror = (error) => {
-                console.error('이미지 로드 오류:', error);
-                resolve(null);
-            };
-            
-            img.src = imageSrc;
-        });
-    }
-
-    async tryMultipleScanMethods(canvas) {
-        const ctx = canvas.getContext('2d');
+    async tryMultipleScanMethods(img) {
         const methods = [
-            () => this.scanOriginal(ctx, canvas.width, canvas.height),
-            () => this.scanWithContrast(ctx, canvas.width, canvas.height),
-            () => this.scanWithBrightness(ctx, canvas.width, canvas.height),
-            () => this.scanGrayscale(ctx, canvas.width, canvas.height),
-            () => this.scanWithSharpening(ctx, canvas.width, canvas.height)
+            { name: 'Original', func: () => this.decodeFromImage(img) },
+            { name: 'Contrast', func: () => this.decodeWithPreprocessing(img, 'contrast') },
+            { name: 'Brightness', func: () => this.decodeWithPreprocessing(img, 'brightness') },
+            { name: 'Grayscale', func: () => this.decodeWithPreprocessing(img, 'grayscale') },
+            { name: 'Sharpening', func: () => this.decodeWithPreprocessing(img, 'sharpening') },
         ];
 
         for (const method of methods) {
             try {
-                const result = await method();
+                console.log(`스캔 시도: ${method.name}`);
+                const result = await method.func();
                 if (result) {
+                    console.log(`스캔 성공: ${method.name}`);
                     return result;
                 }
             } catch (error) {
-                console.log('스캔 방법 실패:', error.message);
-                continue;
+                console.log(`스캔 방법 실패 (${method.name}):`, error.message);
+                // 다음 방법 시도
             }
         }
-        
         return null;
     }
 
-    async scanOriginal(ctx, width, height) {
-        console.log('원본 이미지로 스캔 시도');
-        const imageData = ctx.getImageData(0, 0, width, height);
-        return await this.decodeImageData(imageData);
-    }
-
-    async scanWithContrast(ctx, width, height) {
-        console.log('대비 조정하여 스캔 시도');
-        const imageData = ctx.getImageData(0, 0, width, height);
-        this.adjustContrast(imageData, 1.5);
-        return await this.decodeImageData(imageData);
-    }
-
-    async scanWithBrightness(ctx, width, height) {
-        console.log('밝기 조정하여 스캔 시도');
-        const imageData = ctx.getImageData(0, 0, width, height);
-        this.adjustBrightness(imageData, 30);
-        return await this.decodeImageData(imageData);
-    }
-
-    async scanGrayscale(ctx, width, height) {
-        console.log('흑백으로 변환하여 스캔 시도');
-        const imageData = ctx.getImageData(0, 0, width, height);
-        this.convertToGrayscale(imageData);
-        return await this.decodeImageData(imageData);
-    }
-
-    async scanWithSharpening(ctx, width, height) {
-        console.log('선명도 조정하여 스캔 시도');
-        const imageData = ctx.getImageData(0, 0, width, height);
-        this.applySharpeningFilter(imageData);
-        return await this.decodeImageData(imageData);
-    }
-
-    async decodeImageData(imageData) {
+    async decodeFromImage(img) {
         try {
-            const result = await this.reader.decodeFromImageData(imageData);
+            const result = await this.reader.decodeFromImage(img);
             return result.text;
         } catch (error) {
             return null;
         }
     }
 
+    async decodeWithPreprocessing(img, type) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+
+        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        switch (type) {
+            case 'contrast':
+                this.adjustContrast(imageData, 1.5);
+                break;
+            case 'brightness':
+                this.adjustBrightness(imageData, 30);
+                break;
+            case 'grayscale':
+                this.convertToGrayscale(imageData);
+                break;
+            case 'sharpening':
+                this.applySharpeningFilter(imageData);
+                break;
+        }
+        
+        ctx.putImageData(imageData, 0, 0); // 변경된 이미지 데이터를 캔버스에 다시 그립니다.
+
+        try {
+            const result = await this.reader.decodeFromCanvas(canvas);
+            return result.text;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // 이미지 전처리 함수들 (이전 구현에서 가져옴)
     adjustContrast(imageData, contrast) {
         const data = imageData.data;
         const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
-        
         for (let i = 0; i < data.length; i += 4) {
-            data[i] = this.clamp((data[i] - 128) * factor + 128);     // Red
-            data[i + 1] = this.clamp((data[i + 1] - 128) * factor + 128); // Green
-            data[i + 2] = this.clamp((data[i + 2] - 128) * factor + 128); // Blue
+            data[i] = this.clamp((data[i] - 128) * factor + 128);
+            data[i + 1] = this.clamp((data[i + 1] - 128) * factor + 128);
+            data[i + 2] = this.clamp((data[i + 2] - 128) * factor + 128);
         }
     }
 
     adjustBrightness(imageData, brightness) {
         const data = imageData.data;
-        
         for (let i = 0; i < data.length; i += 4) {
-            data[i] = this.clamp(data[i] + brightness);     // Red
-            data[i + 1] = this.clamp(data[i + 1] + brightness); // Green
-            data[i + 2] = this.clamp(data[i + 2] + brightness); // Blue
+            data[i] = this.clamp(data[i] + brightness);
+            data[i + 1] = this.clamp(data[i + 1] + brightness);
+            data[i + 2] = this.clamp(data[i + 2] + brightness);
         }
     }
 
     convertToGrayscale(imageData) {
         const data = imageData.data;
-        
         for (let i = 0; i < data.length; i += 4) {
             const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-            data[i] = gray;     // Red
-            data[i + 1] = gray; // Green
-            data[i + 2] = gray; // Blue
+            data[i] = gray;
+            data[i + 1] = gray;
+            data[i + 2] = gray;
         }
     }
 
@@ -222,9 +181,7 @@ export class BarcodeReader {
             -1, 5, -1,
             0, -1, 0
         ];
-        
         const newData = new Uint8ClampedArray(data);
-        
         for (let y = 1; y < height - 1; y++) {
             for (let x = 1; x < width - 1; x++) {
                 for (let c = 0; c < 3; c++) {
@@ -241,10 +198,11 @@ export class BarcodeReader {
                 }
             }
         }
-        
         for (let i = 0; i < data.length; i++) {
             data[i] = newData[i];
         }
+        // 원본 imageData에 newData를 복사
+        imageData.data.set(newData);
     }
 
     clamp(value) {
