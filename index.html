@@ -64,10 +64,10 @@
                 
                 <div id="filter-panel" class="hidden" style="margin-top: 12px;">
                     <div style="display: flex; gap: 12px;">
-                        <select id="brand-filter" style="flex: 1;">
+                        <select id="brand-filter" class="dashboard-select">
                             <option value="">전체 브랜드</option>
                         </select>
-                        <select id="status-filter" style="flex: 1;">
+                        <select id="status-filter" class="dashboard-select">
                             <option value="">전체 상태</option>
                             <option value="unused">사용 가능</option>
                             <option value="used">사용 완료</option>
@@ -75,6 +75,18 @@
                         </select>
                     </div>
                 </div>
+            </div>
+
+            <!-- 정렬 섹션 -->
+            <div class="sort-section" style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <select id="sort-by" class="dashboard-select">
+                    <option value="expiry">만료일 순</option>
+                    <option value="createdAt">등록일 순</option>
+                </select>
+                <select id="sort-order" class="dashboard-select">
+                    <option value="asc">오름차순</option>
+                    <option value="desc">내림차순</option>
+                </select>
             </div>
 
             <!-- 통계 섹션 -->

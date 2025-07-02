@@ -31,4 +31,16 @@ export class StorageManager {
         localStorage.setItem('notifications-enabled', settings.enabled);
         localStorage.setItem('notification-custom-days', JSON.stringify(settings.customDays));
     }
+
+    static getSortingSettings() {
+        return {
+            sortBy: localStorage.getItem('sort-by') || 'expiry',
+            sortOrder: localStorage.getItem('sort-order') || 'asc'
+        };
+    }
+
+    static setSortingSettings(settings) {
+        localStorage.setItem('sort-by', settings.sortBy);
+        localStorage.setItem('sort-order', settings.sortOrder);
+    }
 }

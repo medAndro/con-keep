@@ -111,6 +111,23 @@ class ConKeepApp {
 
         // 공유 페이지
         this.setupSharingHandlers();
+
+        // 정렬 설정 로드 및 이벤트 리스너
+        this.loadSortingSettings();
+        document.getElementById('sort-by').addEventListener('change', () => this.filterCoupons());
+        document.getElementById('sort-order').addEventListener('change', () => this.filterCoupons());
+    }
+
+    loadSortingSettings() {
+        const settings = StorageManager.getSortingSettings();
+        document.getElementById('sort-by').value = settings.sortBy;
+        document.getElementById('sort-order').value = settings.sortOrder;
+    }
+
+    saveSortingSettings() {
+        const sortBy = document.getElementById('sort-by').value;
+        const sortOrder = document.getElementById('sort-order').value;
+        StorageManager.setSortingSettings({ sortBy, sortOrder });
     }
 
     setupFileUpload() {
@@ -502,7 +519,7 @@ class ConKeepApp {
         try {
             const coupons = await this.databaseManager.getAllCoupons();
             console.log('쿠폰 로드 완료:', coupons.length, '개');
-            this.displayCoupons(coupons);
+            this.filterCoupons(); // Call filterCoupons to display and sort
             this.updateBrandFilter(coupons);
         } catch (error) {
             console.error('쿠폰 로드 오류:', error);
@@ -534,13 +551,7 @@ class ConKeepApp {
             emptyState.style.display = 'none';
         }
 
-        // 만료일 순으로 정렬
-        coupons.sort((a, b) => {
-            if (!a.expiry && !b.expiry) return 0;
-            if (!a.expiry) return 1;
-            if (!b.expiry) return -1;
-            return new Date(a.expiry) - new Date(b.expiry);
-        });
+        
 
         coupons.forEach(coupon => {
             const couponCard = new CouponCard(coupon, (c) => this.showCouponDetail(c));
@@ -588,7 +599,25 @@ class ConKeepApp {
             return matchesSearch && matchesBrand && matchesStatus;
         });
 
+        // Apply sorting
+        const sortBy = document.getElementById('sort-by').value;
+        const sortOrder = document.getElementById('sort-order').value;
+
+        filteredCoupons.sort((a, b) => {
+            let compareValue = 0;
+            if (sortBy === 'expiry') {
+                const dateA = a.expiry ? new Date(a.expiry).getTime() : Infinity;
+                const dateB = b.expiry ? new Date(b.expiry).getTime() : Infinity;
+                compareValue = dateA - dateB;
+            } else if (sortBy === 'createdAt') {
+                compareValue = a.createdAt - b.createdAt;
+            }
+
+            return sortOrder === 'asc' ? compareValue : -compareValue;
+        });
+
         this.displayCoupons(filteredCoupons);
+        this.saveSortingSettings();
     }
 
     async updateStats() {
@@ -782,7 +811,7 @@ class ConKeepApp {
         
         const settings = StorageManager.getNotificationSettings();
         document.getElementById('notifications-enabled').checked = settings.enabled;
-        document.getElementById('notify-7days').checked = settings.notify7days;
+        
         this.renderNotificationDays(settings.customDays);
     }
 
