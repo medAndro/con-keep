@@ -191,13 +191,23 @@ class ConKeepApp {
         document.getElementById('copy-link').addEventListener('click', () => {
             this.sharingManager.copyShareLink();
         });
+
+        // 소셜 공유 버튼들
+        document.getElementById('share-kakao').addEventListener('click', () => {
+            this.sharingManager.shareToKakao();
+        });
+
+        document.getElementById('share-sms').addEventListener('click', () => {
+            this.sharingManager.shareToSMS();
+        });
+
+        document.getElementById('share-email').addEventListener('click', () => {
+            this.sharingManager.shareToEmail();
+        });
     }
 
     setupSharingHandlers() {
-        document.getElementById('back-to-app').addEventListener('click', () => {
-            this.hideSharePage();
-        });
-
+        // 공유 페이지에서는 앱으로 돌아가기 버튼 제거됨
         document.getElementById('share-usage-toggle').addEventListener('change', (e) => {
             this.updateSharedCouponUsage(e.target.checked);
         });
