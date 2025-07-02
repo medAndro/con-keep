@@ -425,6 +425,25 @@ class ConKeepApp {
         if (couponInfo.expiry) {
             document.getElementById('coupon-expiry').value = couponInfo.expiry;
         }
+
+        // AI 분석 결과를 기반으로 쿠폰 종류 자동 선택
+        const couponTypeGroup = document.getElementById('coupon-type-group');
+        const monetaryBtn = couponTypeGroup.querySelector('[data-value="monetary"]');
+        const exchangeBtn = couponTypeGroup.querySelector('[data-value="exchange"]');
+        const amountGroup = document.getElementById('amount-group');
+
+        // 모든 토글 버튼의 active 클래스 제거
+        couponTypeGroup.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+
+        if (couponInfo.amount === null || couponInfo.amount === 0) {
+            // 금액이 없거나 0이면 교환권으로 판단
+            exchangeBtn.classList.add('active');
+            amountGroup.classList.add('hidden');
+        } else {
+            // 금액이 있으면 금액권으로 판단
+            monetaryBtn.classList.add('active');
+            amountGroup.classList.remove('hidden');
+        }
     }
 
     async saveCoupon() {
