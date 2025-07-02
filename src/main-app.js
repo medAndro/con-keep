@@ -7,6 +7,7 @@ import { NotificationManager } from './utils/notifications.js';
 import { SharingManager } from './utils/sharing.js';
 import { ToastManager } from './components/ToastManager.js';
 import { CouponCard } from './components/CouponCard.js';
+import { ShareModal } from './components/ShareModal.js';
 
 // ConKeep - 옥수수 테마 기프티콘 관리 앱
 class ConKeepApp {
@@ -23,6 +24,7 @@ class ConKeepApp {
         this.aiAnalyzer = new AIAnalyzer(this.toastManager);
         this.notificationManager = new NotificationManager(this.databaseManager);
         this.sharingManager = new SharingManager(this.toastManager);
+        this.shareModal = new ShareModal(this.toastManager);
         
         this.init();
     }
@@ -186,10 +188,6 @@ class ConKeepApp {
 
         document.getElementById('delete-coupon').addEventListener('click', () => {
             this.deleteCoupon();
-        });
-
-        document.getElementById('copy-link').addEventListener('click', () => {
-            this.sharingManager.copyShareLink();
         });
     }
 
@@ -612,7 +610,7 @@ class ConKeepApp {
     async deleteCoupon() {
         if (!this.currentCoupon) return;
 
-        if (!confirm('정말로 이 쿠폰을 삭제하시겠습니까? 🌽')) return;
+        if (!confirm('정말로 이 쿠폰을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다! 🌽⚠️')) return;
 
         try {
             await this.databaseManager.deleteCoupon(this.currentCoupon.id);
@@ -637,7 +635,12 @@ class ConKeepApp {
 
     shareCoupon() {
         if (!this.currentCoupon) return;
-        this.sharingManager.shareCoupon(this.currentCoupon);
+        
+        // 공유 쿠폰 저장
+        const shareId = this.sharingManager.shareCoupon(this.currentCoupon);
+        
+        // 새로운 공유 모달 표시
+        this.shareModal.show(this.currentCoupon);
     }
 
     checkSharedCoupon() {

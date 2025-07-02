@@ -1010,6 +1010,140 @@ body, .app-container, .modal-content, .search-section, .stat-card, .coupon-card 
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+/* 공유 모달 스타일 */
+.share-url-section {
+    margin-bottom: 20px;
+}
+
+.share-url-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.url-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.url-input-group input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.copy-btn {
+    padding: 10px 16px;
+    background: var(--corn-yellow);
+    color: var(--dark-brown);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.copy-btn:hover {
+    background: var(--corn-orange);
+    transform: translateY(-2px);
+}
+
+.share-buttons-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.social-share-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.social-share-btn {
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--card-background);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.social-share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.social-share-btn.kakao-btn {
+    background: #FEE500;
+    color: #000;
+    border-color: #FEE500;
+}
+
+.social-share-btn.kakao-btn:hover {
+    background: #FFDD00;
+}
+
+.social-share-btn.sms-btn {
+    background: #34C759;
+    color: white;
+    border-color: #34C759;
+}
+
+.social-share-btn.sms-btn:hover {
+    background: #28A745;
+}
+
+.social-share-btn.email-btn {
+    background: #007AFF;
+    color: white;
+    border-color: #007AFF;
+}
+
+.social-share-btn.email-btn:hover {
+    background: #0056CC;
+}
+
+.social-share-btn.native-btn {
+    background: var(--corn-yellow);
+    color: var(--dark-brown);
+    border-color: var(--corn-yellow);
+}
+
+.social-share-btn.native-btn:hover {
+    background: var(--corn-orange);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+    .social-share-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .url-input-group {
+        flex-direction: column;
+    }
+    
+    .url-input-group input {
+        margin-bottom: 8px;
+    }
+}
+
 /* 소셜 공유 버튼 스타일 */
 .social-share-btn {
     display: inline-flex;
