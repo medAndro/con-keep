@@ -76,11 +76,26 @@
 ### 1. 프로젝트 다운로드
 ```bash
 # Git clone 또는 파일 다운로드 후
-cd conkeep
+cd con-keep-mock
 ```
 
-### 2. 웹 서버 실행
+### 2. 의존성 설치
 ```bash
+npm install
+```
+
+### 3. 프로젝트 빌드
+```bash
+npm run build
+```
+
+### 4. 웹 서버 실행
+빌드가 완료되면 `dist` 디렉토리가 생성됩니다. 이 디렉토리에서 웹 서버를 실행하세요.
+
+```bash
+# dist 디렉토리로 이동
+cd dist
+
 # Python 사용 (권장)
 python -m http.server 8000
 
@@ -91,12 +106,10 @@ npx serve .
 php -S localhost:8000
 ```
 
-### 3. 브라우저에서 접속
-```
-http://localhost:8000
-```
+### 5. 브라우저에서 접속
+웹 서버 실행 후, 터미널에 표시되는 주소(예: `http://localhost:8000`)로 접속하세요.
 
-### 4. Google Gemini API 키 설정
+### 6. Google Gemini API 키 설정
 1. [Google AI Studio](https://makersuite.google.com/app/apikey)에서 API 키 발급
 2. 앱 설정에서 API 키 입력 및 저장
 3. AI 기능 활성화 완료
@@ -105,19 +118,24 @@ http://localhost:8000
 
 ```
 /
-├── index.html          # 메인 HTML 파일
-├── style.css          # CSS 스타일시트
-├── app.js             # JavaScript 메인 로직
-├── README.md          # 프로젝트 문서
-└── manifest.json      # PWA 매니페스트 (선택사항)
+├── public/              # 정적 에셋 폴더
+├── src/                 # 소스 코드 폴더
+│   ├── components/      # React 컴포넌트
+│   ├── pages/           # 페이지 컴포넌트
+│   ├── App.tsx          # 메인 앱 컴포넌트
+│   └── main.tsx         # 애플리케이션 진입점
+├── package.json         # 프로젝트 의존성 및 스크립트
+├── vite.config.ts       # Vite 설정 파일
+├── tsconfig.json        # TypeScript 설정 파일
+└── README.md            # 프로젝트 문서
 ```
 
 ## 🛠 기술 스택
 
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
+- **UI Components**: shadcn/ui, Radix UI
 - **AI Vision**: Google Gemini Vision API
 - **Barcode**: ZXing-js Library
-- **QR Generator**: qrcode.js Library
 - **Storage**: IndexedDB
 - **Communication**: BroadcastChannel API
 - **Notifications**: Web Notification API
