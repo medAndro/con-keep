@@ -32,9 +32,7 @@ export class NotificationManager {
     }
 
     async checkExpiringCoupons() {
-        // NotificationSettings 컴포넌트에서 설정 가져오기
-        const settings = this.getNotificationSettings();
-        
+        const settings = StorageManager.getNotificationSettings();
         if (!settings.enabled || Notification.permission !== 'granted') {
             return;
         }
@@ -47,46 +45,16 @@ export class NotificationManager {
 
                 const daysLeft = this.getDaysUntilExpiry(coupon.expiry);
                 
-                // 커스텀 날짜 설정과 비교
-                if (settings.customDays.includes(daysLeft)) {
-                    // 설정된 시간에 맞춰 알림 표시
-                    settings.times.forEach(time => {
-                        const now = new Date();
-                        const [hours, minutes] = time.split(':');
-                        const notificationTime = new Date();
-                        notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                        
-                        // 현재 시간과 알림 시간이 비슷하면 (5분 이내) 알림 표시
-                        const timeDiff = Math.abs(now - notificationTime);
-                        if (timeDiff <= 5 * 60 * 1000) { // 5분 이내
-                            new Notification(`🌽 ${coupon.brand} 쿠폰 만료 예정`, {
-                                body: `${coupon.name} - ${daysLeft}일 후 만료`,
-                                icon: '/favicon.ico',
-                                tag: `coupon-${coupon.id}-${daysLeft}` // 중복 방지
-                            });
-                        }
+                if ((settings.notify7days && daysLeft === 7) || 
+                    (settings.notify1day && daysLeft === 1)) {
+                    new Notification(`🌽 ${coupon.brand} 쿠폰 만료 예정`, {
+                        body: `${coupon.name} - ${daysLeft}일 후 만료`,
+                        icon: '/favicon.ico'
                     });
                 }
             });
         } catch (error) {
             console.error('만료 알림 확인 오류:', error);
-        }
-    }
-
-    getNotificationSettings() {
-        // 기본 설정
-        const defaultSettings = {
-            enabled: true,
-            customDays: [7, 3, 1],
-            times: ['09:00']
-        };
-        
-        try {
-            const stored = localStorage.getItem('notificationSettings');
-            return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
-        } catch (error) {
-            console.error('알림 설정 로드 오류:', error);
-            return defaultSettings;
         }
     }
 
