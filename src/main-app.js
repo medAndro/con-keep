@@ -185,6 +185,10 @@ class ConKeepApp {
             this.saveApiKey();
         });
 
+        document.getElementById('add-notification-day').addEventListener('click', () => {
+            this.addNotificationDayInput();
+        });
+
         document.getElementById('export-data').addEventListener('click', () => {
             this.exportData();
         });
@@ -779,7 +783,44 @@ class ConKeepApp {
         const settings = StorageManager.getNotificationSettings();
         document.getElementById('notifications-enabled').checked = settings.enabled;
         document.getElementById('notify-7days').checked = settings.notify7days;
-        document.getElementById('notify-1day').checked = settings.notify1day;
+        this.renderNotificationDays(settings.customDays);
+    }
+
+    renderNotificationDays(days) {
+        const container = document.getElementById('notification-days-container');
+        container.innerHTML = ''; // Clear existing
+        days.sort((a, b) => a - b).forEach(day => {
+            this.addNotificationDayInput(day);
+        });
+    }
+
+    addNotificationDayInput(value = '') {
+        const container = document.getElementById('notification-days-container');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center space-x-2 mb-2';
+        wrapper.innerHTML = `
+            <input type="number" class="form-group-input notification-day-input" value="${value}" min="1" placeholder="일">
+            <span>일 전</span>
+            <button type="button" class="secondary-btn remove-notification-day">삭제</button>
+        `;
+        container.appendChild(wrapper);
+
+        wrapper.querySelector('.remove-notification-day').addEventListener('click', (e) => {
+            wrapper.remove();
+        });
+    }
+
+    getNotificationDaysFromUI() {
+        const container = document.getElementById('notification-days-container');
+        const inputs = container.querySelectorAll('input[type="number"]');
+        const days = [];
+        inputs.forEach(input => {
+            const day = parseInt(input.value, 10);
+            if (!isNaN(day) && day > 0) {
+                days.push(day);
+            }
+        });
+        return [...new Set(days)].sort((a, b) => a - b); // Remove duplicates and sort
     }
 
     saveApiKey() {
@@ -793,8 +834,7 @@ class ConKeepApp {
         
         const settings = {
             enabled: document.getElementById('notifications-enabled').checked,
-            notify7days: document.getElementById('notify-7days').checked,
-            notify1day: document.getElementById('notify-1day').checked
+            customDays: this.getNotificationDaysFromUI()
         };
         
         StorageManager.setNotificationSettings(settings);

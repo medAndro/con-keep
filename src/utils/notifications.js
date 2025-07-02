@@ -48,8 +48,7 @@ export class NotificationManager {
 
                 const daysLeft = this.getDaysUntilExpiry(coupon.expiry);
                 
-                if ((settings.notify7days && daysLeft === 7) || 
-                    (settings.notify1day && daysLeft === 1)) {
+                if (settings.customDays && settings.customDays.includes(daysLeft)) {
                     new Notification(`🌽 ${coupon.brand} 쿠폰 만료 예정`, {
                         body: `${coupon.name} - ${daysLeft}일 후 만료`,
                         icon: '/favicon.ico'

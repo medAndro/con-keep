@@ -478,6 +478,19 @@ body {
     font-size: 1rem;
 }
 
+.form-group-input {
+    padding: 12px 16px;
+    border: 2px solid var(--corn-light);
+    border-radius: 10px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.notification-day-input {
+    width: 96px; /* Equivalent to w-24 in Tailwind CSS */
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

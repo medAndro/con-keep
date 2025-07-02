@@ -29,7 +29,6 @@ export class StorageManager {
 
     static setNotificationSettings(settings) {
         localStorage.setItem('notifications-enabled', settings.enabled);
-        localStorage.setItem('notify-7days', settings.notify7days);
-        localStorage.setItem('notify-1day', settings.notify1day);
+        localStorage.setItem('notification-custom-days', JSON.stringify(settings.customDays));
     }
 }
