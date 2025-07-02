@@ -194,9 +194,11 @@ class ConKeepApp {
     }
 
     setupSharingHandlers() {
-        document.getElementById('back-to-app').addEventListener('click', () => {
-            this.hideSharePage();
-        });
+        // 앱으로 돌아가기 버튼 핸들러 제거 (공유 페이지에서는 불필요)
+        const backButton = document.getElementById('back-to-app');
+        if (backButton) {
+            backButton.style.display = 'none'; // 버튼 숨기기
+        }
 
         document.getElementById('share-usage-toggle').addEventListener('change', (e) => {
             this.updateSharedCouponUsage(e.target.checked);
@@ -671,6 +673,12 @@ class ConKeepApp {
         document.getElementById('share-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
         document.getElementById('share-coupon-expiry').textContent = coupon.expiry || '정보 없음';
         document.getElementById('share-usage-toggle').checked = coupon.used;
+        
+        // 앱으로 돌아가기 버튼 숨기기
+        const backButton = document.getElementById('back-to-app');
+        if (backButton) {
+            backButton.style.display = 'none';
+        }
         
         document.getElementById('share-page').classList.remove('hidden');
         document.getElementById('app').style.display = 'none';
