@@ -95,6 +95,17 @@
     --gradient: linear-gradient(135deg, var(--corn-dark), var(--corn-brown));
 }
 
+[data-theme="dark"] .upload-area {
+    background: var(--surface-color);
+    border-color: var(--corn-dark);
+}
+
+[data-theme="dark"] .upload-area:hover,
+[data-theme="dark"] .upload-area.dragover {
+    background: var(--corn-brown);
+    border-color: var(--corn-yellow);
+}
+
 * {
     margin: 0;
     padding: 0;
