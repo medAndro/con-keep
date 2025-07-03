@@ -51,6 +51,10 @@
                 <span>➕</span>
                 <span>등록</span>  
             </button>
+            <button class="tab-btn" data-tab="multi-add">
+                <span>✨</span>
+                <span>다중등록</span>
+            </button>
         </nav>
 
         <!-- 대시보드 탭 -->
@@ -119,10 +123,12 @@
         <div id="add-tab" class="tab-content">
             <!-- 업로드 영역 -->
             <div id="upload-area" class="upload-area">
-                <div class="upload-icon">📸</div>
-                <h3>기프티콘 이미지를 업로드하세요</h3>
-                <p>드래그 앤 드롭하거나 클릭해서 선택하세요</p>
-                <button class="upload-btn">파일 선택</button>
+                <label for="file-input">
+                    <div class="upload-icon">📸</div>
+                    <h3>기프티콘 이미지를 업로드하세요</h3>
+                    <p>드래그 앤 드롭하거나 클릭해서 선택하세요</p>
+                    <span class="upload-btn">파일 선택</span>
+                </label>
                 <input type="file" id="file-input" accept="image/*" style="display: none;">
             </div>
 
@@ -196,6 +202,31 @@
                     <button id="save-coupon" class="primary-btn corn-primary" style="flex: 1;">저장</button>
                     <button id="cancel-add" class="secondary-btn corn-secondary">취소</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 다중등록 탭 -->
+        <div id="multi-add-tab" class="tab-content">
+            <div id="multi-upload-area" class="upload-area">
+                <label for="multi-file-input">
+                    <div class="upload-icon">🚀</div>
+                    <h3>여러 쿠폰 이미지를 한 번에 등록하세요</h3>
+                    <p>드래그 앤 드롭하거나 클릭해서 여러 파일을 선택하세요</p>
+                    <span class="upload-btn">파일 선택</span>
+                </label>
+                <input type="file" id="multi-file-input" accept="image/*" multiple style="display: none;">
+            </div>
+
+            <div id="multi-progress-section" class="hidden">
+                <div class="progress-bar-container">
+                    <div id="multi-progress-bar" class="progress-bar"></div>
+                </div>
+                <p id="multi-progress-text">0/0 처리 중...</p>
+            </div>
+
+            <div id="multi-results-section" class="hidden">
+                <h4>처리 결과</h4>
+                <div id="multi-results-grid" class="results-grid"></div>
             </div>
         </div>
     </div>

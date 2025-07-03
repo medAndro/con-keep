@@ -66,6 +66,8 @@ class ConKeepApp {
 
         // 파일 업로드
         this.setupFileUpload();
+        this.setupMultiFileUpload();
+        this.setupMultiFileUpload();
 
         // 쿠폰 관련 버튼들
         document.getElementById('save-coupon').addEventListener('click', () => {
@@ -138,18 +140,21 @@ class ConKeepApp {
         const fileInput = document.getElementById('file-input');
         const uploadArea = document.getElementById('upload-area');
         
-        uploadArea.addEventListener('click', () => fileInput.click());
-        
+        console.log('setupFileUpload: Initializing event listeners.');
+
         uploadArea.addEventListener('dragover', (e) => {
+            console.log('setupFileUpload: dragover.');
             e.preventDefault();
             uploadArea.classList.add('dragover');
         });
         
         uploadArea.addEventListener('dragleave', () => {
+            console.log('setupFileUpload: dragleave.');
             uploadArea.classList.remove('dragover');
         });
         
         uploadArea.addEventListener('drop', (e) => {
+            console.log('setupFileUpload: drop.');
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             const files = e.dataTransfer.files;
@@ -159,6 +164,7 @@ class ConKeepApp {
         });
         
         fileInput.addEventListener('change', (e) => {
+            console.log('setupFileUpload: fileInput changed.', e.target.files);
             if (e.target.files.length > 0) {
                 this.handleFileUpload(e.target.files[0]);
             }
@@ -938,6 +944,160 @@ class ConKeepApp {
 
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    // --- 다중 등록 관련 메서드 ---
+
+    setupMultiFileUpload() {
+        const multiFileInput = document.getElementById('multi-file-input');
+        const multiUploadArea = document.getElementById('multi-upload-area');
+        
+        console.log('setupMultiFileUpload: Initializing event listeners.');
+
+        multiUploadArea.addEventListener('dragover', (e) => {
+            console.log('setupMultiFileUpload: dragover.');
+            e.preventDefault();
+            multiUploadArea.classList.add('dragover');
+        });
+        
+        multiUploadArea.addEventListener('dragleave', () => {
+            console.log('setupMultiFileUpload: dragleave.');
+            multiUploadArea.classList.remove('dragover');
+        });
+        
+        multiUploadArea.addEventListener('drop', (e) => {
+            console.log('setupMultiFileUpload: drop.');
+            e.preventDefault();
+            multiUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleMultiFileUpload(files);
+            }
+        });
+        
+        multiFileInput.addEventListener('change', (e) => {
+            console.log('setupMultiFileUpload: multiFileInput changed.', e.target.files);
+            if (e.target.files.length > 0) {
+                this.handleMultiFileUpload(e.target.files);
+            }
+        });
+    }
+
+    async handleMultiFileUpload(files) {
+        const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        if (imageFiles.length === 0) {
+            this.toastManager.showToast('이미지 파일만 업로드 가능합니다 🌽', 'error');
+            return;
+        }
+
+        this.resetMultiAddForm();
+        document.getElementById('multi-progress-section').classList.remove('hidden');
+        document.getElementById('multi-results-section').classList.remove('hidden');
+
+        const totalFiles = imageFiles.length;
+        let processedCount = 0;
+        const resultsGrid = document.getElementById('multi-results-grid');
+
+        for (const file of imageFiles) {
+            processedCount++;
+            this.updateMultiProgress(processedCount, totalFiles);
+
+            const resultCard = this.createResultCard(file.name);
+            resultsGrid.appendChild(resultCard);
+
+            try {
+                const imageData = await this.readFileAsDataURL(file);
+                const scanResult = await this.scanner.scanBarcode(imageData);
+
+                if (!scanResult) {
+                    this.updateResultCard(resultCard, '실패', '바코드를 인식할 수 없습니다.');
+                    continue;
+                }
+
+                if (await this.databaseManager.isDuplicateCoupon(scanResult)) {
+                    this.updateResultCard(resultCard, '실패', '이미 등록된 쿠폰입니다.');
+                    continue;
+                }
+
+                const apiKey = StorageManager.getApiKey();
+                const aiResult = await this.aiAnalyzer.analyzeImage(imageData, apiKey);
+
+                if (!aiResult || !aiResult.brand || !aiResult.name || !aiResult.expiry) {
+                    this.updateResultCard(resultCard, '실패', 'AI가 쿠폰 정보를 분석하지 못했습니다.');
+                    continue;
+                }
+
+                const coupon = {
+                    id: this.generateId(),
+                    imgSrc: imageData,
+                    code: scanResult,
+                    brand: aiResult.brand,
+                    name: aiResult.name,
+                    couponType: (aiResult.amount === null || aiResult.amount === 0) ? 'exchange' : 'monetary',
+                    amount: aiResult.amount ? parseInt(aiResult.amount) : null,
+                    price: aiResult.price ? parseInt(aiResult.price) : null,
+                    expiry: aiResult.expiry,
+                    source: '다중 등록',
+                    used: false,
+                    shared: false,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+
+                await this.databaseManager.addCoupon(coupon);
+                this.updateResultCard(resultCard, '성공', `${coupon.brand} - ${coupon.name}`);
+
+            } catch (error) {
+                console.error('다중 등록 처리 오류:', error);
+                this.updateResultCard(resultCard, '실패', '처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        this.toastManager.showToast(`총 ${totalFiles}개의 파일 중 ${resultsGrid.querySelectorAll('.success').length}개가 등록되었습니다.`, 'success');
+        this.loadCoupons();
+        this.updateStats();
+    }
+
+    readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    updateMultiProgress(current, total) {
+        const progressBar = document.getElementById('multi-progress-bar');
+        const progressText = document.getElementById('multi-progress-text');
+        const percentage = (current / total) * 100;
+        progressBar.style.width = `${percentage}%`;
+        progressText.textContent = `${current}/${total} 처리 중...`;
+    }
+
+    createResultCard(fileName) {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+            <div class="file-name">${fileName}</div>
+            <div class="status">처리 중...</div>
+            <div class="message"></div>
+        `;
+        return card;
+    }
+
+    updateResultCard(card, status, message) {
+        card.querySelector('.status').textContent = status;
+        card.querySelector('.message').textContent = message;
+        card.classList.add(status === '성공' ? 'success' : 'error');
+    }
+
+    resetMultiAddForm() {
+        document.getElementById('multi-progress-section').classList.add('hidden');
+        document.getElementById('multi-results-section').classList.add('hidden');
+        document.getElementById('multi-results-grid').innerHTML = '';
+        document.getElementById('multi-file-input').value = '';
+        this.updateMultiProgress(0, 0);
     }
 }
 
