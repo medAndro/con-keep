@@ -6,7 +6,6 @@
 콘킾(ConKeep)은 AI 기반의 모바일 기프티콘 관리 및 공유 서비스입니다. 기프티콘 이미지를 업로드하면 자동으로 바코드를 인식하고, Google Gemini Vision API를 통해 브랜드, 상품명, 유효기간, 금액을 추출하여 체계적으로 관리할 수 있습니다.
 
 ## 😓 알려진 문제
-### 바코드 인식 고장
 
 
 ## 🔗 배포 URL
@@ -121,7 +120,11 @@ php -S localhost:8000
 ├── public/              # 정적 에셋 폴더
 ├── src/                 # 소스 코드 폴더
 │   ├── components/      # React 컴포넌트
+│   │   └── ui/          # shadcn/ui 컴포넌트
+│   ├── hooks/           # 사용자 정의 React Hooks
+│   ├── lib/             # 유틸리티 함수 및 라이브러리
 │   ├── pages/           # 페이지 컴포넌트
+│   ├── utils/           # 기타 유틸리티 모듈
 │   ├── App.tsx          # 메인 앱 컴포넌트
 │   └── main.tsx         # 애플리케이션 진입점
 ├── package.json         # 프로젝트 의존성 및 스크립트
