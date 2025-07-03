@@ -283,6 +283,7 @@ body {
 .search-bar {
     display: flex;
     gap: 8px;
+    margin-bottom: 12px; /* Added margin-bottom */
 }
 
 .search-bar input {
@@ -310,18 +311,6 @@ body {
     background-repeat: no-repeat;
     background-position: right 12px top 50%;
     background-size: 12px auto;
-    cursor: pointer;
-}
-
-.filter-btn {
-    background: var(--corn-yellow);
-    border: 2px solid var(--corn-dark);
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
 }
 
@@ -476,6 +465,15 @@ body {
     margin-bottom: 16px;
 }
 
+.upload-area h3 {
+    margin-bottom: 8px;
+}
+
+.upload-area p {
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+}
+
 .upload-btn, .corn-primary, .primary-btn {
     background: var(--gradient);
     color: var(--corn-brown);
@@ -486,6 +484,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 1rem;
+    margin-top: 16px; /* Added margin-top */
 }
 
 .upload-btn:hover, .corn-primary:hover, .primary-btn:hover {

@@ -176,11 +176,6 @@ class ConKeepApp {
             this.filterCoupons();
         });
 
-        document.getElementById('filter-btn').addEventListener('click', () => {
-            const panel = document.getElementById('filter-panel');
-            panel.classList.toggle('hidden');
-        });
-
         document.getElementById('brand-filter').addEventListener('change', () => {
             this.filterCoupons();
         });
