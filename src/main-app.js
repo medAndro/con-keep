@@ -89,10 +89,14 @@ class ConKeepApp {
 
                 const couponType = e.target.dataset.value;
                 const amountGroup = document.getElementById('amount-group');
+                const priceGroup = document.getElementById('price-group');
+
                 if (couponType === 'exchange') {
                     amountGroup.classList.add('hidden');
+                    priceGroup.classList.remove('hidden');
                 } else {
                     amountGroup.classList.remove('hidden');
+                    priceGroup.classList.add('hidden');
                 }
             });
         });
@@ -320,7 +324,7 @@ class ConKeepApp {
         // 폼 필드 완전 초기화
         const fields = [
             'coupon-code', 'coupon-brand', 'coupon-name', 
-            'coupon-amount', 'coupon-expiry'
+            'coupon-amount', 'coupon-expiry', 'coupon-source', 'coupon-price'
         ];
         
         fields.forEach(fieldId => {
@@ -335,6 +339,7 @@ class ConKeepApp {
         document.querySelectorAll('#coupon-type-group .toggle-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector('#coupon-type-group .toggle-btn[data-value="monetary"]').classList.add('active');
         document.getElementById('amount-group').classList.remove('hidden');
+        document.getElementById('price-group').classList.add('hidden');
         
         // 이미지 초기화
         const previewImage = document.getElementById('preview-image');
@@ -452,6 +457,7 @@ class ConKeepApp {
         const monetaryBtn = couponTypeGroup.querySelector('[data-value="monetary"]');
         const exchangeBtn = couponTypeGroup.querySelector('[data-value="exchange"]');
         const amountGroup = document.getElementById('amount-group');
+        const priceGroup = document.getElementById('price-group');
 
         // 모든 토글 버튼의 active 클래스 제거
         couponTypeGroup.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
@@ -460,10 +466,12 @@ class ConKeepApp {
             // 금액이 없거나 0이면 교환권으로 판단
             exchangeBtn.classList.add('active');
             amountGroup.classList.add('hidden');
+            priceGroup.classList.remove('hidden');
         } else {
             // 금액이 있으면 금액권으로 판단
             monetaryBtn.classList.add('active');
             amountGroup.classList.remove('hidden');
+            priceGroup.classList.add('hidden');
         }
     }
 
@@ -475,8 +483,10 @@ class ConKeepApp {
         const amountInput = document.getElementById('coupon-amount');
         const amount = couponType === 'monetary' ? amountInput.value : null;
         const expiry = document.getElementById('coupon-expiry').value;
+        const source = document.getElementById('coupon-source').value.trim();
+        const price = document.getElementById('coupon-price').value;
 
-        if (!code || !brand || !name) {
+        if (!code || !brand || !name || !expiry || (couponType === 'monetary' && !amount)) {
             this.toastManager.showToast('필수 항목을 입력해주세요 🌽', 'error');
             return;
         }
@@ -495,7 +505,9 @@ class ConKeepApp {
             name: name,
             couponType: couponType,
             amount: amount ? parseInt(amount) : null,
+            price: price ? parseInt(price) : null,
             expiry: expiry,
+            source: source, // 구매처/선물한 사람 정보 추가
             used: false,
             shared: false,
             createdAt: Date.now(),
@@ -643,8 +655,10 @@ class ConKeepApp {
         document.getElementById('modal-coupon-brand').textContent = coupon.brand;
         document.getElementById('modal-coupon-name').textContent = coupon.name;
         document.getElementById('modal-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
+        document.getElementById('modal-coupon-price').textContent = coupon.price ? coupon.price.toLocaleString() + '원' : '정보 없음';
         document.getElementById('modal-coupon-expiry').textContent = coupon.expiry || '정보 없음';
         document.getElementById('modal-coupon-code').textContent = coupon.code;
+        document.getElementById('modal-coupon-source').textContent = coupon.source || '정보 없음';
         
         const toggleBtn = document.getElementById('toggle-used');
         toggleBtn.textContent = coupon.used ? '사용 취소' : '사용 완료';

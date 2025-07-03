@@ -173,13 +173,23 @@
                 
                 <div class="form-row">
                     <div class="form-group" id="amount-group">
-                        <label for="coupon-amount">금액</label>
+                        <label for="coupon-amount">금액 *</label>
                         <input type="number" id="coupon-amount" placeholder="원">
                     </div>
                     <div class="form-group">
-                        <label for="coupon-expiry">유효기간</label>
+                        <label for="coupon-expiry">유효기간 *</label>
                         <input type="date" id="coupon-expiry">
                     </div>
+                </div>
+
+                <div class="form-group hidden" id="price-group">
+                    <label for="coupon-price">정상가 (선택)</label>
+                    <input type="number" id="coupon-price" placeholder="교환권의 실제 가격을 입력하세요">
+                </div>
+
+                <div class="form-group">
+                    <label for="coupon-source">구매처 / 선물한 사람 (선택)</label>
+                    <input type="text" id="coupon-source" placeholder="예: 카카오톡 선물하기, 김옥수수">
                 </div>
                 
                 <div style="display: flex; gap: 12px; margin-top: 20px;">
@@ -216,12 +226,20 @@
                         <span id="modal-coupon-amount"></span>
                     </div>
                     <div class="detail-row">
+                        <span class="label">정상가:</span>
+                        <span id="modal-coupon-price"></span>
+                    </div>
+                    <div class="detail-row">
                         <span class="label">유효기간:</span>
                         <span id="modal-coupon-expiry"></span>
                     </div>
                     <div class="detail-row">
                         <span class="label">바코드:</span>
                         <span class="code" id="modal-coupon-code"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">구매처/선물:</span>
+                        <span id="modal-coupon-source"></span>
                     </div>
                 </div>
                 
