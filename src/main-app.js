@@ -317,10 +317,11 @@ class ConKeepApp {
         if (uploadArea) uploadArea.classList.remove('hidden');
         if (scanOverlay) scanOverlay.classList.add('hidden');
         
-        // 폼 필드 완전 초기화
+        // 폼 필드 완전 초기화 (출처 정보 포함)
         const fields = [
             'coupon-code', 'coupon-brand', 'coupon-name', 
-            'coupon-amount', 'coupon-expiry'
+            'coupon-amount', 'coupon-expiry', 'coupon-source-person',
+            'coupon-source-place', 'coupon-memo'
         ];
         
         fields.forEach(fieldId => {
@@ -475,6 +476,11 @@ class ConKeepApp {
         const amountInput = document.getElementById('coupon-amount');
         const amount = couponType === 'monetary' ? amountInput.value : null;
         const expiry = document.getElementById('coupon-expiry').value;
+        
+        // 출처 정보 (선택사항)
+        const sourcePerson = document.getElementById('coupon-source-person').value.trim();
+        const sourcePlace = document.getElementById('coupon-source-place').value.trim();
+        const memo = document.getElementById('coupon-memo').value.trim();
 
         if (!code || !brand || !name) {
             this.toastManager.showToast('필수 항목을 입력해주세요 🌽', 'error');
@@ -498,6 +504,10 @@ class ConKeepApp {
             expiry: expiry,
             used: false,
             shared: false,
+            // 출처 정보 추가
+            sourcePerson: sourcePerson || null,
+            sourcePlace: sourcePlace || null,
+            memo: memo || null,
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -550,8 +560,6 @@ class ConKeepApp {
         if (emptyState) {
             emptyState.style.display = 'none';
         }
-
-        
 
         coupons.forEach(coupon => {
             const couponCard = new CouponCard(coupon, (c) => this.showCouponDetail(c));
@@ -645,6 +653,19 @@ class ConKeepApp {
         document.getElementById('modal-coupon-amount').textContent = coupon.amount ? coupon.amount.toLocaleString() + '원' : '정보 없음';
         document.getElementById('modal-coupon-expiry').textContent = coupon.expiry || '정보 없음';
         document.getElementById('modal-coupon-code').textContent = coupon.code;
+        
+        // 출처 정보 표시
+        const sourceInfo = document.getElementById('modal-source-info');
+        const hasSourceInfo = coupon.sourcePerson || coupon.sourcePlace || coupon.memo;
+        
+        if (hasSourceInfo) {
+            document.getElementById('modal-coupon-source-person').textContent = coupon.sourcePerson || '정보 없음';
+            document.getElementById('modal-coupon-source-place').textContent = coupon.sourcePlace || '정보 없음';
+            document.getElementById('modal-coupon-memo').textContent = coupon.memo || '정보 없음';
+            sourceInfo.classList.remove('hidden');
+        } else {
+            sourceInfo.classList.add('hidden');
+        }
         
         const toggleBtn = document.getElementById('toggle-used');
         toggleBtn.textContent = coupon.used ? '사용 취소' : '사용 완료';

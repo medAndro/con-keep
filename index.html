@@ -181,6 +181,25 @@
                         <input type="date" id="coupon-expiry">
                     </div>
                 </div>
+
+                <!-- 쿠폰 출처 정보 (선택사항) -->
+                <div class="form-section">
+                    <h4 class="section-title">📝 쿠폰 출처 정보 (선택사항)</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="coupon-source-person">누구에게서 받았나요?</label>
+                            <input type="text" id="coupon-source-person" placeholder="예: 친구, 가족, 동료">
+                        </div>
+                        <div class="form-group">
+                            <label for="coupon-source-place">어디서 구매/획득했나요?</label>
+                            <input type="text" id="coupon-source-place" placeholder="예: 이벤트, 선물, 구매">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="coupon-memo">메모</label>
+                        <textarea id="coupon-memo" placeholder="추가 정보나 메모를 입력하세요" rows="2"></textarea>
+                    </div>
+                </div>
                 
                 <div style="display: flex; gap: 12px; margin-top: 20px;">
                     <button id="save-coupon" class="primary-btn corn-primary" style="flex: 1;">저장</button>
@@ -222,6 +241,20 @@
                     <div class="detail-row">
                         <span class="label">바코드:</span>
                         <span class="code" id="modal-coupon-code"></span>
+                    </div>
+                    <div id="modal-source-info" class="source-info hidden">
+                        <div class="detail-row">
+                            <span class="label">받은 곳:</span>
+                            <span id="modal-coupon-source-person"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">획득 경로:</span>
+                            <span id="modal-coupon-source-place"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">메모:</span>
+                            <span id="modal-coupon-memo"></span>
+                        </div>
                     </div>
                 </div>
                 
