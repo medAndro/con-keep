@@ -1,0 +1,32 @@
+# IDE (Android Studio / IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+.kotlin/
+
+# Gradle
+.gradle/
+/build/
+/*/build/
+
+# Local configuration & Secrets
+local.properties
+secrets.properties
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing & Security
+*.jks
+*.keystore
+google-services.json
+
+# Test & Lint reports
+/lint/reports/
+/test-results/
+/ajur-results/
+
+# OS specific
+.DS_Store
+Thumbs.db
