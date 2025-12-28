@@ -76,7 +76,6 @@ fun ConKeepTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
         content = content,
     )
 }
