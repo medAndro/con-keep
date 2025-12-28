@@ -1,64 +1,81 @@
 package com.conkeep.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme =
-    darkColorScheme(
-        primary = Purple80,
-        secondary = PurpleGrey80,
-        tertiary = Pink80,
-    )
-
+/**
+ * ConKeep Light ColorScheme
+ * Material3 기본 컴포넌트 동작을 위한 최소 설정
+ */
 private val LightColorScheme =
     lightColorScheme(
-        primary = Purple40,
-        secondary = PurpleGrey40,
-        tertiary = Pink40,
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-     */
+        // Primary (브랜드 메인)
+        primary = ColorPalette.YellowBase,
+        onPrimary = ColorPalette.NavyDark,
+        primaryContainer = ColorPalette.YellowLight,
+        onPrimaryContainer = ColorPalette.NavyDark,
+        // Secondary (강조)
+        secondary = ColorPalette.OrangeVivid,
+        onSecondary = ColorPalette.NeutralWhite,
+        secondaryContainer = ColorPalette.OrangePale,
+        onSecondaryContainer = ColorPalette.OrangeDark,
+        // Tertiary (보조)
+        tertiary = ColorPalette.GreenBase,
+        onTertiary = ColorPalette.NeutralWhite,
+        tertiaryContainer = ColorPalette.GreenPale,
+        onTertiaryContainer = ColorPalette.GreenBase,
+        // Background & Surface
+        background = ColorPalette.YellowBg,
+        onBackground = ColorPalette.NavyDark,
+        surface = ColorPalette.NeutralWhite,
+        onSurface = ColorPalette.NavyDark,
+        surfaceVariant = ColorPalette.NeutralCreamMedium,
+        onSurfaceVariant = ColorPalette.GrayDark,
+        // Error
+        error = ColorPalette.OrangeDark,
+        onError = ColorPalette.NeutralWhite,
+        errorContainer = ColorPalette.OrangePale,
+        onErrorContainer = ColorPalette.OrangeDark,
+        // Outline
+        outline = ColorPalette.GrayLight,
+        outlineVariant = ColorPalette.GrayLighter,
+        // Scrim
+        scrim = ColorPalette.NeutralBlack.copy(alpha = 0.5f),
     )
 
+/**
+ * ConKeep Dark ColorScheme (추후 구현)
+ */
+private val DarkColorScheme =
+    darkColorScheme(
+        primary = ColorPalette.YellowBase,
+        onPrimary = ColorPalette.NeutralBlack,
+        // TODO: 다크모드 색상 정의
+    )
+
+/**
+ * ConKeep 테마
+ *
+ * @param darkTheme 다크모드 활성화 여부
+ * @param content Composable 콘텐츠
+ */
 @Composable
 fun ConKeepTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colorScheme =
-        when {
-            dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val context = LocalContext.current
-                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            }
-
-            darkTheme -> {
-                DarkColorScheme
-            }
-
-            else -> {
-                LightColorScheme
-            }
+        if (darkTheme) {
+            DarkColorScheme
+        } else {
+            LightColorScheme
         }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
         content = content,
     )
 }
