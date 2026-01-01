@@ -1,6 +1,6 @@
 [versions]
 agp = "8.13.2"
-bom = "3.2.6"
+supabaseBom = "3.2.6"
 credentials = "1.5.0"
 googleid = "1.1.1"
 kotlin = "2.3.0"
@@ -9,9 +9,10 @@ junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 ktorClientAndroid = "3.3.3"
-lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.2"
 composeBom = "2025.12.01"
+compose = "1.10.0"
+kotlinxSerialization = "1.10.0-RC"
 ktlint = "14.0.1"
 lifecycle = "2.10.0"
 navigation-compose = "2.9.6"
@@ -20,19 +21,18 @@ hilt-navigation-compose = "1.3.0"
 playServicesAuth = "21.4.0"
 room = "2.8.4"
 ksp = "2.3.4"
-kotlinxSerialization = "1.10.0-RC"
-
+navigation3 = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "bom" }
+bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabaseBom" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
@@ -71,6 +71,12 @@ supabase-postgrest-kt = { module = "io.github.jan-tennert.supabase:postgrest-kt"
 
 # Google
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+
+# Navigation 3
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

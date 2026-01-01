@@ -1,0 +1,32 @@
+package com.conkeep.ui.feature.coupon.component
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.conkeep.ui.feature.coupon.model.Coupon
+
+@Composable
+fun CouponCard(
+    coupon: Coupon,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .clickable(onClick = onClick),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(coupon.name, style = MaterialTheme.typography.titleMedium)
+            Text("유효기간: ${coupon.expiryDate}", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
