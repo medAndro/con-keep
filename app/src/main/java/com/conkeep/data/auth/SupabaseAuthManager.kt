@@ -12,8 +12,13 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,11 +30,16 @@ class SupabaseAuthManager
     ) {
         val auth = supabase.auth
 
-        // 로그인 상태 (Flow)
-        val isLoggedIn: Flow<Boolean> =
-            auth.sessionStatus.map { status ->
-                status is SessionStatus.Authenticated
-            }
+        // 로그인 상태 (StateFlow)
+        val isLoggedIn: StateFlow<Boolean> =
+            auth.sessionStatus
+                .map { status ->
+                    status is SessionStatus.Authenticated
+                }.stateIn(
+                    scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                    started = SharingStarted.Eagerly, // 앱 시작부터 추적
+                    initialValue = false,
+                )
 
         // 현재 사용자 정보
         val currentUser: UserInfo?
