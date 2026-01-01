@@ -13,16 +13,18 @@ import javax.inject.Inject
 class CouponDetailViewModel
     @Inject
     constructor(
-        savedStateHandle: SavedStateHandle,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        // SavedStateHandle에서 직접 id 가져오기
-        val couponId: String = savedStateHandle.get<String>("id") ?: ""
+        var couponId by mutableStateOf("")
+            private set
 
         var couponDetail by mutableStateOf<Coupon?>(null)
             private set
 
         fun loadCoupon(couponId: String) {
             // 실제 데이터 로드 로직 (여기서는 하드코딩)
+            this.couponId = couponId
+
             couponDetail =
                 when (couponId) {
                     "C001" -> Coupon("C001", "123456789", "스타벅스 아메리카노", "2026-02-01")
