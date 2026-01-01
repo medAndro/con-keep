@@ -1,4 +1,4 @@
-package com.conkeep.ui.auth
+package com.conkeep.ui.feature.auth
 
 import android.app.Activity
 import android.widget.Toast
