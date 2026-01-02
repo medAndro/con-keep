@@ -1,5 +1,12 @@
 <resources>
     <string name="app_name">ConKeep</string>
+    <string name="app_icon_description">콘킾 로고</string>
+
+<!--     Login screen-->
+    <string name="app_description">옥수수처럼 달콤한 쿠폰관리</string>
+    <string name="btn_google_sign_up">Google 계정으로 시작하기</string>
+    <string name="btn_google_logo_description">구글 로고</string>
+
     <string name="category_cafe">카페</string>
     <string name="category_convenience_store">편의점</string>
     <string name="category_mart">마트</string>
@@ -16,4 +23,6 @@
     <string name="category_fashion_beauty">패션·뷰티</string>
     <string name="category_gas_transport">주유·교통</string>
     <string name="category_etc">기타</string>
+
+
 </resources>

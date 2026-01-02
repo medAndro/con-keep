@@ -7,13 +7,14 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.conkeep.ui.feature.auth.LoginScreen
 import com.conkeep.ui.feature.coupon.CouponScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailViewModel
 
 @Composable
-fun NavigationRoot() {
-    val backStack = rememberNavBackStack(Route.CouponScreen)
+fun NavigationRoot(initialRoute: Route) {
+    val backStack = rememberNavBackStack(initialRoute)
 
     NavDisplay(
         backStack = backStack,
@@ -25,6 +26,10 @@ fun NavigationRoot() {
             ),
         entryProvider =
             entryProvider {
+                entry<Route.LoginScreen> {
+                    LoginScreen(backStack = backStack)
+                }
+
                 entry<Route.CouponScreen> {
                     CouponScreen(backStack = backStack)
                 }
