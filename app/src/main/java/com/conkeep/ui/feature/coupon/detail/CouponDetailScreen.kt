@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.coupon.detail
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import coil3.compose.AsyncImage
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +58,16 @@ fun CouponDetailScreen(
                     .padding(padding)
                     .padding(16.dp),
         ) {
+            Log.d("CouponDetailScreen", "coupon: $coupon")
+            AsyncImage(
+                model = File(coupon?.localImagePath ?: ""),
+                contentDescription = "쿠폰 이미지",
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+            )
+
             Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
 
             Spacer(modifier = Modifier.height(16.dp))

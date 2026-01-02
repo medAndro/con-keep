@@ -16,6 +16,7 @@ fun CouponEntity.toDomain(): Coupon =
         imageUrl = imageUrl,
         imageKey = imageKey,
         thumbnailUrl = thumbnailUrl,
+        localImagePath = localImagePath,
         productName = productName,
         brand = brand,
         couponPin = couponPin,
@@ -39,6 +40,7 @@ fun CouponEntity.toDomain(): Coupon =
             Instant
                 .fromEpochMilliseconds(updatedAt)
                 .toLocalDateTime(TimeZone.currentSystemDefault()),
+        isSynced = isSynced,
     )
 
 fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
@@ -50,6 +52,7 @@ fun Coupon.toEntity(): CouponEntity =
         imageUrl = imageUrl,
         imageKey = imageKey,
         thumbnailUrl = thumbnailUrl,
+        localImagePath = localImagePath,
         productName = productName,
         brand = brand,
         couponPin = couponPin,
@@ -62,6 +65,7 @@ fun Coupon.toEntity(): CouponEntity =
         usedAt = usedAt?.toInstant(TimeZone.currentSystemDefault())?.toEpochMilliseconds(),
         createdAt = createdAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         updatedAt = updatedAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+        isSynced = isSynced,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }

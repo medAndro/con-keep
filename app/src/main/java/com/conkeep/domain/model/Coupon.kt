@@ -10,6 +10,7 @@ data class Coupon(
     val imageUrl: String,
     val imageKey: String,
     val thumbnailUrl: String?,
+    val localImagePath: String?,
     // 쿠폰 정보
     val productName: String?,
     val brand: String?,
@@ -27,4 +28,5 @@ data class Coupon(
     // 메타데이터
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
+    val isSynced: Boolean,
 )

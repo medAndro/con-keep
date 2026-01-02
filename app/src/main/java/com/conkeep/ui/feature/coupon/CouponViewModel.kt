@@ -71,6 +71,8 @@ class CouponViewModel
                         imageUrl = "https://via.placeholder.com/400x200?text=$randomBrand",
                         imageKey = "dummy_${Clock.System.now().toEpochMilliseconds()}",
                         thumbnailUrl = "https://via.placeholder.com/100x50?text=$randomBrand",
+                        // 로컬 이미지 경로
+                        localImagePath = absolutePath,
                         // 쿠폰 정보
                         productName = "$randomBrand $randomProduct",
                         brand = randomBrand,
@@ -108,6 +110,7 @@ class CouponViewModel
                         // 메타데이터
                         createdAt = localDateTime,
                         updatedAt = localDateTime,
+                        isSynced = false,
                     ),
                 )
             }

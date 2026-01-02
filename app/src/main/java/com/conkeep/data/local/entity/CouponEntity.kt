@@ -19,10 +19,7 @@ data class CouponEntity(
     val thumbnailUrl: String?,
     // 로컬 전용 컬럼 (동기화 안 함)
     @ColumnInfo(name = "local_image_path")
-    val localImagePath: String? = null, // 앱 파일 저장소 경로
-    // 동기화 상태 추적 (선택사항)
-    @ColumnInfo(name = "is_synced")
-    val isSynced: Boolean = false,
+    val localImagePath: String?, // 앱 파일 저장소 경로
     // 쿠폰 정보
     @ColumnInfo(name = "product_name")
     val productName: String?,
@@ -49,4 +46,7 @@ data class CouponEntity(
     val createdAt: Long,
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long,
+    // 동기화 상태 추적
+    @ColumnInfo(name = "is_synced")
+    val isSynced: Boolean = false,
 )

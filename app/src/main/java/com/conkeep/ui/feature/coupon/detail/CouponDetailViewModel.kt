@@ -1,7 +1,5 @@
 package com.conkeep.ui.feature.coupon.detail
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
@@ -41,6 +39,7 @@ class CouponDetailViewModel
                             name = it.productName ?: "이름 없는 쿠폰",
                             expiryDate = it.expiryDate?.toString() ?: "만료일 없음",
                             isUsed = it.isUsed,
+                            localImagePath = it.localImagePath,
                         )
                     }
                 }.stateIn(
