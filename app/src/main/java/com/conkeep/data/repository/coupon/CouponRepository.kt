@@ -36,7 +36,7 @@ class CouponRepository
                 .map { entity -> entity?.toDomain() }
 
         suspend fun addCoupon(coupon: Coupon) {
-            couponDao.insert(coupon.toEntity())
+            couponDao.insert(coupon.copy(userId = authManager.currentUser?.id ?: "").toEntity())
         }
 
         suspend fun markAsUsed(
