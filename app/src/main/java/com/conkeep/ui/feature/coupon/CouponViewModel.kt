@@ -46,7 +46,7 @@ class CouponViewModel
                     initialValue = emptyList(),
                 )
 
-        fun addDummyCoupon() {
+        fun addDummyCoupon(absolutePath: String) {
             viewModelScope.launch {
                 val now = Clock.System.now()
                 val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
