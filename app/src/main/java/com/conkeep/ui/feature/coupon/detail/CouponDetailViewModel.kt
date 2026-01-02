@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.mapper.toUiModel
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -32,16 +33,7 @@ class CouponDetailViewModel
             couponRepository
                 .getCoupon(couponId)
                 .map { domainCoupon ->
-                    domainCoupon?.let {
-                        CouponUiModel(
-                            id = it.id,
-                            number = it.couponPin ?: "",
-                            name = it.productName ?: "이름 없는 쿠폰",
-                            expiryDate = it.expiryDate?.toString() ?: "만료일 없음",
-                            isUsed = it.isUsed,
-                            localImagePath = it.localImagePath,
-                        )
-                    }
+                    domainCoupon?.toUiModel()
                 }.stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5000),

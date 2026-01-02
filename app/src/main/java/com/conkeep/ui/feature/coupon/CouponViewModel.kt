@@ -6,6 +6,7 @@ import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,17 +31,8 @@ class CouponViewModel
         val coupons: StateFlow<List<CouponUiModel>> =
             couponRepository
                 .getCoupons()
-                .map { coupons ->
-                    coupons.map { coupon ->
-                        CouponUiModel(
-                            id = coupon.id,
-                            number = coupon.couponPin ?: "",
-                            name = coupon.productName ?: "",
-                            expiryDate = coupon.expiryDate.toString(),
-                            isUsed = coupon.isUsed,
-                            localImagePath = coupon.localImagePath,
-                        )
-                    }
+                .map { domainCoupons ->
+                    domainCoupons.toUiModel()
                 }.stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5000),
