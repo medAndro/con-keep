@@ -121,6 +121,10 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
+    // Coil
+    implementation(libs.coil.compose)
+    implementation(libs.coil.ktor3)
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
