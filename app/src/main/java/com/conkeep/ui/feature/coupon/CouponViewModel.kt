@@ -38,6 +38,7 @@ class CouponViewModel
                             name = coupon.productName ?: "",
                             expiryDate = coupon.expiryDate.toString(),
                             isUsed = coupon.isUsed,
+                            localImagePath = coupon.localImagePath,
                         )
                     }
                 }.stateIn(
