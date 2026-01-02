@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">ConKeep</string>
+    <string name="category_cafe">카페</string>
+    <string name="category_convenience_store">편의점</string>
+    <string name="category_mart">마트</string>
+    <string name="category_bakery">베이커리</string>
+    <string name="category_chicken_pizza">치킨·피자</string>
+    <string name="category_burger_sandwich">버거·샌드위치</string>
+    <string name="category_fast_food">패스트푸드</string>
+    <string name="category_dining">외식·분식</string>
+    <string name="category_ice_cream">아이스크림</string>
+    <string name="category_dessert">디저트</string>
+    <string name="category_department_store">백화점</string>
+    <string name="category_gift_card">상품권·캐시</string>
+    <string name="category_culture">영화·문화</string>
+    <string name="category_fashion_beauty">패션·뷰티</string>
+    <string name="category_gas_transport">주유·교통</string>
+    <string name="category_etc">기타</string>
 </resources>

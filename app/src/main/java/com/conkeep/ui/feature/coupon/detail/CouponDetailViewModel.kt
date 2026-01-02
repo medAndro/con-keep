@@ -1,40 +1,60 @@
 package com.conkeep.ui.feature.coupon.detail
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.conkeep.ui.feature.coupon.model.Coupon
+import androidx.lifecycle.viewModelScope
+import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-@HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel(assistedFactory = CouponDetailViewModel.Factory::class)
 class CouponDetailViewModel
-    @Inject
+    @AssistedInject
     constructor(
-        private val savedStateHandle: SavedStateHandle,
+        private val couponRepository: CouponRepository,
+        @Assisted private val couponId: String,
     ) : ViewModel() {
-        var couponId by mutableStateOf("")
-            private set
-
-        var couponDetail by mutableStateOf<Coupon?>(null)
-            private set
-
-        fun loadCoupon(couponId: String) {
-            // 실제 데이터 로드 로직 (여기서는 하드코딩)
-            this.couponId = couponId
-
-            couponDetail =
-                when (couponId) {
-                    "C001" -> Coupon("C001", "123456789", "스타벅스 아메리카노", "2026-02-01")
-                    "C002" -> Coupon("C002", "987654321", "CGV 영화 관람권", "2026-01-15")
-                    "C003" -> Coupon("C003", "1111555599", "올리브영 5000원 할인", "2026-03-10")
-                    else -> null
-                }
+        @AssistedFactory
+        interface Factory {
+            fun create(couponId: String): CouponDetailViewModel
         }
 
+        val coupon: StateFlow<CouponUiModel?> =
+            couponRepository
+                .getCoupon(couponId)
+                .map { domainCoupon ->
+                    domainCoupon?.let {
+                        CouponUiModel(
+                            id = it.id,
+                            number = it.couponPin ?: "",
+                            name = it.productName ?: "이름 없는 쿠폰",
+                            expiryDate = it.expiryDate?.toString() ?: "만료일 없음",
+                            isUsed = it.isUsed,
+                        )
+                    }
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = null,
+                )
+
         fun useCoupon() {
-            println("쿠폰 사용: $couponId")
+            viewModelScope.launch {
+                couponRepository.markAsUsed(
+                    id = couponId,
+                    timestamp = System.currentTimeMillis(),
+                )
+            }
         }
     }
