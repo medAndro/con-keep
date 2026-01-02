@@ -1,5 +1,6 @@
 [versions]
 agp = "8.13.2"
+coreSplashscreen = "1.2.0"
 supabaseBom = "3.2.6"
 credentials = "1.5.0"
 googleid = "1.1.1"
@@ -11,7 +12,6 @@ espressoCore = "3.7.0"
 ktorClientAndroid = "3.3.3"
 activityCompose = "1.12.2"
 composeBom = "2025.12.01"
-compose = "1.10.0"
 kotlinxSerialization = "1.10.0-RC"
 ktlint = "14.0.1"
 lifecycle = "2.10.0"
@@ -25,6 +25,7 @@ navigation3 = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabaseBom" }

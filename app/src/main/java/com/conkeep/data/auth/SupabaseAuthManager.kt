@@ -17,6 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -44,6 +46,17 @@ class SupabaseAuthManager
         // 현재 사용자 정보
         val currentUser: UserInfo?
             get() = auth.currentUserOrNull()
+
+        suspend fun awaitInitialSession(): Boolean =
+            auth.sessionStatus
+                .filter { it !is SessionStatus.Initializing } // 초기화 완료까지 대기
+                .first()
+                .let { it is SessionStatus.Authenticated }
+
+        suspend fun awaitInitialSessionV2(): Boolean {
+            auth.awaitInitialization()
+            return auth.currentSessionOrNull() != null
+        }
 
         /**
          * 구글 로그인
