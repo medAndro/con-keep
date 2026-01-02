@@ -10,12 +10,20 @@ data class CouponEntity(
     val id: String,
     @ColumnInfo(name = "user_id")
     val userId: String,
+    // 업로드된 이미지 정보 (Supabase와 동기화)
     @ColumnInfo(name = "image_url")
     val imageUrl: String,
     @ColumnInfo(name = "image_key")
     val imageKey: String,
     @ColumnInfo(name = "thumbnail_url")
     val thumbnailUrl: String?,
+    // 로컬 전용 컬럼 (동기화 안 함)
+    @ColumnInfo(name = "local_image_path")
+    val localImagePath: String? = null, // 앱 파일 저장소 경로
+    // 동기화 상태 추적 (선택사항)
+    @ColumnInfo(name = "is_synced")
+    val isSynced: Boolean = false,
+    // 쿠폰 정보
     @ColumnInfo(name = "product_name")
     val productName: String?,
     val brand: String?,

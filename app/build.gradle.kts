@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlinSerializaitons)
+    alias(libs.plugins.room)
+}
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {

@@ -34,6 +34,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         imageUrl = imageUrl,
         imageKey = imageKey,
         thumbnailUrl = thumbnailUrl,
+        isSynced = true,
         productName = productName,
         brand = brand,
         couponPin = couponPin,
