@@ -1,6 +1,6 @@
 package com.conkeep.ui.feature.coupon.model
 
-data class Coupon(
+data class CouponUiModel(
     val id: String,
     val number: String,
     val name: String,

@@ -10,11 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.conkeep.ui.feature.coupon.model.Coupon
+import com.conkeep.ui.feature.coupon.model.CouponUiModel
 
 @Composable
 fun CouponCard(
-    coupon: Coupon,
+    couponUiModel: CouponUiModel,
     onClick: () -> Unit,
 ) {
     Card(
@@ -25,8 +25,8 @@ fun CouponCard(
                 .clickable(onClick = onClick),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(coupon.name, style = MaterialTheme.typography.titleMedium)
-            Text("유효기간: ${coupon.expiryDate}", style = MaterialTheme.typography.bodySmall)
+            Text(couponUiModel.name, style = MaterialTheme.typography.titleMedium)
+            Text("유효기간: ${couponUiModel.expiryDate}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

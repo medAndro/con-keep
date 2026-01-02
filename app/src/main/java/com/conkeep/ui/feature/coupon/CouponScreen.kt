@@ -9,6 +9,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
@@ -22,13 +24,15 @@ fun CouponScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: CouponViewModel = hiltViewModel(),
 ) {
+    val coupons by viewModel.coupons.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("내 쿠폰") },
                 actions = {
                     Button(onClick = {
-                        // 쿠폰 추가
+                        viewModel.addDummyCoupon()
                     }) {
                         Text("+")
                     }
@@ -39,9 +43,9 @@ fun CouponScreen(
         LazyColumn(
             modifier = Modifier.padding(padding),
         ) {
-            items(viewModel.coupons) { coupon ->
+            items(coupons) { coupon ->
                 CouponCard(
-                    coupon = coupon,
+                    couponUiModel = coupon,
                     onClick = {
                         backStack.add(Route.CouponDetailScreen(id = coupon.id))
                     },

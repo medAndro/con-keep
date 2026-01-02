@@ -50,7 +50,7 @@ fun CouponDetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            viewModel.couponDetail?.let { coupon ->
+            viewModel.couponUiModelDetail?.let { coupon ->
                 Text("번호: ${coupon.number}")
                 Text("이름: ${coupon.name}")
                 Text("유효기간: ${coupon.expiryDate}")
