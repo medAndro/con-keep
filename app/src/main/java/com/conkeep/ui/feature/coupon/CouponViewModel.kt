@@ -37,6 +37,7 @@ class CouponViewModel
                             number = coupon.couponPin ?: "",
                             name = coupon.productName ?: "",
                             expiryDate = coupon.expiryDate.toString(),
+                            isUsed = coupon.isUsed,
                         )
                     }
                 }.stateIn(

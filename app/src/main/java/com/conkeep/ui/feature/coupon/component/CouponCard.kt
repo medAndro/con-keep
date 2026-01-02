@@ -25,7 +25,7 @@ fun CouponCard(
                 .clickable(onClick = onClick),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(couponUiModel.name, style = MaterialTheme.typography.titleMedium)
+            Text("${if (couponUiModel.isUsed) "[사용]" else "[미사용]"} ${couponUiModel.name}", style = MaterialTheme.typography.titleMedium)
             Text("유효기간: ${couponUiModel.expiryDate}", style = MaterialTheme.typography.bodySmall)
         }
     }

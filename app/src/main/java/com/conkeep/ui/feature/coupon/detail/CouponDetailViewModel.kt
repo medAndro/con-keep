@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = CouponDetailViewModel.Factory::class)
@@ -39,6 +40,7 @@ class CouponDetailViewModel
                             number = it.couponPin ?: "",
                             name = it.productName ?: "이름 없는 쿠폰",
                             expiryDate = it.expiryDate?.toString() ?: "만료일 없음",
+                            isUsed = it.isUsed,
                         )
                     }
                 }.stateIn(
@@ -48,6 +50,11 @@ class CouponDetailViewModel
                 )
 
         fun useCoupon() {
-            println("쿠폰 사용: ${coupon.value?.name}")
+            viewModelScope.launch {
+                couponRepository.markAsUsed(
+                    id = couponId,
+                    timestamp = System.currentTimeMillis(),
+                )
+            }
         }
     }

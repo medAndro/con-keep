@@ -61,11 +61,15 @@ fun CouponDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(
-                    onClick = { viewModel.useCoupon() },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("쿠폰 사용하기")
+                if (coupon?.isUsed == false) {
+                    Button(
+                        onClick = { viewModel.useCoupon() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("쿠폰 사용하기")
+                    }
+                } else {
+                    Text("이미 사용된 쿠폰입니다.")
                 }
             }
         }
