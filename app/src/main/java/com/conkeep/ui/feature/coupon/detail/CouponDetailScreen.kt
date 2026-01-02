@@ -17,6 +17,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 
@@ -29,13 +31,16 @@ fun CouponDetailScreen(
 ) {
     val coupon by viewModel.coupon.collectAsState()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("쿠폰 상세") },
                 navigationIcon = {
                     Button(onClick = {
-                        backStack.removeLastOrNull()
+                        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                            backStack.removeLastOrNull()
+                        }
                     }) {
                         Text("←")
                     }
