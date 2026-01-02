@@ -1,7 +1,6 @@
 package com.conkeep.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
@@ -31,11 +30,11 @@ fun NavigationRoot() {
                 }
 
                 entry<Route.CouponDetailScreen> { key ->
-                    val viewModel: CouponDetailViewModel = hiltViewModel()
+                    val viewModel =
+                        hiltViewModel<CouponDetailViewModel, CouponDetailViewModel.Factory> { factory ->
+                            factory.create(key.id)
+                        }
 
-                    LaunchedEffect(key.id) {
-                        viewModel.loadCoupon(key.id)
-                    }
                     CouponDetailScreen(
                         id = key.id,
                         backStack = backStack,

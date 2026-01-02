@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.collections.map
 
 @Singleton
 class CouponRepository
@@ -28,6 +29,11 @@ class CouponRepository
             couponDao
                 .getCouponsFlow(authManager.currentUser?.id ?: "")
                 .map { entities -> entities.map { it.toDomain() } }
+
+        fun getCoupon(id: String): Flow<Coupon?> =
+            couponDao
+                .getCouponFlow(id)
+                .map { entity -> entity?.toDomain() }
 
         suspend fun addCoupon(coupon: Coupon) {
             couponDao.insert(coupon.toEntity())
