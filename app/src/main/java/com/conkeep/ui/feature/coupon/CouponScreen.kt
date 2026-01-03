@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -26,8 +25,13 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.navigation.Route
 import com.conkeep.ui.feature.coupon.component.CouponCard
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -51,8 +55,10 @@ fun CouponScreen(
             uri?.let {
                 scope.launch {
                     val savedPath = saveImageToAppStorage(context, uri)
+                    val barcodeNumber = scanBarcodeFromUri(context, uri)
+
                     if (savedPath != null) {
-                        viewModel.addDummyCoupon(savedPath)
+                        viewModel.addDummyCoupon(savedPath, barcodeNumber)
                     }
                 }
             }
@@ -122,6 +128,34 @@ suspend fun saveImageToAppStorage(
 
             // 5. 저장된 파일 경로 반환 (Room DB에 저장할 경로)
             destinationFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+suspend fun scanBarcodeFromUri(
+    context: Context,
+    uri: Uri,
+): String? =
+    withContext(Dispatchers.IO) {
+        try {
+            val image = InputImage.fromFilePath(context, uri)
+
+            // 스캐너 옵션 (쿠폰은 보통 CODE_128, EAN_13, QR이지만 전체 검사)
+            val options =
+                BarcodeScannerOptions
+                    .Builder()
+                    .setBarcodeFormats(
+                        Barcode.FORMAT_ALL_FORMATS,
+                    ).build()
+
+            val scanner = BarcodeScanning.getClient(options)
+
+            val barcodes = scanner.process(image).await()
+
+            // 인식된 바코드들 중 첫 번째 값의 displayValue 반환
+            barcodes.firstOrNull()?.displayValue
         } catch (e: Exception) {
             e.printStackTrace()
             null

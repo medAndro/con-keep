@@ -39,7 +39,10 @@ class CouponViewModel
                     initialValue = emptyList(),
                 )
 
-        fun addDummyCoupon(absolutePath: String) {
+        fun addDummyCoupon(
+            uri: String,
+            barcodeNumber: String?,
+        ) {
             viewModelScope.launch {
                 val now = Clock.System.now()
                 val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
@@ -65,11 +68,11 @@ class CouponViewModel
                         imageKey = "dummy_${Clock.System.now().toEpochMilliseconds()}",
                         thumbnailUrl = "https://via.placeholder.com/100x50?text=$randomBrand",
                         // 로컬 이미지 경로
-                        localImagePath = absolutePath,
+                        localImagePath = uri,
                         // 쿠폰 정보
                         productName = "$randomBrand $randomProduct",
                         brand = randomBrand,
-                        couponPin = List(12) { Random.nextInt(0, 10) }.joinToString(""),
+                        couponPin = barcodeNumber,
                         expiryDate = today.plus(Random.nextInt(7, 90), DateTimeUnit.DAY), // 7~90일 후
                         // 금액 정보
                         isMonetary = Random.nextBoolean(),
