@@ -30,6 +30,8 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -54,11 +56,15 @@ fun CouponScreen(
         ) { uri ->
             uri?.let {
                 scope.launch {
-                    val savedPath = saveImageToAppStorage(context, uri)
-                    val barcodeNumber = scanBarcodeFromUri(context, uri)
+                    val pathDeferred = async { saveImageToAppStorage(context, uri) }
+                    val barcodeDeferred = async { scanBarcodeFromUri(context, uri) }
 
-                    if (savedPath != null) {
-                        viewModel.addDummyCoupon(savedPath, barcodeNumber)
+                    val results = awaitAll(pathDeferred, barcodeDeferred)
+                    val path = results[0]
+                    val barcode = results[1]
+
+                    if (path != null) {
+                        viewModel.addDummyCoupon(path, barcode)
                     }
                 }
             }
