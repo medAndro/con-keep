@@ -6,4 +6,5 @@ data class CouponUiModel(
     val name: String,
     val expiryDate: String,
     val isUsed: Boolean,
+    val localImagePath: String? = null,
 )

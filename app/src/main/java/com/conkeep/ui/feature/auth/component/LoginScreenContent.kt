@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -35,22 +34,24 @@ import com.conkeep.ui.theme.PretendardMedium16
 fun LoginScreenContent(onGoogleSignInClick: () -> Unit) {
     Scaffold { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(color = brandPrimary),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(color = brandPrimary),
         ) {
             // 중앙 영역 (화면 정중앙)
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.offset(y = (-21).dp)
+                    modifier = Modifier.offset(y = (-21).dp),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -70,20 +71,20 @@ fun LoginScreenContent(onGoogleSignInClick: () -> Unit) {
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = stringResource(R.string.app_description),
-                    style = PretendardMedium16,
-                )
+                    Text(
+                        text = stringResource(R.string.app_description),
+                        style = PretendardMedium16,
+                    )
                 }
             }
 
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 120.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 120.dp),
             ) {
                 GoogleSignInButton(
                     onClick = onGoogleSignInClick,

@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlinSerializaitons)
+    alias(libs.plugins.room)
+}
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {
@@ -116,6 +120,10 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+    // Coil
+    implementation(libs.coil.compose)
+    implementation(libs.coil.ktor3)
 
     // Test
     testImplementation(libs.junit)

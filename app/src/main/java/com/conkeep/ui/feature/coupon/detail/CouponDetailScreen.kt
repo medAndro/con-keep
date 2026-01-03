@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.coupon.detail
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +18,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import coil3.compose.AsyncImage
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,13 +34,16 @@ fun CouponDetailScreen(
 ) {
     val coupon by viewModel.coupon.collectAsState()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("쿠폰 상세") },
                 navigationIcon = {
                     Button(onClick = {
-                        backStack.removeLastOrNull()
+                        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                            backStack.removeLastOrNull()
+                        }
                     }) {
                         Text("←")
                     }
@@ -50,6 +58,16 @@ fun CouponDetailScreen(
                     .padding(padding)
                     .padding(16.dp),
         ) {
+            Log.d("CouponDetailScreen", "coupon: $coupon")
+            AsyncImage(
+                model = File(coupon?.localImagePath ?: ""),
+                contentDescription = "쿠폰 이미지",
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+            )
+
             Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
 
             Spacer(modifier = Modifier.height(16.dp))

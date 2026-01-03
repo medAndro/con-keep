@@ -22,6 +22,7 @@ playServicesAuth = "21.4.0"
 room = "2.8.4"
 ksp = "2.3.4"
 navigation3 = "1.0.0"
+coil3 = "3.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -78,6 +79,10 @@ androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runt
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 
+# Coil 3
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3"}
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -87,4 +92,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlinSerializaitons = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin"}
-
+room = { id = "androidx.room", version.ref = "room" }

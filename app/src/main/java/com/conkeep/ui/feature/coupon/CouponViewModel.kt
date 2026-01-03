@@ -6,6 +6,7 @@ import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,23 +31,15 @@ class CouponViewModel
         val coupons: StateFlow<List<CouponUiModel>> =
             couponRepository
                 .getCoupons()
-                .map { coupons ->
-                    coupons.map { coupon ->
-                        CouponUiModel(
-                            id = coupon.id,
-                            number = coupon.couponPin ?: "",
-                            name = coupon.productName ?: "",
-                            expiryDate = coupon.expiryDate.toString(),
-                            isUsed = coupon.isUsed,
-                        )
-                    }
+                .map { domainCoupons ->
+                    domainCoupons.toUiModel()
                 }.stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5000),
                     initialValue = emptyList(),
                 )
 
-        fun addDummyCoupon() {
+        fun addDummyCoupon(absolutePath: String) {
             viewModelScope.launch {
                 val now = Clock.System.now()
                 val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
@@ -71,6 +64,8 @@ class CouponViewModel
                         imageUrl = "https://via.placeholder.com/400x200?text=$randomBrand",
                         imageKey = "dummy_${Clock.System.now().toEpochMilliseconds()}",
                         thumbnailUrl = "https://via.placeholder.com/100x50?text=$randomBrand",
+                        // 로컬 이미지 경로
+                        localImagePath = absolutePath,
                         // 쿠폰 정보
                         productName = "$randomBrand $randomProduct",
                         brand = randomBrand,
@@ -108,6 +103,7 @@ class CouponViewModel
                         // 메타데이터
                         createdAt = localDateTime,
                         updatedAt = localDateTime,
+                        isSynced = false,
                     ),
                 )
             }

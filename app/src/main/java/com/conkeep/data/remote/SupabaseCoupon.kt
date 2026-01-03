@@ -34,6 +34,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         imageUrl = imageUrl,
         imageKey = imageKey,
         thumbnailUrl = thumbnailUrl,
+        localImagePath = null,
         productName = productName,
         brand = brand,
         couponPin = couponPin,
@@ -46,6 +47,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         usedAt = usedAt?.let { Instant.parse(it).toEpochMilli() },
         createdAt = Instant.parse(createdAt).toEpochMilli(),
         updatedAt = Instant.parse(updatedAt).toEpochMilli(),
+        isSynced = true,
     )
 
 // Entity to DTO 변환
