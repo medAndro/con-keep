@@ -1,7 +1,9 @@
 package com.conkeep.ui.feature.coupon
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
@@ -27,6 +29,7 @@ class CouponViewModel
     @Inject
     constructor(
         private val couponRepository: CouponRepository,
+        private val couponProcessor: CouponProcessor,
     ) : ViewModel() {
         val coupons: StateFlow<List<CouponUiModel>> =
             couponRepository
@@ -39,7 +42,17 @@ class CouponViewModel
                     initialValue = emptyList(),
                 )
 
-        fun addDummyCoupon(
+        fun addDummyCouponFromUri(uri: Uri) {
+            viewModelScope.launch {
+                val (path, barcode) = couponProcessor.processImage(uri)
+
+                if (path != null) {
+                    addDummyCouponToDb(path, barcode)
+                }
+            }
+        }
+
+        private fun addDummyCouponToDb(
             uri: String,
             barcodeNumber: String?,
         ) {
