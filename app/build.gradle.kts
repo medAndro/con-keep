@@ -82,7 +82,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.splashscreen)
 
     // Compose
@@ -124,6 +123,13 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
     implementation(libs.coil.ktor3)
+
+    // Google
+    implementation(libs.barcode.scanning)
+
+    // Kotlinx
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // Test
     testImplementation(libs.junit)
