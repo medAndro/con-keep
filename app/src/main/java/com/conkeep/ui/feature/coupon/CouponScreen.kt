@@ -34,7 +34,7 @@ fun CouponScreen(
             contract = ActivityResultContracts.PickVisualMedia(),
         ) { uri ->
             uri?.let {
-                viewModel.addDummyCouponFromUri(uri)
+                viewModel.addCouponFromUri(uri)
             }
         }
 
