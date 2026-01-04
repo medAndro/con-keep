@@ -5,7 +5,6 @@ import com.conkeep.data.local.entity.CouponLocalStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Serializable
@@ -42,7 +41,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        expiryDate = expiryDate?.let { LocalDate.parse(it) },
+        expiryDate = expiryDate,
         isMonetary = isMonetary,
         amount = amount,
         category = category,
@@ -55,7 +54,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         createdAt = Instant.parse(createdAt).toEpochMilli(),
         updatedAt = Instant.parse(updatedAt).toEpochMilli(),
         isSynced = true,
-        localStatus = CouponLocalStatus.PENDING,
+        localStatus = CouponLocalStatus.PENDING.name,
     )
 
 // Entity to DTO 변환

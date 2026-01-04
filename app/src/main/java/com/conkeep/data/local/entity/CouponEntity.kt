@@ -3,7 +3,6 @@ package com.conkeep.data.local.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.time.LocalDate
 
 @Entity(tableName = "coupons")
 data class CouponEntity(
@@ -31,7 +30,7 @@ data class CouponEntity(
     val couponPin: String?,
     // ISO 8601 형식 (2026-02-01)
     @ColumnInfo(name = "expiry_date")
-    val expiryDate: LocalDate?,
+    val expiryDate: String?,
     @ColumnInfo(name = "is_monetary")
     val isMonetary: Boolean,
     // nullable (금액 쿠폰이 아닐 경우)
@@ -54,5 +53,5 @@ data class CouponEntity(
     val isSynced: Boolean = false,
     // 로컬 UI 상태
     @ColumnInfo(name = "local_status")
-    val localStatus: CouponLocalStatus? = CouponLocalStatus.PENDING,
+    val localStatus: String? = CouponLocalStatus.PENDING.name,
 )

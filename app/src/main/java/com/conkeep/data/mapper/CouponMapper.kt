@@ -1,11 +1,9 @@
 package com.conkeep.data.mapper
 
 import com.conkeep.data.local.entity.CouponEntity
-import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.domain.model.Coupon
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.number
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
@@ -22,10 +20,7 @@ fun CouponEntity.toDomain(): Coupon =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        expiryDate =
-            expiryDate?.let { javaDate ->
-                LocalDate(javaDate.year, javaDate.monthValue, javaDate.dayOfMonth)
-            },
+        expiryDate = expiryDate?.let { LocalDate.parse(it) },
         isMonetary = isMonetary,
         amount = amount,
         category = category?.toCouponCategory(),
@@ -47,7 +42,7 @@ fun CouponEntity.toDomain(): Coupon =
                 .fromEpochMilliseconds(updatedAt)
                 .toLocalDateTime(TimeZone.currentSystemDefault()),
         isSynced = isSynced,
-        localStatus = localStatus?.name, // 추가!
+        localStatus = localStatus, // 추가!
     )
 
 fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
@@ -64,11 +59,7 @@ fun Coupon.toEntity(): CouponEntity =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        // kotlinx.LocalDate → java.time.LocalDate
-        expiryDate =
-            expiryDate?.let { kDate ->
-                java.time.LocalDate.of(kDate.year, kDate.month.number, kDate.day)
-            },
+        expiryDate = expiryDate?.toString(),
         isMonetary = isMonetary,
         amount = amount,
         category = category?.name,
@@ -79,10 +70,7 @@ fun Coupon.toEntity(): CouponEntity =
         createdAt = createdAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         updatedAt = updatedAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         isSynced = isSynced,
-        localStatus =
-            localStatus?.let { statusStr ->
-                runCatching { CouponLocalStatus.valueOf(statusStr) }.getOrNull()
-            },
+        localStatus = localStatus,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }
