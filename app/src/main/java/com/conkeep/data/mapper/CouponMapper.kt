@@ -12,6 +12,7 @@ import kotlin.time.Instant
 fun CouponEntity.toDomain(): Coupon =
     Coupon(
         id = id,
+        remoteId = remoteId,
         userId = userId,
         imageUrl = imageUrl,
         imageKey = imageKey,
@@ -48,6 +49,7 @@ fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
 fun Coupon.toEntity(): CouponEntity =
     CouponEntity(
         id = id,
+        remoteId = remoteId,
         userId = userId,
         imageUrl = imageUrl,
         imageKey = imageKey,

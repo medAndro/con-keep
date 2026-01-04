@@ -30,6 +30,7 @@ data class SupabaseCoupon(
 fun SupabaseCoupon.toEntity(): CouponEntity =
     CouponEntity(
         id = id,
+        remoteId = id,
         userId = userId,
         imageUrl = imageUrl,
         imageKey = imageKey,

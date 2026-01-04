@@ -5,6 +5,7 @@ import kotlinx.datetime.LocalDateTime
 
 data class Coupon(
     val id: String,
+    val remoteId: String?,
     val userId: String,
     // 이미지
     val imageUrl: String?,

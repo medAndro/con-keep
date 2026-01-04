@@ -8,6 +8,8 @@ import androidx.room.PrimaryKey
 data class CouponEntity(
     @PrimaryKey
     val id: String,
+    @ColumnInfo(name = "remote_id")
+    val remoteId: String?,
     @ColumnInfo(name = "user_id")
     val userId: String,
     // 업로드된 이미지 정보 (Supabase와 동기화)

@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class PresignedUrlResponse(
-    @SerialName("uploadUrl") val uploadUrl: String,
+    @SerialName("uploadUrl") val uploadPresignedUrl: String,
     @SerialName("imageUrl") val imageUrl: String,
+    @SerialName("key") val r2ObjectKey: String,
 )
