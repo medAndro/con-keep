@@ -32,6 +32,13 @@ interface CouponDao {
     @Update
     suspend fun update(coupon: CouponEntity)
 
+    @Query("UPDATE coupons SET image_url = :imageUrl, image_key = :imageKey WHERE id = :id")
+    suspend fun updateR2Info(
+        id: String,
+        imageUrl: String,
+        imageKey: String,
+    )
+
     @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt WHERE id = :id")
     suspend fun markAsUsed(
         id: String,

@@ -53,8 +53,17 @@ class CouponRepository
                 .getCouponFlow(id)
                 .map { entity -> entity?.toDomain() }
 
-        suspend fun addCoupon(coupon: Coupon) {
+        suspend fun addCoupon(coupon: Coupon): String {
             couponDao.insert(coupon.copy(userId = authManager.currentUser?.id ?: "").toEntity())
+            return coupon.id
+        }
+
+        suspend fun updateR2Info(
+            couponId: String,
+            r2Url: String,
+            r2Key: String,
+        ) {
+            couponDao.updateR2Info(couponId, r2Url, r2Key)
         }
 
         suspend fun getPresignedUrl(
