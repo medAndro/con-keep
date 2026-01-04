@@ -1,7 +1,9 @@
 package com.conkeep.ui.feature.coupon
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
@@ -27,6 +29,7 @@ class CouponViewModel
     @Inject
     constructor(
         private val couponRepository: CouponRepository,
+        private val couponProcessor: CouponProcessor,
     ) : ViewModel() {
         val coupons: StateFlow<List<CouponUiModel>> =
             couponRepository
@@ -39,7 +42,20 @@ class CouponViewModel
                     initialValue = emptyList(),
                 )
 
-        fun addDummyCoupon(absolutePath: String) {
+        fun addDummyCouponFromUri(uri: Uri) {
+            viewModelScope.launch {
+                val (path, barcode) = couponProcessor.processImage(uri)
+
+                if (path != null) {
+                    addDummyCouponToDb(path, barcode)
+                }
+            }
+        }
+
+        private fun addDummyCouponToDb(
+            uri: String,
+            barcodeNumber: String?,
+        ) {
             viewModelScope.launch {
                 val now = Clock.System.now()
                 val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
@@ -65,11 +81,11 @@ class CouponViewModel
                         imageKey = "dummy_${Clock.System.now().toEpochMilliseconds()}",
                         thumbnailUrl = "https://via.placeholder.com/100x50?text=$randomBrand",
                         // 로컬 이미지 경로
-                        localImagePath = absolutePath,
+                        localImagePath = uri,
                         // 쿠폰 정보
                         productName = "$randomBrand $randomProduct",
                         brand = randomBrand,
-                        couponPin = List(12) { Random.nextInt(0, 10) }.joinToString(""),
+                        couponPin = barcodeNumber,
                         expiryDate = today.plus(Random.nextInt(7, 90), DateTimeUnit.DAY), // 7~90일 후
                         // 금액 정보
                         isMonetary = Random.nextBoolean(),
