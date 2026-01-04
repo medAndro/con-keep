@@ -66,6 +66,7 @@ hilt-navigation-compose = {module = "androidx.hilt:hilt-navigation-compose",vers
 
 # Room
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktorClientAndroid" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorClientAndroid" }
 room-runtime = {module = "androidx.room:room-runtime",version.ref = "room"}
 room-ktx = {module = "androidx.room:room-ktx",version.ref = "room"}
 room-compiler = {module = "androidx.room:room-compiler",version.ref = "room"}
