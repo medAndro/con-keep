@@ -9,8 +9,8 @@ import java.time.Instant
 data class SupabaseCoupon(
     val id: String,
     @SerialName("user_id") val userId: String,
-    @SerialName("image_url") val imageUrl: String,
-    @SerialName("image_key") val imageKey: String,
+    @SerialName("image_url") val imageUrl: String?,
+    @SerialName("image_key") val imageKey: String?,
     @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
     @SerialName("product_name") val productName: String? = null,
     val brand: String? = null,

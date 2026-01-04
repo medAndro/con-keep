@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil3.compose.AsyncImage
@@ -32,7 +33,7 @@ fun CouponDetailScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: CouponDetailViewModel,
 ) {
-    val coupon by viewModel.coupon.collectAsState()
+    val coupon by viewModel.coupon.collectAsStateWithLifecycle()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     Scaffold(

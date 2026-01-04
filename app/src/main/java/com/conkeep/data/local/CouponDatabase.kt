@@ -8,7 +8,7 @@ import com.conkeep.data.local.entity.CouponEntity
 
 @Database(
     entities = [CouponEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
