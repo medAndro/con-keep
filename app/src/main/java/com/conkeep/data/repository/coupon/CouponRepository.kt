@@ -3,6 +3,7 @@ package com.conkeep.data.repository.coupon
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
+import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
 import com.conkeep.data.remote.dto.AiCouponResponse
@@ -67,19 +68,27 @@ class CouponRepository
 
         suspend fun updateAiRecognitionInfo(
             couponId: String,
-            couponInfo: CouponInfo,
+            couponInfo: CouponInfo?,
+            success: Boolean,
         ) {
             val now = System.currentTimeMillis()
+            val status =
+                if (success) {
+                    CouponLocalStatus.RECOGNIZED.name
+                } else {
+                    CouponLocalStatus.AI_FAILED.name
+                }
             couponDao.updateAiRecognitionInfo(
                 couponId = couponId,
-                productName = couponInfo.productName,
-                brand = couponInfo.brand,
-                couponPin = couponInfo.couponPin,
-                expiryDate = couponInfo.expiryDate,
-                isMonetary = couponInfo.isMonetary,
-                amount = couponInfo.amount,
-                category = couponInfo.category,
+                productName = couponInfo?.productName,
+                brand = couponInfo?.brand,
+                couponPin = couponInfo?.couponPin,
+                expiryDate = couponInfo?.expiryDate,
+                isMonetary = couponInfo?.isMonetary,
+                amount = couponInfo?.amount,
+                category = couponInfo?.category,
                 updatedAt = now,
+                localStatus = status,
             )
         }
 

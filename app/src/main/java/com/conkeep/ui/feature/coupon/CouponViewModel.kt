@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.data.mapper.toCouponCategory
 import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.processor.CouponProcessor
@@ -72,23 +73,37 @@ class CouponViewModel
                         urlResponse.imageUrl,
                         urlResponse.r2ObjectKey,
                     )
-                    val aiResponse = couponRepository.aiCouponRecognizing(urlResponse.imageUrl)
 
                     // AI 성공 시 추가 업데이트
-                    aiResponse.onSuccess { response ->
-                        val processedBarcode =
-                            preProcessResult.barcode.takeUnless { it.isNullOrEmpty() }
-                        val finalCouponPin = processedBarcode ?: response.data.couponPin
-                        val finalCategory =
-                            response.data.category
-                                .toCouponCategory()
-                                .name
-
-                        couponRepository.updateAiRecognitionInfo(
-                            couponId,
-                            response.data.copy(couponPin = finalCouponPin, category = finalCategory),
-                        )
-                    }
+                    val aiResponse = couponRepository.aiCouponRecognizing(urlResponse.imageUrl)
+                    aiResponse.fold(
+                        onSuccess = { response ->
+                            // 성공: RECOGNIZED + 쿠폰 정보
+                            val finalCouponInfo =
+                                response.data.copy(
+                                    couponPin =
+                                        preProcessResult.barcode.takeUnless { it.isNullOrEmpty() }
+                                            ?: response.data.couponPin,
+                                    category =
+                                        response.data.category
+                                            .toCouponCategory()
+                                            .name,
+                                )
+                            couponRepository.updateAiRecognitionInfo(
+                                couponId,
+                                finalCouponInfo,
+                                success = true,
+                            )
+                        },
+                        onFailure = {
+                            // 실패: FAILED 상태
+                            couponRepository.updateAiRecognitionInfo(
+                                couponId,
+                                null,
+                                success = false,
+                            )
+                        },
+                    )
                 } catch (e: Exception) {
                     Log.e("CouponViewModel", "쿠폰 등록 실패: ${e.message}")
                 }
@@ -122,6 +137,7 @@ class CouponViewModel
                     createdAt = localDateTime,
                     updatedAt = localDateTime,
                     isSynced = false,
+                    localStatus = CouponLocalStatus.PREPROCESSED.name,
                 )
 
             // Repository 호출 → ID 반환 받음

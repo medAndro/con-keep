@@ -41,18 +41,20 @@ interface CouponDao {
 
     @Query(
         """
-        UPDATE OR IGNORE coupons 
-        SET 
-            product_name = COALESCE(:productName, product_name),
-            brand = COALESCE(:brand, brand),
-            coupon_pin = COALESCE(:couponPin, coupon_pin),
-            expiry_date = COALESCE(:expiryDate, expiry_date),
-            is_monetary = COALESCE(:isMonetary, is_monetary),
-            amount = COALESCE(:amount, amount),
-            category = COALESCE(:category, category),
-            updated_at = :updatedAt
-        WHERE id = :couponId
-    """,
+    UPDATE OR IGNORE coupons 
+    SET 
+        product_name = COALESCE(:productName, product_name),
+        brand = COALESCE(:brand, brand),
+        coupon_pin = COALESCE(:couponPin, coupon_pin),
+        expiry_date = COALESCE(:expiryDate, expiry_date),
+        is_monetary = COALESCE(:isMonetary, is_monetary),
+        amount = COALESCE(:amount, amount),
+        category = COALESCE(:category, category),
+        local_status = COALESCE(:localStatus, local_status),
+        
+        updated_at = :updatedAt
+    WHERE id = :couponId
+""",
     )
     suspend fun updateAiRecognitionInfo(
         couponId: String,
@@ -63,6 +65,7 @@ interface CouponDao {
         isMonetary: Boolean?,
         amount: Int?,
         category: String?,
+        localStatus: String?,
         updatedAt: Long,
     ): Int
 

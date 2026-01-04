@@ -1,24 +1,36 @@
 package com.conkeep.data.local
 
 import androidx.room.TypeConverter
+import com.conkeep.data.local.entity.CouponLocalStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+@Suppress("unused")
 class Converters {
-    // ISO 8601 날짜 형식 변환
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    @TypeConverter
-    fun fromTimestamp(value: Long?): Instant? = value?.let { Instant.ofEpochMilli(it) }
+    @TypeConverter fun fromStatus(status: CouponLocalStatus?): String? = status?.name
 
-    @TypeConverter
-    fun dateToTimestamp(date: Instant?): Long? = date?.toEpochMilli()
+    @TypeConverter fun toStatus(status: String?): CouponLocalStatus? =
+        status?.let {
+            runCatching {
+                CouponLocalStatus.valueOf(
+                    it,
+                )
+            }.getOrNull()
+        }
 
-    // LocalDate 변환 (expiry_date용)
-    @TypeConverter
-    fun fromLocalDate(date: LocalDate?): String? = date?.format(dateFormatter)
+    // timestamptz ↔ Instant
+    @TypeConverter fun fromInstant(instant: Instant?): Long? = instant?.toEpochMilli()
 
-    @TypeConverter
-    fun toLocalDate(dateString: String?): LocalDate? = dateString?.let { LocalDate.parse(it, dateFormatter) }
+    @TypeConverter fun toInstant(timestamp: Long?): Instant? =
+        timestamp?.let {
+            Instant.ofEpochMilli(it)
+        }
+
+    // date ↔ LocalDate
+    @TypeConverter fun fromLocalDate(date: LocalDate?): String? = date?.format(dateFormatter)
+
+    @TypeConverter fun toLocalDate(dateString: String?): LocalDate? = dateString?.let { LocalDate.parse(it, dateFormatter) }
 }
