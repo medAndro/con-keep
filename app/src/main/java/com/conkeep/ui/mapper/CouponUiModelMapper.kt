@@ -11,6 +11,7 @@ fun Coupon.toUiModel(): CouponUiModel =
         expiryDate = expiryDate.toString(),
         isUsed = isUsed,
         localImagePath = localImagePath,
+        r2Url = imageUrl,
     )
 
 fun List<Coupon>.toUiModel(): List<CouponUiModel> = map { it.toUiModel() }

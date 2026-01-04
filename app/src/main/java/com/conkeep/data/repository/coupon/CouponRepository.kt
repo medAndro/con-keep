@@ -1,18 +1,35 @@
 package com.conkeep.data.repository.coupon
 
+import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
+import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toEntity
+import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.util.cio.readChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.map
@@ -24,6 +41,7 @@ class CouponRepository
         private val supabase: SupabaseClient,
         private val couponDao: CouponDao,
         private val authManager: SupabaseAuthManager,
+        @param:R2UploadClient private val r2Client: HttpClient,
     ) {
         fun getCoupons(): Flow<List<Coupon>> =
             couponDao
@@ -35,9 +53,75 @@ class CouponRepository
                 .getCouponFlow(id)
                 .map { entity -> entity?.toDomain() }
 
-        suspend fun addCoupon(coupon: Coupon) {
+        suspend fun addCoupon(coupon: Coupon): String {
             couponDao.insert(coupon.copy(userId = authManager.currentUser?.id ?: "").toEntity())
+            return coupon.id
         }
+
+        suspend fun updateR2Info(
+            couponId: String,
+            r2Url: String,
+            r2Key: String,
+        ) {
+            couponDao.updateR2Info(couponId, r2Url, r2Key)
+        }
+
+        suspend fun getPresignedUrl(
+            file: File,
+            contentType: String,
+        ): Result<PresignedUrlResponse> =
+            withContext(Dispatchers.IO) {
+                try {
+                    val response =
+                        r2Client.get("${BuildConfig.BASE_URL}/upload-url") {
+                            url {
+                                parameters.append("ext", file.extension.lowercase())
+                                parameters.append("contentType", contentType)
+                                parameters.append("fileSize", file.length().toString())
+                            }
+                            // AuthManager의 JWT 토큰 인증 헤더
+                            val token = authManager.accessToken
+                            if (token != null) {
+                                header(HttpHeaders.Authorization, "Bearer $token")
+                            }
+                        }
+
+                    if (response.status == HttpStatusCode.OK) {
+                        Result.success(response.body<PresignedUrlResponse>())
+                    } else {
+                        Result.failure(Exception("PresignedUrl 생성 실패: ${response.status}"))
+                    }
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+
+        suspend fun uploadCouponImageR2(
+            imageFile: File,
+            uploadUrl: String,
+            contentType: String,
+        ): Result<Unit> =
+            withContext(Dispatchers.IO) {
+                if (!imageFile.exists()) {
+                    return@withContext Result.failure(Exception("파일이 존재하지 않습니다: ${imageFile.absolutePath}"))
+                }
+                try {
+                    val response: HttpResponse =
+                        r2Client.put(uploadUrl) {
+                            setBody(imageFile.readChannel())
+                            contentType(ContentType.parse(contentType))
+                            header(HttpHeaders.ContentLength, imageFile.length().toString())
+                        }
+
+                    if (response.status.isSuccess()) {
+                        Result.success(Unit)
+                    } else {
+                        Result.failure(Exception("R2 업로드 실패: ${response.status}"))
+                    }
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
 
         suspend fun markAsUsed(
             id: String,

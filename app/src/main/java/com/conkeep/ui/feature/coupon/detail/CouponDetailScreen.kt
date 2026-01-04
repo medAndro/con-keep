@@ -14,12 +14,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil3.compose.AsyncImage
@@ -32,7 +32,7 @@ fun CouponDetailScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: CouponDetailViewModel,
 ) {
-    val coupon by viewModel.coupon.collectAsState()
+    val coupon by viewModel.coupon.collectAsStateWithLifecycle()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     Scaffold(
@@ -76,6 +76,7 @@ fun CouponDetailScreen(
                 Text("번호: ${coupon?.number}")
                 Text("이름: ${coupon?.name}")
                 Text("유효기간: ${coupon?.expiryDate}")
+                Text("r2Url: ${coupon?.r2Url}")
 
                 Spacer(modifier = Modifier.height(24.dp))
 

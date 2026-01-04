@@ -3,7 +3,9 @@ package com.conkeep.ui.feature.coupon
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.processor.CouponProcessor
+import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
@@ -20,6 +22,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import java.io.File
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -44,84 +48,87 @@ class CouponViewModel
 
         fun addDummyCouponFromUri(uri: Uri) {
             viewModelScope.launch {
-                val (path, barcode) = couponProcessor.processImage(uri)
+                // 1. 이미지 프로세싱 (MIME 타입, 로컬 경로, 바코드 추출)
+                val preProcessResult = couponProcessor.preProcessImage(uri)
+                val path = preProcessResult.localPath ?: return@launch
+                val mimeType = preProcessResult.mimeType ?: "image/jpeg"
 
-                if (path != null) {
-                    addDummyCouponToDb(path, barcode)
-                }
+                val couponId = addDummyCouponToDb(preProcessResult)
+
+                // 2. 백엔드에 Presigned URL 요청
+                val urlResponse: PresignedUrlResponse =
+                    couponRepository
+                        .getPresignedUrl(
+                            file = File(path),
+                            contentType = mimeType,
+                        ).getOrNull() ?: return@launch
+
+                // 3. R2에 실제 업로드 실행
+                val uploadResult =
+                    couponRepository.uploadCouponImageR2(
+                        imageFile = File(path),
+                        uploadUrl = urlResponse.uploadPresignedUrl,
+                        contentType = mimeType,
+                    )
+
+                // 4. 업로드 성공 시에만 실제 imageUrl을 담아 DB 저장
+                uploadResult
+                    .onSuccess {
+                        updateR2Info(couponId, urlResponse.imageUrl, urlResponse.r2ObjectKey)
+                    }.onFailure { println("로그: 업로드 실패 - ${it.message}") }
             }
         }
 
-        private fun addDummyCouponToDb(
-            uri: String,
-            barcodeNumber: String?,
+        private fun updateR2Info(
+            couponId: String,
+            imageUrl: String,
+            imageKey: String,
         ) {
             viewModelScope.launch {
-                val now = Clock.System.now()
-                val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
-                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-
-                val dummyBrands = listOf("스타벅스", "투썸플레이스", "이디야", "CGV", "메가박스", "올리브영", "GS25", "CU")
-                val dummyProducts = listOf("아메리카노", "카페라떼", "영화 관람권", "5000원 할인", "음료 교환권", "베이커리 세트")
-                val categories = CouponCategory.entries.toTypedArray()
-
-                val randomBrand = dummyBrands.random()
-                val randomProduct = dummyProducts.random()
-
-                couponRepository.addCoupon(
-                    Coupon(
-                        id =
-                            Clock.System
-                                .now()
-                                .toEpochMilliseconds()
-                                .toString(),
-                        userId = "", // Repository에서 authManager로 자동 설정
-                        // 이미지 (더미)
-                        imageUrl = "https://via.placeholder.com/400x200?text=$randomBrand",
-                        imageKey = "dummy_${Clock.System.now().toEpochMilliseconds()}",
-                        thumbnailUrl = "https://via.placeholder.com/100x50?text=$randomBrand",
-                        // 로컬 이미지 경로
-                        localImagePath = uri,
-                        // 쿠폰 정보
-                        productName = "$randomBrand $randomProduct",
-                        brand = randomBrand,
-                        couponPin = barcodeNumber,
-                        expiryDate = today.plus(Random.nextInt(7, 90), DateTimeUnit.DAY), // 7~90일 후
-                        // 금액 정보
-                        isMonetary = Random.nextBoolean(),
-                        amount =
-                            if (Random.nextBoolean()) {
-                                listOf(
-                                    1000,
-                                    3000,
-                                    5000,
-                                    10000,
-                                ).random()
-                            } else {
-                                null
-                            },
-                        // 분류
-                        category = categories.random(),
-                        userMemo =
-                            if (Random.nextBoolean()) {
-                                "더미 메모 ${
-                                    Random.nextInt(
-                                        1,
-                                        100,
-                                    )
-                                }"
-                            } else {
-                                null
-                            },
-                        // 사용 정보
-                        isUsed = false,
-                        usedAt = null,
-                        // 메타데이터
-                        createdAt = localDateTime,
-                        updatedAt = localDateTime,
-                        isSynced = false,
-                    ),
-                )
+                couponRepository.updateR2Info(couponId, imageUrl, imageKey)
             }
+        }
+
+        private suspend fun addDummyCouponToDb(couponPreProcessResult: CouponPreProcessResult): String {
+            val now = Clock.System.now()
+            val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+            val dummyBrands = listOf("스타벅스", "투썸플레이스", "이디야", "CGV", "메가박스", "올리브영", "GS25", "CU")
+            val dummyProducts = listOf("아메리카노", "카페라떼", "영화 관람권", "5000원 할인", "음료 교환권", "베이커리 세트")
+            val categories = CouponCategory.entries.toTypedArray()
+
+            val randomBrand = dummyBrands.random()
+            val randomProduct = dummyProducts.random()
+
+            val localId = UUID.randomUUID().toString()
+
+            val dummyCoupon =
+                Coupon(
+                    id = localId,
+                    remoteId = null,
+                    userId = "",
+                    imageUrl = null,
+                    imageKey = null,
+                    thumbnailUrl = null,
+                    localImagePath = couponPreProcessResult.localPath,
+                    productName = "$randomBrand $randomProduct",
+                    brand = randomBrand,
+                    couponPin = couponPreProcessResult.barcode,
+                    expiryDate = today.plus(Random.nextInt(7, 90), DateTimeUnit.DAY),
+                    isMonetary = Random.nextBoolean(),
+                    amount = if (Random.nextBoolean()) listOf(1000, 3000, 5000, 10000).random() else null,
+                    category = categories.random(),
+                    userMemo = if (Random.nextBoolean()) "더미 메모 ${Random.nextInt(1, 100)}" else null,
+                    isUsed = false,
+                    usedAt = null,
+                    createdAt = localDateTime,
+                    updatedAt = localDateTime,
+                    isSynced = false,
+                )
+
+            // Repository 호출 → ID 반환 받음
+            couponRepository.addCoupon(dummyCoupon)
+            return localId // 로컬 ID 반환
         }
     }

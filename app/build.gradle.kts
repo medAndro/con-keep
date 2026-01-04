@@ -34,6 +34,11 @@ android {
         )
         buildConfigField(
             type = "String",
+            "BASE_URL",
+            "\"${gradleLocalProperties(rootDir, providers).getProperty("BASE_URL")}\"",
+        )
+        buildConfigField(
+            type = "String",
             "SUPABASE_URL",
             "\"${gradleLocalProperties(rootDir, providers).getProperty("SUPABASE_URL")}\"",
         )
@@ -97,7 +102,6 @@ dependencies {
     implementation(libs.supabase.postgrest.kt)
     implementation(libs.supabase.auth.kt)
     implementation(libs.realtime.kt)
-    implementation(libs.ktor.client.android)
 
     // Google Sign-In
     implementation(libs.play.services.auth)
@@ -119,6 +123,10 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+    // Ktor
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.logging)
 
     // Coil
     implementation(libs.coil.compose)
