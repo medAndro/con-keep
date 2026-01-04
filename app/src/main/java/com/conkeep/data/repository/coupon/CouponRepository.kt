@@ -8,6 +8,7 @@ import com.conkeep.data.mapper.toEntity
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toEntity
+import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import io.github.jan.supabase.SupabaseClient
@@ -42,6 +43,7 @@ class CouponRepository
         private val couponDao: CouponDao,
         private val authManager: SupabaseAuthManager,
         @param:R2UploadClient private val r2Client: HttpClient,
+        @param:AuthClient private val authClient: HttpClient,
     ) {
         fun getCoupons(): Flow<List<Coupon>> =
             couponDao
