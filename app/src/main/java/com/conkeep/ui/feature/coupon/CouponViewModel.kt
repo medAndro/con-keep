@@ -3,6 +3,7 @@ package com.conkeep.ui.feature.coupon
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
@@ -20,6 +21,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import java.io.File
 import javax.inject.Inject
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -44,17 +46,38 @@ class CouponViewModel
 
         fun addDummyCouponFromUri(uri: Uri) {
             viewModelScope.launch {
-                val (path, barcode) = couponProcessor.processImage(uri)
+                // 1. 이미지 프로세싱 (MIME 타입, 로컬 경로, 바코드 추출)
+                val preProcessResult = couponProcessor.preProcessImage(uri)
+                val path = preProcessResult.localPath ?: return@launch
+                val mimeType = preProcessResult.mimeType ?: "image/jpeg"
 
-                if (path != null) {
-                    addDummyCouponToDb(path, barcode)
-                }
+                // 2. 백엔드에 Presigned URL 요청
+                val urlResponse =
+                    couponRepository
+                        .getPresignedUrl(
+                            file = File(path),
+                            contentType = mimeType,
+                        ).getOrNull() ?: return@launch
+
+                // 3. R2에 실제 업로드 실행
+                val uploadResult =
+                    couponRepository.uploadCouponImageR2(
+                        imageFile = File(path),
+                        uploadUrl = urlResponse.uploadUrl,
+                        contentType = mimeType,
+                    )
+
+                // 4. 업로드 성공 시에만 실제 imageUrl을 담아 DB 저장
+                uploadResult
+                    .onSuccess {
+                        addDummyCouponToDb(preProcessResult, urlResponse.imageUrl)
+                    }.onFailure { println("로그: 업로드 실패 - ${it.message}") }
             }
         }
 
         private fun addDummyCouponToDb(
-            uri: String,
-            barcodeNumber: String?,
+            couponPreProcessResult: CouponPreProcessResult,
+            r2ImageUrl: String,
         ) {
             viewModelScope.launch {
                 val now = Clock.System.now()
@@ -77,15 +100,15 @@ class CouponViewModel
                                 .toString(),
                         userId = "", // Repository에서 authManager로 자동 설정
                         // 이미지 (더미)
-                        imageUrl = "https://via.placeholder.com/400x200?text=$randomBrand",
+                        imageUrl = r2ImageUrl,
                         imageKey = "dummy_${Clock.System.now().toEpochMilliseconds()}",
                         thumbnailUrl = "https://via.placeholder.com/100x50?text=$randomBrand",
                         // 로컬 이미지 경로
-                        localImagePath = uri,
+                        localImagePath = couponPreProcessResult.localPath,
                         // 쿠폰 정보
                         productName = "$randomBrand $randomProduct",
                         brand = randomBrand,
-                        couponPin = barcodeNumber,
+                        couponPin = couponPreProcessResult.barcode,
                         expiryDate = today.plus(Random.nextInt(7, 90), DateTimeUnit.DAY), // 7~90일 후
                         // 금액 정보
                         isMonetary = Random.nextBoolean(),

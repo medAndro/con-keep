@@ -47,6 +47,9 @@ class SupabaseAuthManager
         val currentUser: UserInfo?
             get() = auth.currentUserOrNull()
 
+        val accessToken: String?
+            get() = auth.currentSessionOrNull()?.accessToken
+
         suspend fun awaitInitialSession(): Boolean =
             auth.sessionStatus
                 .filter { it !is SessionStatus.Initializing } // 초기화 완료까지 대기
