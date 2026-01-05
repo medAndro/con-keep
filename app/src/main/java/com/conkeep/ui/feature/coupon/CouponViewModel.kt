@@ -83,7 +83,7 @@ class CouponViewModel
                                 response.data.copy(
                                     couponPin =
                                         preProcessResult.barcode.takeUnless { it.isNullOrEmpty() }
-                                            ?: response.data.couponPin,
+                                            ?: response.data.couponPin?.filter { !it.isWhitespace() },
                                     category =
                                         response.data.category
                                             .toCouponCategory()
