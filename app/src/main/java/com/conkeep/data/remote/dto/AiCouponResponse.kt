@@ -17,6 +17,7 @@ data class CouponInfo(
     val couponPin: String?,
     @SerialName("expiry_date")
     val expiryDate: String?,
+    val dday: Int?,
     @SerialName("is_monetary")
     val isMonetary: Boolean,
     val amount: Int? = null,

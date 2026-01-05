@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.map
@@ -78,12 +80,29 @@ class CouponRepository
                 } else {
                     CouponLocalStatus.AI_FAILED.name
                 }
+            val finalExpiryDate =
+                when {
+                    !couponInfo?.expiryDate.isNullOrEmpty() ->
+                        couponInfo.expiryDate.takeIf {
+                            runCatching { LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE) }.isSuccess
+                        }
+
+                    couponInfo?.dday != null -> {
+                        LocalDate
+                            .now()
+                            .plusDays(-couponInfo.dday.toLong())
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    }
+
+                    else -> null
+                }
+
             couponDao.updateAiRecognitionInfo(
                 couponId = couponId,
                 productName = couponInfo?.productName,
                 brand = couponInfo?.brand,
                 couponPin = couponInfo?.couponPin,
-                expiryDate = couponInfo?.expiryDate,
+                expiryDate = finalExpiryDate,
                 isMonetary = couponInfo?.isMonetary,
                 amount = couponInfo?.amount,
                 category = couponInfo?.category,
