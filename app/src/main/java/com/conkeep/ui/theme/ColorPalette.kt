@@ -35,6 +35,8 @@ object ColorPalette {
     val GrayMedium = Color(0xFFB6BDC2)
     val GrayLighter = Color(0xFFF0F0F0)
     val GrayOrangeGray = Color(0xFF9F8F6B)
+    val CharcoalGray = Color(0xFF121212)
+    val CharcoalGrayTransparency = Color(0x66121212)
 
     // ========== Neutral ==========
     val NeutralWhite = Color(0xFFFFFEFE)
