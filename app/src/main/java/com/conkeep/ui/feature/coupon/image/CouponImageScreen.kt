@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.coupon.image
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -7,15 +8,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,8 +43,29 @@ fun CouponImageScreen(
     viewModel: CouponImageViewModel,
 ) {
     val coupon by viewModel.coupon.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
 
+    val context = LocalContext.current
+    val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val window = remember(context) { (context as? Activity)?.window }
+
+    if (window != null) {
+        val controller =
+            remember(window, view) {
+                WindowCompat.getInsetsController(window, view)
+            }
+
+        DisposableEffect(controller) {
+            controller.apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+
+            onDispose {
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
     CouponImageContents(
         imageUri = coupon?.localImagePath ?: "",
         onBackClick = {
