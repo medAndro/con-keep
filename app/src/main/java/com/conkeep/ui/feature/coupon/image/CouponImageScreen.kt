@@ -34,6 +34,7 @@ import com.conkeep.R
 import com.conkeep.ui.theme.ConKeepColors.bgFullscreen
 import com.conkeep.ui.theme.ConKeepColors.bgFullscreenTransparency
 import com.conkeep.ui.theme.ConKeepColors.textWhite
+import com.conkeep.ui.util.DisableHaptic
 import me.saket.telephoto.zoomable.coil3.ZoomableAsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,18 +102,20 @@ fun CouponImageContents(
                 alignment = Alignment.Center,
             )
         } else {
-            ZoomableAsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(imageUri)
-                        .crossfade(true)
-                        .build(),
-                contentDescription = stringResource(R.string.coupon_image_screen_image_description),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillWidth,
-                alignment = Alignment.Center,
-            )
+            DisableHaptic {
+                ZoomableAsyncImage(
+                    model =
+                        ImageRequest
+                            .Builder(LocalContext.current)
+                            .data(imageUri)
+                            .crossfade(true)
+                            .build(),
+                    contentDescription = stringResource(R.string.coupon_image_screen_image_description),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillWidth,
+                    alignment = Alignment.Center,
+                )
+            }
         }
 
         Toolbar(
