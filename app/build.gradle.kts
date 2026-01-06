@@ -132,6 +132,7 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
     implementation(libs.coil.ktor3)
+    implementation(libs.zoomable.image.coil3)
 
     // Google
     implementation(libs.barcode.scanning)
