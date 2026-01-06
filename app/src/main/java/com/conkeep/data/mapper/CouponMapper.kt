@@ -1,4 +1,3 @@
-// data/mapper/CouponMapper.kt
 package com.conkeep.data.mapper
 
 import com.conkeep.data.local.entity.CouponEntity
@@ -27,21 +26,15 @@ fun CouponEntity.toDomain(): Coupon =
         category = category?.toCouponCategory(),
         userMemo = userMemo,
         isUsed = isUsed,
+        // Long → LocalDateTime
         usedAt =
-            usedAt?.let {
-                Instant
-                    .fromEpochMilliseconds(it)
-                    .toLocalDateTime(TimeZone.currentSystemDefault())
+            usedAt?.let { epochMilli ->
+                Instant.fromEpochMilliseconds(epochMilli).toLocalDateTime(TimeZone.currentSystemDefault())
             },
-        createdAt =
-            Instant
-                .fromEpochMilliseconds(createdAt)
-                .toLocalDateTime(TimeZone.currentSystemDefault()),
-        updatedAt =
-            Instant
-                .fromEpochMilliseconds(updatedAt)
-                .toLocalDateTime(TimeZone.currentSystemDefault()),
+        createdAt = Instant.fromEpochMilliseconds(createdAt).toLocalDateTime(TimeZone.currentSystemDefault()),
+        updatedAt = Instant.fromEpochMilliseconds(updatedAt).toLocalDateTime(TimeZone.currentSystemDefault()),
         isSynced = isSynced,
+        localStatus = localStatus, // 추가!
     )
 
 fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
@@ -58,16 +51,18 @@ fun Coupon.toEntity(): CouponEntity =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        expiryDate = expiryDate?.toString(), // "2026-02-01"
+        expiryDate = expiryDate?.toString(),
         isMonetary = isMonetary,
         amount = amount,
-        category = category?.name, // Enum → "CAFE"
+        category = category?.name,
         userMemo = userMemo,
         isUsed = isUsed,
+        // kotlinx.LocalDateTime → Long (Unix timestamp)
         usedAt = usedAt?.toInstant(TimeZone.currentSystemDefault())?.toEpochMilliseconds(),
         createdAt = createdAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         updatedAt = updatedAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         isSynced = isSynced,
+        localStatus = localStatus,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }

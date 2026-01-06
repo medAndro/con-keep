@@ -30,4 +30,6 @@ data class Coupon(
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val isSynced: Boolean,
+    // 로컬 쿠폰 저장 상태
+    val localStatus: String?,
 )

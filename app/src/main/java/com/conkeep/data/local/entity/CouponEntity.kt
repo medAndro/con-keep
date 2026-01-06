@@ -51,4 +51,7 @@ data class CouponEntity(
     // 동기화 상태 추적
     @ColumnInfo(name = "is_synced")
     val isSynced: Boolean = false,
+    // 로컬 UI 상태
+    @ColumnInfo(name = "local_status")
+    val localStatus: String? = CouponLocalStatus.PENDING.name,
 )

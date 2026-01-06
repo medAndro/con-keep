@@ -127,6 +127,7 @@ dependencies {
     // Ktor
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.auth)
 
     // Coil
     implementation(libs.coil.compose)

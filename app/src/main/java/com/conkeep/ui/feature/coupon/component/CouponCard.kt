@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.conkeep.R
+import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepTheme
 import java.io.File
@@ -58,7 +59,16 @@ fun CouponCard(
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "${if (couponUiModel.isUsed) "[사용]" else "[미사용]"} ${couponUiModel.name}",
+                    "${if (couponUiModel.isUsed) "[사용]" else "[미사용]"} ${
+                        when (couponUiModel.localStatus) {
+                            CouponLocalStatus.PREPROCESSED -> "AI 인식중..."
+                            CouponLocalStatus.RECOGNIZED -> couponUiModel.name
+                            CouponLocalStatus.AI_FAILED -> "AI 인식 실패..."
+                            CouponLocalStatus.PENDING -> "초기 상태"
+                            null -> ""
+                        }
+
+                    }",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(

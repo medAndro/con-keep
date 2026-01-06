@@ -39,6 +39,36 @@ interface CouponDao {
         imageKey: String,
     )
 
+    @Query(
+        """
+    UPDATE OR IGNORE coupons 
+    SET 
+        product_name = COALESCE(:productName, product_name),
+        brand = COALESCE(:brand, brand),
+        coupon_pin = COALESCE(:couponPin, coupon_pin),
+        expiry_date = COALESCE(:expiryDate, expiry_date),
+        is_monetary = COALESCE(:isMonetary, is_monetary),
+        amount = COALESCE(:amount, amount),
+        category = COALESCE(:category, category),
+        local_status = COALESCE(:localStatus, local_status),
+        
+        updated_at = :updatedAt
+    WHERE id = :couponId
+""",
+    )
+    suspend fun updateAiRecognitionInfo(
+        couponId: String,
+        productName: String?,
+        brand: String?,
+        couponPin: String?,
+        expiryDate: String?,
+        isMonetary: Boolean?,
+        amount: Int?,
+        category: String?,
+        localStatus: String?,
+        updatedAt: Long,
+    ): Int
+
     @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt WHERE id = :id")
     suspend fun markAsUsed(
         id: String,

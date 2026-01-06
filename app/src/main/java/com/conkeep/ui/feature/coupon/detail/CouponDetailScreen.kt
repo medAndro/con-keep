@@ -76,6 +76,7 @@ fun CouponDetailScreen(
                 Text("번호: ${coupon?.number}")
                 Text("이름: ${coupon?.name}")
                 Text("유효기간: ${coupon?.expiryDate}")
+                Text("상태: ${coupon?.localStatus?.name}")
                 Text("r2Url: ${coupon?.r2Url}")
 
                 Spacer(modifier = Modifier.height(24.dp))

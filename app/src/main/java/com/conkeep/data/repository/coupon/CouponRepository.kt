@@ -3,19 +3,25 @@ package com.conkeep.data.repository.coupon
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
+import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
+import com.conkeep.data.remote.dto.AiCouponResponse
+import com.conkeep.data.remote.dto.CouponInfo
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toEntity
+import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -26,10 +32,13 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.util.cio.readChannel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.map
@@ -42,6 +51,7 @@ class CouponRepository
         private val couponDao: CouponDao,
         private val authManager: SupabaseAuthManager,
         @param:R2UploadClient private val r2Client: HttpClient,
+        @param:AuthClient private val authClient: HttpClient,
     ) {
         fun getCoupons(): Flow<List<Coupon>> =
             couponDao
@@ -56,6 +66,49 @@ class CouponRepository
         suspend fun addCoupon(coupon: Coupon): String {
             couponDao.insert(coupon.copy(userId = authManager.currentUser?.id ?: "").toEntity())
             return coupon.id
+        }
+
+        suspend fun updateAiRecognitionInfo(
+            couponId: String,
+            couponInfo: CouponInfo?,
+            success: Boolean,
+        ) {
+            val now = System.currentTimeMillis()
+            val status =
+                if (success) {
+                    CouponLocalStatus.RECOGNIZED.name
+                } else {
+                    CouponLocalStatus.AI_FAILED.name
+                }
+            val finalExpiryDate =
+                when {
+                    !couponInfo?.expiryDate.isNullOrEmpty() ->
+                        couponInfo.expiryDate.takeIf {
+                            runCatching { LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE) }.isSuccess
+                        }
+
+                    couponInfo?.dday != null -> {
+                        LocalDate
+                            .now()
+                            .plusDays(-couponInfo.dday.toLong())
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    }
+
+                    else -> null
+                }
+
+            couponDao.updateAiRecognitionInfo(
+                couponId = couponId,
+                productName = couponInfo?.productName,
+                brand = couponInfo?.brand,
+                couponPin = couponInfo?.couponPin,
+                expiryDate = finalExpiryDate,
+                isMonetary = couponInfo?.isMonetary,
+                amount = couponInfo?.amount,
+                category = couponInfo?.category,
+                updatedAt = now,
+                localStatus = status,
+            )
         }
 
         suspend fun updateR2Info(
@@ -121,6 +174,25 @@ class CouponRepository
                 } catch (e: Exception) {
                     Result.failure(e)
                 }
+            }
+
+        suspend fun aiCouponRecognizing(imageUrl: String): Result<AiCouponResponse> =
+            try {
+                val response: AiCouponResponse =
+                    authClient
+                        .post("${BuildConfig.BASE_URL}/analyze") {
+                            contentType(ContentType.Application.Json)
+                            setBody(mapOf("imageUrl" to imageUrl))
+                            // @AuthClient이므로 Bearer 토큰 자동 삽입됨
+                        }.body()
+
+                Result.success(response)
+            } catch (e: ClientRequestException) {
+                Result.failure(Exception("분석 실패: ${e.response.status}"))
+            } catch (_: TimeoutCancellationException) {
+                Result.failure(Exception("분석 시간 초과"))
+            } catch (e: Exception) {
+                Result.failure(Exception("분석 오류: ${e.message}"))
             }
 
         suspend fun markAsUsed(
