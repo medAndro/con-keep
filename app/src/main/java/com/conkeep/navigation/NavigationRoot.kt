@@ -11,6 +11,8 @@ import com.conkeep.ui.feature.auth.LoginScreen
 import com.conkeep.ui.feature.coupon.CouponScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailViewModel
+import com.conkeep.ui.feature.coupon.image.CouponImageScreen
+import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
 
 @Composable
 fun NavigationRoot(initialRoute: Route) {
@@ -42,6 +44,18 @@ fun NavigationRoot(initialRoute: Route) {
 
                     CouponDetailScreen(
                         id = key.id,
+                        backStack = backStack,
+                        viewModel = viewModel,
+                    )
+                }
+
+                entry<Route.CouponImageScreen> { key ->
+                    val viewModel =
+                        hiltViewModel<CouponImageViewModel, CouponImageViewModel.Factory> { factory ->
+                            factory.create(key.id)
+                        }
+
+                    CouponImageScreen(
                         backStack = backStack,
                         viewModel = viewModel,
                     )

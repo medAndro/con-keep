@@ -27,6 +27,12 @@ object ConKeepColors {
     val bgDefault: Color
         get() = ColorPalette.YellowBg
 
+    val bgFullscreen: Color
+        get() = ColorPalette.CharcoalGray
+
+    val bgFullscreenTransparency: Color
+        get() = ColorPalette.CharcoalGrayTransparency
+
     val bgSurface: Color
         get() = ColorPalette.NeutralWhite
 

@@ -1,9 +1,12 @@
 package com.conkeep
 
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
@@ -26,6 +29,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
+
+        // Todo : 다크모드 지원시 SystemBarStyle.auto 변경 필요
+        enableEdgeToEdge(
+            statusBarStyle =
+                SystemBarStyle.light(
+                    scrim = Color.TRANSPARENT,
+                    darkScrim = Color.TRANSPARENT,
+                ),
+            navigationBarStyle =
+                SystemBarStyle.light(
+                    scrim = Color.TRANSPARENT,
+                    darkScrim = Color.TRANSPARENT,
+                ),
+        )
+
         super.onCreate(savedInstanceState)
 
         splashScreen.setKeepOnScreenCondition {
@@ -53,7 +71,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             ConKeepTheme(darkTheme = false) {
                 if (isReady.value && initialRoute.value != null) {
-                    NavigationRoot(initialRoute = initialRoute.value!!)
+                    initialRoute.value?.let { route ->
+                        NavigationRoot(initialRoute = route)
+                    }
                 }
             }
         }
