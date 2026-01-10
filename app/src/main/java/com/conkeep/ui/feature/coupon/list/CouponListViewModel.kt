@@ -39,10 +39,6 @@ class CouponListViewModel
 
         private var searchJob: Job? = null
 
-        init {
-            searchCoupons("")
-        }
-
         fun searchCoupons(query: String) {
             viewModelScope.launch {
                 searchJob?.cancel()

@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,10 @@ fun CouponScreen(
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: List<CouponUiModel> by viewModel.coupons.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.searchCoupons("")
+    }
 
     val pickMedia: ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?> =
         rememberLauncherForActivityResult(
@@ -72,10 +77,10 @@ fun CouponScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CouponScreenContent(
-    coupons: List<CouponUiModel> = emptyList(),
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
     onSearchTriggered: (String) -> Unit,
+    coupons: List<CouponUiModel> = emptyList(),
 ) {
     var typingQuery: String by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
