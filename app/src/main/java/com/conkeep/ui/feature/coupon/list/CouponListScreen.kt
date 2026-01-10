@@ -118,6 +118,11 @@ fun CouponScreenContent(
                     onSearchTriggered(typingQuery)
                     focusManager.clearFocus()
                 },
+                onClearQuery = {
+                    typingQuery = ""
+                    onSearchTriggered(typingQuery)
+                    focusManager.clearFocus()
+                },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
 

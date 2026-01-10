@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.coupon.list.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -39,12 +41,14 @@ import com.conkeep.ui.theme.PretendardMedium16
 fun SearchBar(
     query: String,
     onQueryUpdate: (String) -> Unit,
-    onSearch: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onSearch: () -> Unit = {},
+    onClearQuery: () -> Unit = {},
     singleLine: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val searchImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_search)
+    val closeImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_close)
 
     BasicTextField(
         value = query,
@@ -70,6 +74,7 @@ fun SearchBar(
                 value = query,
                 innerTextField = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        // 1. 검색 아이콘 (Prefix)
                         Icon(
                             imageVector = searchImageVector,
                             contentDescription = null,
@@ -81,6 +86,7 @@ fun SearchBar(
                         )
                         Spacer(modifier = Modifier.size(7.dp))
 
+                        // 2. 텍스트 입력 영역
                         Box(modifier = Modifier.weight(1f)) {
                             innerTextField()
                             if (query.isEmpty()) {
@@ -91,13 +97,31 @@ fun SearchBar(
                                 )
                             }
                         }
+
+                        // 3. 닫기 버튼 (Suffix, 검색어 입력중에만 표시)
+                        if (query.isNotEmpty()) {
+                            Spacer(modifier = Modifier.size(7.dp))
+                            Icon(
+                                imageVector = closeImageVector,
+                                contentDescription = stringResource(R.string.coupon_list_screen_search_bar_clear_description),
+                                tint = textHint,
+                                modifier =
+                                    Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            onQueryUpdate("")
+                                            onClearQuery()
+                                        }.padding(10.dp),
+                            )
+                        }
                     }
                 },
                 enabled = true,
                 singleLine = singleLine,
                 visualTransformation = VisualTransformation.None,
                 interactionSource = interactionSource,
-                contentPadding = PaddingValues(start = 0.dp, end = 16.dp),
+                contentPadding = PaddingValues(start = 0.dp, end = 6.dp),
                 container = {
                     OutlinedTextFieldDefaults.Container(
                         enabled = true,
