@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.coupon
+package com.conkeep.ui.feature.coupon.list
 
 import android.net.Uri
 import android.util.Log
@@ -14,10 +14,11 @@ import com.conkeep.domain.model.CouponCategory
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -27,22 +28,32 @@ import javax.inject.Inject
 import kotlin.time.Clock
 
 @HiltViewModel
-class CouponViewModel
+class CouponListViewModel
     @Inject
     constructor(
         private val couponRepository: CouponRepository,
         private val couponProcessor: CouponProcessor,
     ) : ViewModel() {
-        val coupons: StateFlow<List<CouponUiModel>> =
-            couponRepository
-                .getCoupons()
-                .map { domainCoupons ->
-                    domainCoupons.toUiModel()
-                }.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5000),
-                    initialValue = emptyList(),
-                )
+        private val _coupons = MutableStateFlow<List<CouponUiModel>>(emptyList())
+        val coupons: StateFlow<List<CouponUiModel>> = _coupons.asStateFlow()
+
+        private var searchJob: Job? = null
+
+        fun searchCoupons(query: String) {
+            viewModelScope.launch {
+                searchJob?.cancel()
+                searchJob =
+                    viewModelScope.launch {
+                        couponRepository
+                            .searchCoupons(query)
+                            .map { entities ->
+                                entities.toUiModel()
+                            }.collect { uiModels ->
+                                _coupons.value = uiModels
+                            }
+                    }
+            }
+        }
 
         fun addCouponFromUri(uri: Uri) {
             viewModelScope.launch {
