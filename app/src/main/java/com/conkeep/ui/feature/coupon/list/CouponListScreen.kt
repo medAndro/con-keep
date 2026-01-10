@@ -5,6 +5,8 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,12 +20,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.navigation.Route
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
+import com.conkeep.ui.feature.coupon.list.component.SearchBar
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +68,7 @@ fun CouponScreenContent(
     coupons: List<CouponUiModel> = emptyList(),
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
+    searchQuery: String = "",
 ) {
     Scaffold(
         topBar = {
@@ -77,14 +82,28 @@ fun CouponScreenContent(
             )
         },
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.padding(padding),
+        Column(
+            modifier =
+                Modifier
+                    .padding(padding) // Scaffold의 패딩(TopAppBar 높이 등)을 여기에 적용
+                    .fillMaxSize(),
         ) {
-            items(coupons) { coupon ->
-                CouponCard(
-                    couponUiModel = coupon,
-                    onClick = { onCouponDetailClick(coupon.id) },
-                )
+            SearchBar(
+                query = searchQuery,
+                onQueryUpdate = {},
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            LazyColumn(
+                modifier = Modifier.weight(1f), // 남은 영역을 리스트가 차지하도록 설정
+            ) {
+                items(coupons) { coupon ->
+                    CouponCard(
+                        couponUiModel = coupon,
+                        onClick = { onCouponDetailClick(coupon.id) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
             }
         }
     }
