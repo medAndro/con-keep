@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.coupon
+package com.conkeep.ui.feature.coupon.list
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -25,7 +25,7 @@ import com.conkeep.ui.feature.coupon.component.CouponCard
 @Composable
 fun CouponScreen(
     backStack: NavBackStack<NavKey>,
-    viewModel: CouponViewModel = hiltViewModel(),
+    viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons by viewModel.coupons.collectAsState()
 

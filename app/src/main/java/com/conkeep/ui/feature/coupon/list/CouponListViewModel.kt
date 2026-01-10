@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.coupon
+package com.conkeep.ui.feature.coupon.list
 
 import android.net.Uri
 import android.util.Log
@@ -27,7 +27,7 @@ import javax.inject.Inject
 import kotlin.time.Clock
 
 @HiltViewModel
-class CouponViewModel
+class CouponListViewModel
     @Inject
     constructor(
         private val couponRepository: CouponRepository,
