@@ -29,8 +29,12 @@
     <string name="category_gas_transport">주유·교통</string>
     <string name="category_etc">기타</string>
 
+<!--    쿠폰 목록 화면-->
+    <string name="coupon_list_screen_search_bar_placeholder">상품명이나 브랜드로 검색하세요</string>
+
 <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
+
 
 
 </resources>
