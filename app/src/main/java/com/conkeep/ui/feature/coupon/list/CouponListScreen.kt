@@ -5,6 +5,7 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,7 +19,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -68,8 +74,11 @@ fun CouponScreenContent(
     coupons: List<CouponUiModel> = emptyList(),
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
-    searchQuery: String = "",
+    onSearchTriggered: (String) -> Unit = {},
 ) {
+    var typingQuery: String by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,17 +94,27 @@ fun CouponScreenContent(
         Column(
             modifier =
                 Modifier
-                    .padding(padding) // Scaffold의 패딩(TopAppBar 높이 등)을 여기에 적용
-                    .fillMaxSize(),
+                    .padding(padding)
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            onSearchTriggered(typingQuery)
+                            focusManager.clearFocus()
+                        })
+                    },
         ) {
             SearchBar(
-                query = searchQuery,
-                onQueryUpdate = {},
+                query = typingQuery,
+                onQueryUpdate = { typingQuery = it },
+                onSearch = {
+                    onSearchTriggered(typingQuery)
+                    focusManager.clearFocus()
+                },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
             LazyColumn(
-                modifier = Modifier.weight(1f), // 남은 영역을 리스트가 차지하도록 설정
+                modifier = Modifier.weight(1f),
             ) {
                 items(coupons) { coupon ->
                     CouponCard(
