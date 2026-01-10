@@ -54,12 +54,14 @@ fun SearchBar(
         textStyle = PretendardMedium16,
         singleLine = singleLine,
         interactionSource = interactionSource,
-        keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Search
-        ),
-        keyboardActions = KeyboardActions(
-            onSearch = { onSearch() }
-        ),
+        keyboardOptions =
+            KeyboardOptions(
+                imeAction = ImeAction.Search,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onSearch = { onSearch() },
+            ),
         decorationBox = { innerTextField ->
             OutlinedTextFieldDefaults.DecorationBox(
                 value = query,
