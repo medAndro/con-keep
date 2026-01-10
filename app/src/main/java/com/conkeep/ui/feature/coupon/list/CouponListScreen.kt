@@ -54,6 +54,7 @@ fun CouponScreen(
         }
 
     CouponScreenContent(
+        coupons = coupons,
         onCouponAddClick = {
             pickMedia.launch(
                 PickVisualMediaRequest(
@@ -64,7 +65,7 @@ fun CouponScreen(
         onCouponDetailClick = { couponId ->
             backStack.add(Route.CouponDetailScreen(id = couponId))
         },
-        coupons = coupons,
+        onSearchTriggered = viewModel::searchCoupons,
     )
 }
 
@@ -74,7 +75,7 @@ fun CouponScreenContent(
     coupons: List<CouponUiModel> = emptyList(),
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
-    onSearchTriggered: (String) -> Unit = {},
+    onSearchTriggered: (String) -> Unit,
 ) {
     var typingQuery: String by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
@@ -98,6 +99,7 @@ fun CouponScreenContent(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = {
+                            typingQuery = typingQuery.trim()
                             onSearchTriggered(typingQuery)
                             focusManager.clearFocus()
                         })
@@ -107,6 +109,7 @@ fun CouponScreenContent(
                 query = typingQuery,
                 onQueryUpdate = { typingQuery = it },
                 onSearch = {
+                    typingQuery = typingQuery.trim()
                     onSearchTriggered(typingQuery)
                     focusManager.clearFocus()
                 },
@@ -171,5 +174,6 @@ private fun CouponScreenContentPreview() {
         coupons = dummyCoupons,
         onCouponAddClick = { },
         onCouponDetailClick = {},
+        onSearchTriggered = {},
     )
 }

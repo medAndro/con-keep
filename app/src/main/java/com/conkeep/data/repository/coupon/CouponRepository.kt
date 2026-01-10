@@ -53,10 +53,12 @@ class CouponRepository
         @param:R2UploadClient private val r2Client: HttpClient,
         @param:AuthClient private val authClient: HttpClient,
     ) {
-        fun getCoupons(): Flow<List<Coupon>> =
+        fun searchCoupons(query: String): Flow<List<Coupon>> =
             couponDao
-                .getCouponsFlow(authManager.currentUser?.id ?: "")
-                .map { entities -> entities.map { it.toDomain() } }
+                .searchCoupons(
+                    userId = authManager.currentUser?.id ?: "",
+                    searchQuery = query,
+                ).map { entities -> entities.toDomain() }
 
         fun getCoupon(id: String): Flow<Coupon?> =
             couponDao
@@ -84,7 +86,12 @@ class CouponRepository
                 when {
                     !couponInfo?.expiryDate.isNullOrEmpty() ->
                         couponInfo.expiryDate.takeIf {
-                            runCatching { LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE) }.isSuccess
+                            runCatching {
+                                LocalDate.parse(
+                                    it,
+                                    DateTimeFormatter.ISO_LOCAL_DATE,
+                                )
+                            }.isSuccess
                         }
 
                     couponInfo?.dday != null -> {
