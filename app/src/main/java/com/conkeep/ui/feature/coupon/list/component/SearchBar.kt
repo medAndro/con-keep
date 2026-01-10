@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.conkeep.R
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.textHint
+import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepColors.textSecondary
 import com.conkeep.ui.theme.PretendardMedium16
 
@@ -51,7 +53,8 @@ fun SearchBar(
             modifier
                 .height(45.dp)
                 .clip(RoundedCornerShape(100.dp)),
-        textStyle = PretendardMedium16,
+        textStyle = PretendardMedium16.copy(color = textPrimary),
+        cursorBrush = SolidColor(textPrimary),
         singleLine = singleLine,
         interactionSource = interactionSource,
         keyboardOptions =
