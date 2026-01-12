@@ -108,28 +108,28 @@ fun CouponScreenContent(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = {
-                            typingQuery = typingQuery.trim()
-                            onSearchTriggered(typingQuery)
+                            onSearchTriggered(typingQuery.trim())
                             focusManager.clearFocus()
                         })
                     },
         ) {
             SearchBar(
                 query = typingQuery,
-                onQueryUpdate = { typingQuery = it },
+                onQueryUpdate = {
+                    typingQuery = it
+                    onSearchTriggered(it.trim())
+                },
                 onSearch = {
-                    typingQuery = typingQuery.trim()
-                    onSearchTriggered(typingQuery)
+                    onSearchTriggered(typingQuery.trim())
                     focusManager.clearFocus()
                 },
                 onClearQuery = {
                     typingQuery = ""
-                    onSearchTriggered(typingQuery)
+                    onSearchTriggered("")
                     focusManager.clearFocus()
                 },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
-
             LazyColumn(
                 modifier = Modifier.weight(1f),
             ) {

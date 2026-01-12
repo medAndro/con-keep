@@ -49,7 +49,7 @@ class CouponListViewModel
 
         val coupons: Flow<PagingData<CouponUiModel>> =
             searchQuery
-                .debounce(300L)
+                .debounce(500L)
                 .distinctUntilChanged()
                 .flatMapLatest { query ->
                     val userId = authManager.currentUser?.id ?: ""
