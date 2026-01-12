@@ -8,11 +8,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.conkeep.ui.feature.auth.LoginScreen
-import com.conkeep.ui.feature.coupon.CouponScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailViewModel
 import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
+import com.conkeep.ui.feature.coupon.list.CouponScreen
 
 @Composable
 fun NavigationRoot(initialRoute: Route) {

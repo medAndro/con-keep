@@ -11,11 +11,31 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CouponDao {
-    @Query("SELECT * FROM coupons WHERE user_id = :userId ORDER BY created_at DESC")
-    fun getCouponsFlow(userId: String): Flow<List<CouponEntity>>
-
     @Query("SELECT * FROM coupons WHERE id = :id")
     fun getCouponFlow(id: String): Flow<CouponEntity?>
+
+    /**
+     * 검색 쿼리
+     * 검색어(searchQuery)가 비어있으면 전체 목록을 반환하고,
+     * 검색어가 존재하면 상품명, 브랜드, 쿠폰 번호 중 하나라도 포함하는 쿠폰 목록을 반환합니다.
+     */
+    @Query(
+        """
+        SELECT * FROM coupons 
+        WHERE user_id = :userId 
+        AND (
+            :searchQuery = '' OR 
+            product_name LIKE '%' || :searchQuery || '%' OR 
+            brand LIKE '%' || :searchQuery || '%' OR 
+            coupon_pin LIKE '%' || :searchQuery || '%'
+        )
+        ORDER BY created_at DESC
+    """,
+    )
+    fun searchCoupons(
+        userId: String,
+        searchQuery: String,
+    ): Flow<List<CouponEntity>>
 
     @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_used = 0 ORDER BY expiry_date ASC")
     fun getActiveCoupons(userId: String): Flow<List<CouponEntity>>

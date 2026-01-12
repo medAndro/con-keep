@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.coupon.component
+package com.conkeep.ui.feature.coupon.list.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -29,14 +29,14 @@ import java.io.File
 fun CouponCard(
     couponUiModel: CouponUiModel,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isPreview = LocalInspectionMode.current
 
     Card(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
-                .padding(8.dp)
                 .clickable(onClick = onClick),
     ) {
         Row {
@@ -89,10 +89,11 @@ fun CouponCardPreview() {
                 CouponUiModel(
                     id = "1",
                     number = "1234567890",
-                    name = "이디야 커피",
+                    name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     expiryDate = "2026-12-31",
                     isUsed = false,
                     localImagePath = null,
+                    localStatus = CouponLocalStatus.RECOGNIZED,
                 ),
             onClick = {},
         )
