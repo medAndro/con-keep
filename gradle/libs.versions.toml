@@ -70,6 +70,7 @@ hilt-navigation-compose = {module = "androidx.hilt:hilt-navigation-compose",vers
 room-runtime = {module = "androidx.room:room-runtime",version.ref = "room"}
 room-ktx = {module = "androidx.room:room-ktx",version.ref = "room"}
 room-compiler = {module = "androidx.room:room-compiler",version.ref = "room"}
+androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 
 # Supabase
 realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt" }
