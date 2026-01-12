@@ -1,5 +1,6 @@
 package com.conkeep.data.local.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -32,10 +33,10 @@ interface CouponDao {
         ORDER BY created_at DESC
     """,
     )
-    fun searchCoupons(
+    fun searchCouponsPaging(
         userId: String,
         searchQuery: String,
-    ): Flow<List<CouponEntity>>
+    ): PagingSource<Int, CouponEntity>
 
     @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_used = 0 ORDER BY expiry_date ASC")
     fun getActiveCoupons(userId: String): Flow<List<CouponEntity>>
