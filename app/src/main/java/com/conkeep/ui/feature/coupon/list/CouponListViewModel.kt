@@ -14,6 +14,7 @@ import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
+import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
@@ -86,6 +87,15 @@ class CouponListViewModel
             }.flatMapLatest { (query, filter) ->
                 couponRepository.getCouponCount(query, today, filter.value)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+        val couponCountSummary: StateFlow<CouponCountSummary> =
+            couponRepository
+                .getCouponSummary(today)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    CouponCountSummary(),
+                )
 
         fun searchCoupons(query: String) {
             _searchQuery.value = query

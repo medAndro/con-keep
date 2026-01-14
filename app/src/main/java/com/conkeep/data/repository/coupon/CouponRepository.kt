@@ -19,6 +19,7 @@ import com.conkeep.data.remote.dto.toEntity
 import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
+import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
@@ -46,7 +47,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.collections.map
 
 @Singleton
 class CouponRepository
@@ -88,6 +88,12 @@ class CouponRepository
                 searchQuery = query,
                 today = today,
                 filterType = filterType,
+            )
+
+        fun getCouponSummary(today: String): Flow<CouponCountSummary> =
+            couponDao.getCouponSummaryFlow(
+                userId = authManager.currentUser?.id ?: "",
+                today = today,
             )
 
         fun getCoupon(id: String): Flow<Coupon?> =

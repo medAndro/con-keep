@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +41,8 @@ import com.conkeep.ui.feature.coupon.list.component.CouponCard
 import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
 import com.conkeep.ui.feature.coupon.list.component.CouponSortRow
 import com.conkeep.ui.feature.coupon.list.component.SearchBar
+import com.conkeep.ui.feature.coupon.list.component.couponCountSummaryFixture
+import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
@@ -55,7 +56,8 @@ fun CouponScreen(
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
-    val couponCount by viewModel.couponCount.collectAsState(initial = 0)
+    val couponCount by viewModel.couponCount.collectAsStateWithLifecycle()
+    val couponCountSummary by viewModel.couponCountSummary.collectAsStateWithLifecycle()
     val couponSortType by viewModel.couponSortType.collectAsStateWithLifecycle()
     val couponFilterType by viewModel.couponFilterType.collectAsStateWithLifecycle()
     var isFilterChipExpanded by rememberSaveable { mutableStateOf(true) }
@@ -78,6 +80,7 @@ fun CouponScreen(
         couponCount = couponCount,
         selectedSortType = couponSortType,
         couponFilterType = couponFilterType,
+        couponCountSummary = couponCountSummary,
         isFilterExpanded = isFilterChipExpanded,
         onCouponAddClick = {
             pickMedia.launch(
@@ -110,6 +113,7 @@ fun CouponScreenContent(
     onSearchTriggered: (String) -> Unit,
     onFilterChipExpandClick: () -> Unit,
     couponFilterType: CouponFilterType = CouponFilterType.ALL,
+    couponCountSummary: CouponCountSummary = CouponCountSummary(),
     selectedSortType: CouponSortType = CouponSortType.RECENT,
     onFilterTypeClick: (CouponFilterType) -> Unit,
 ) {
@@ -171,6 +175,7 @@ fun CouponScreenContent(
             if (isFilterExpanded) {
                 CouponFilterChipRow(
                     selectedFilter = couponFilterType,
+                    couponCountSummary = couponCountSummary,
                     onFilterSelected = onFilterTypeClick,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
@@ -251,6 +256,7 @@ private fun CouponScreenContentPreview() {
             onSearchTriggered = {},
             couponFilterType = CouponFilterType.ALL,
             selectedSortType = CouponSortType.RECENT,
+            couponCountSummary = couponCountSummaryFixture,
             onFilterChipExpandClick = {},
         ) {}
     }

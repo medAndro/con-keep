@@ -7,8 +7,12 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.conkeep.data.local.dto.CouponCountResult
 import com.conkeep.data.local.entity.CouponEntity
+import com.conkeep.ui.feature.coupon.model.CouponCountSummary
+import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 @Dao
 interface CouponDao {
@@ -93,7 +97,7 @@ interface CouponDao {
     ): PagingSource<Int, CouponEntity>
 
     /**
-     * [전체 개수 조회 쿼리]
+     * [검색어x필터 개수 조회 쿼리]
      * searchCouponsPaging 쿼리와 동일한 WHERE 조건을 사용하여
      * 검색/필터링된 결과의 전체 개수를 실시간으로 반환합니다.
      */
@@ -123,6 +127,40 @@ interface CouponDao {
         today: String,
         filterType: Int,
     ): Flow<Int>
+
+    /**
+     * 각 필터 상태별로 그룹화하여 개수를 가져오는 쿼리.
+     */
+    @Query(
+        """
+        SELECT 0 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId
+        UNION ALL
+        SELECT 1 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId AND is_used = 0 AND expiry_date >= :today
+        UNION ALL
+        SELECT 2 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId AND is_used = 1
+        UNION ALL
+        SELECT 3 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId AND is_used = 0 AND expiry_date < :today
+    """,
+    )
+    fun getRawCounts(
+        userId: String,
+        today: String,
+    ): Flow<List<CouponCountResult>>
+
+    fun getCouponSummaryFlow(
+        userId: String,
+        today: String,
+    ): Flow<CouponCountSummary> =
+        getRawCounts(userId, today).map { results ->
+            val countMap =
+                results.associate { result ->
+                    val type =
+                        CouponFilterType.entries.find { it.value == result.filterValue }
+                            ?: CouponFilterType.ALL
+                    type to result.count
+                }
+            CouponCountSummary(countMap)
+        }
 
     @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_used = 0 ORDER BY expiry_date ASC")
     fun getActiveCoupons(userId: String): Flow<List<CouponEntity>>

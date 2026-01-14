@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.getDisplayTitle
 import com.conkeep.ui.theme.ConKeepColors.brandPrimary
@@ -25,6 +26,7 @@ import com.conkeep.ui.theme.PretendardSemibold13
 @Composable
 fun CouponFilterChipRow(
     selectedFilter: CouponFilterType,
+    couponCountSummary: CouponCountSummary,
     onFilterSelected: (CouponFilterType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -43,7 +45,7 @@ fun CouponFilterChipRow(
                         .height(27.dp),
                 label = {
                     Text(
-                        text = filter.getDisplayTitle(),
+                        text = "${filter.getDisplayTitle()} · ${couponCountSummary.getCount(filter)}",
                         style = PretendardSemibold13,
                     )
                 },
@@ -63,12 +65,24 @@ fun CouponFilterChipRow(
     }
 }
 
+val couponCountSummaryFixture =
+    CouponCountSummary(
+        counts =
+            mapOf(
+                CouponFilterType.ALL to 123,
+                CouponFilterType.AVAILABLE to 22,
+                CouponFilterType.USED to 10,
+                CouponFilterType.EXPIRED to 42,
+            ),
+    )
+
 @Preview
 @Composable
 fun CouponFilterChipRowALLPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponFilterChipRow(
             selectedFilter = CouponFilterType.ALL,
+            couponCountSummary = couponCountSummaryFixture,
             onFilterSelected = {},
             modifier = Modifier.fillMaxWidth(),
         )
@@ -81,6 +95,7 @@ fun CouponFilterChipRowUsedPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponFilterChipRow(
             selectedFilter = CouponFilterType.USED,
+            couponCountSummary = couponCountSummaryFixture,
             onFilterSelected = {},
             modifier = Modifier.fillMaxWidth(),
         )
