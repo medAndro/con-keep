@@ -2,12 +2,12 @@
     <string name="app_name">ConKeep</string>
     <string name="app_icon_description">콘킾 로고</string>
 
-<!--    TopBar-->
+    <!--    TopBar-->
     <string name="topbar_back_description">뒤로가기</string>
     <string name="topbar_share_description">공유하기</string>
     <string name="topbar_save_description">저장하기</string>
 
-<!--     Login screen-->
+    <!--     로그인 화면-->
     <string name="app_description">옥수수처럼 달콤한 쿠폰관리</string>
     <string name="btn_google_sign_up">Google 계정으로 시작하기</string>
     <string name="btn_google_logo_description">구글 로고</string>
@@ -29,13 +29,20 @@
     <string name="category_gas_transport">주유·교통</string>
     <string name="category_etc">기타</string>
 
-<!--    쿠폰 목록 화면-->
+    <!--    쿠폰 목록 화면-->
     <string name="coupon_list_screen_search_bar_placeholder">상품명이나 브랜드로 검색하세요</string>
     <string name="coupon_list_screen_search_bar_clear_description">검색 입력 초기화</string>
+    <!-- 필터 칩 -->
+    <string name="filter_all">전체</string>
+    <string name="filter_available">사용 가능</string>
+    <string name="filter_used">사용 완료</string>
+    <string name="filter_expired">기간 만료</string>
+    <!-- 정렬 바 -->
+    <string name="sort_recent">최근 등록순</string>
+    <string name="sort_expiry">만료 임박순</string>
 
-<!--    쿠폰 이미지 화면-->
+    <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
-
 
 
 </resources>
