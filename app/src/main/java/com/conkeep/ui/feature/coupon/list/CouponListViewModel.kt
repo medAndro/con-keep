@@ -91,12 +91,16 @@ class CouponListViewModel
             _searchQuery.value = query
         }
 
-        fun toggleCouponFilterType() {
+        fun toggleCouponSortType() {
             _couponSortType.value =
                 when (_couponSortType.value) {
                     CouponSortType.RECENT -> CouponSortType.EXPIRY
                     CouponSortType.EXPIRY -> CouponSortType.RECENT
                 }
+        }
+
+        fun changeCouponFilterType(filterType: CouponFilterType) {
+            _couponFilterType.value = filterType
         }
 
         fun addCouponFromUri(uri: Uri) {

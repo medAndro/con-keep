@@ -56,6 +56,7 @@ fun CouponScreen(
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
     val couponCount by viewModel.couponCount.collectAsState(initial = 0)
     val couponSortType by viewModel.couponSortType.collectAsStateWithLifecycle()
+    val couponFilterType by viewModel.couponFilterType.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.searchCoupons("")
@@ -74,6 +75,7 @@ fun CouponScreen(
         coupons = coupons,
         couponCount = couponCount,
         selectedSortType = couponSortType,
+        couponFilterType = couponFilterType,
         isFilterExpanded = false,
         onCouponAddClick = {
             pickMedia.launch(
@@ -85,7 +87,8 @@ fun CouponScreen(
         onCouponDetailClick = { couponId ->
             backStack.add(Route.CouponDetailScreen(id = couponId))
         },
-        onCouponSortClick = viewModel::toggleCouponFilterType,
+        onCouponSortClick = viewModel::toggleCouponSortType,
+        onFilterTypeClick = viewModel::changeCouponFilterType,
         onSearchTriggered = viewModel::searchCoupons,
     )
 }
@@ -95,12 +98,14 @@ fun CouponScreen(
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
     couponCount: Int = 0,
-    selectedSortType: CouponSortType = CouponSortType.RECENT,
     isFilterExpanded: Boolean = false,
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
     onCouponSortClick: () -> Unit,
     onSearchTriggered: (String) -> Unit,
+    couponFilterType: CouponFilterType = CouponFilterType.ALL,
+    selectedSortType: CouponSortType = CouponSortType.RECENT,
+    onFilterTypeClick: (CouponFilterType) -> Unit,
 ) {
     var typingQuery: String by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
@@ -149,17 +154,17 @@ fun CouponScreenContent(
 
             CouponSortRow(
                 totalCount = couponCount,
-                selectFilterType = CouponFilterType.EXPIRED,
+                selectFilterType = couponFilterType,
                 selectedSort = selectedSortType,
-                isFilterExpanded = true,
+                isFilterExpanded = isFilterExpanded,
                 onFilterClick = {},
                 onSortClick = onCouponSortClick,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
 
             CouponFilterChipRow(
-                selectedFilter = CouponFilterType.ALL,
-                onFilterSelected = {},
+                selectedFilter = couponFilterType,
+                onFilterSelected = onFilterTypeClick,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
 
@@ -230,13 +235,14 @@ private fun CouponScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponScreenContent(
             coupons = dummyPagingItems,
+            couponCount = 30,
+            isFilterExpanded = true,
             onCouponAddClick = {},
             onCouponDetailClick = {},
-            onSearchTriggered = {},
-            couponCount = 30,
-            selectedSortType = CouponSortType.RECENT,
-            isFilterExpanded = true,
             onCouponSortClick = {},
-        )
+            onSearchTriggered = {},
+            couponFilterType = CouponFilterType.ALL,
+            selectedSortType = CouponSortType.RECENT,
+        ) {}
     }
 }
