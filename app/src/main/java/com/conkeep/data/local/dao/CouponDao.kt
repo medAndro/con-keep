@@ -38,6 +38,60 @@ interface CouponDao {
         searchQuery: String,
     ): PagingSource<Int, CouponEntity>
 
+    /**
+     * [통합 검색/필터/정렬 쿼리]
+     * @param userId: 사용자 ID
+     * @param searchQuery 검색어, 비어있다면 전체 반환, 존재하면 상품명, 브랜드, 쿠폰 번호에서 검색
+     * @param today: 현재 날짜 (ISO 8601 형식: "YYYY-MM-DD")
+     * @param filterType: 0(전체), 1(사용가능), 2(사용완료), 3(기간만료)
+     * @param sortType: 0(최근 등록순), 1(만료 임박순)
+     */
+    @Query(
+        """
+        SELECT * FROM coupons 
+        WHERE user_id = :userId 
+        AND (
+            :searchQuery = '' OR 
+            product_name LIKE '%' || :searchQuery || '%' OR 
+            brand LIKE '%' || :searchQuery || '%' OR 
+            coupon_pin LIKE '%' || :searchQuery || '%'
+        )
+        AND (
+            CASE 
+                WHEN :filterType = 1 THEN is_used = 0 AND expiry_date >= :today -- 사용가능
+                WHEN :filterType = 2 THEN is_used = 1 -- 사용완료
+                WHEN :filterType = 3 THEN is_used = 0 AND expiry_date < :today -- 기간만료
+                ELSE 1 -- 전체 (filterType = 0)
+            END
+        )
+        ORDER BY 
+            -- 1. 전체 보기(filterType=0)일 때 상태 우선순위: 사용가능(0) > 사용완료(1) > 기간만료(2)
+            CASE 
+                WHEN :filterType = 0 THEN 
+                    CASE 
+                        WHEN is_used = 0 AND expiry_date >= :today THEN 0
+                        WHEN is_used = 1 THEN 1
+                        ELSE 2
+                    END
+                ELSE 0 
+            END ASC,
+            
+            -- 2. 실제 정렬 조건 (최근등록순 또는 만료임박순)
+            CASE WHEN :sortType = 0 THEN created_at END DESC,
+            CASE WHEN :sortType = 1 THEN expiry_date END ASC,
+            
+            -- 3. 동일 조건 시 최종 정렬
+            id DESC
+    """,
+    )
+    fun searchCouponsPaging(
+        userId: String,
+        searchQuery: String,
+        today: String,
+        filterType: Int,
+        sortType: Int,
+    ): PagingSource<Int, CouponEntity>
+
     @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_used = 0 ORDER BY expiry_date ASC")
     fun getActiveCoupons(userId: String): Flow<List<CouponEntity>>
 
