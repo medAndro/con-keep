@@ -4,6 +4,10 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
+import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.data.mapper.toCouponCategory
 import com.conkeep.data.processor.CouponPreProcessResult
@@ -14,10 +18,14 @@ import com.conkeep.domain.model.CouponCategory
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -27,32 +35,33 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.Clock
 
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CouponListViewModel
     @Inject
     constructor(
         private val couponRepository: CouponRepository,
         private val couponProcessor: CouponProcessor,
+        private val authManager: SupabaseAuthManager,
     ) : ViewModel() {
-        private val _coupons = MutableStateFlow<List<CouponUiModel>>(emptyList())
-        val coupons: StateFlow<List<CouponUiModel>> = _coupons.asStateFlow()
+        private val _searchQuery = MutableStateFlow("")
+        val searchQuery = _searchQuery.asStateFlow()
 
-        private var searchJob: Job? = null
+        val coupons: Flow<PagingData<CouponUiModel>> =
+            searchQuery
+                .debounce(500L)
+                .distinctUntilChanged()
+                .flatMapLatest { query ->
+                    val userId = authManager.currentUser?.id ?: ""
+                    couponRepository
+                        .searchCoupons(userId, query)
+                        .map { pagingData ->
+                            pagingData.map { it.toUiModel() }
+                        }
+                }.cachedIn(viewModelScope)
 
         fun searchCoupons(query: String) {
-            viewModelScope.launch {
-                searchJob?.cancel()
-                searchJob =
-                    viewModelScope.launch {
-                        couponRepository
-                            .searchCoupons(query)
-                            .map { entities ->
-                                entities.toUiModel()
-                            }.collect { uiModels ->
-                                _coupons.value = uiModels
-                            }
-                    }
-            }
+            _searchQuery.value = query
         }
 
         fun addCouponFromUri(uri: Uri) {

@@ -1,8 +1,13 @@
 package com.conkeep.data.repository.coupon
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
+import com.conkeep.data.local.entity.CouponEntity
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
@@ -53,12 +58,23 @@ class CouponRepository
         @param:R2UploadClient private val r2Client: HttpClient,
         @param:AuthClient private val authClient: HttpClient,
     ) {
-        fun searchCoupons(query: String): Flow<List<Coupon>> =
-            couponDao
-                .searchCoupons(
-                    userId = authManager.currentUser?.id ?: "",
-                    searchQuery = query,
-                ).map { entities -> entities.toDomain() }
+        fun searchCoupons(
+            userId: String,
+            query: String,
+        ): Flow<PagingData<Coupon>> =
+            Pager(
+                config =
+                    PagingConfig(
+                        pageSize = 20,
+                        enablePlaceholders = false,
+                        initialLoadSize = 40,
+                    ),
+                pagingSourceFactory = { couponDao.searchCouponsPaging(userId, query) },
+            ).flow.map { pagingData: PagingData<CouponEntity> ->
+                pagingData.map {
+                    it.toDomain()
+                }
+            }
 
         fun getCoupon(id: String): Flow<Coupon?> =
             couponDao
@@ -84,7 +100,7 @@ class CouponRepository
                 }
             val finalExpiryDate =
                 when {
-                    !couponInfo?.expiryDate.isNullOrEmpty() ->
+                    !couponInfo?.expiryDate.isNullOrEmpty() -> {
                         couponInfo.expiryDate.takeIf {
                             runCatching {
                                 LocalDate.parse(
@@ -93,6 +109,7 @@ class CouponRepository
                                 )
                             }.isSuccess
                         }
+                    }
 
                     couponInfo?.dday != null -> {
                         LocalDate
@@ -101,7 +118,9 @@ class CouponRepository
                             .format(DateTimeFormatter.ISO_LOCAL_DATE)
                     }
 
-                    else -> null
+                    else -> {
+                        null
+                    }
                 }
 
             couponDao.updateAiRecognitionInfo(

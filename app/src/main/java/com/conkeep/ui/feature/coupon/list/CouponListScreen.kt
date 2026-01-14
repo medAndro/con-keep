@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,11 +30,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.navigation.Route
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
 import com.conkeep.ui.feature.coupon.list.component.SearchBar
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import kotlinx.coroutines.flow.flowOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +47,7 @@ fun CouponScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
-    val coupons: List<CouponUiModel> by viewModel.coupons.collectAsState()
+    val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
 
     LaunchedEffect(Unit) {
         viewModel.searchCoupons("")
@@ -77,10 +81,10 @@ fun CouponScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CouponScreenContent(
+    coupons: LazyPagingItems<CouponUiModel>,
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
     onSearchTriggered: (String) -> Unit,
-    coupons: List<CouponUiModel> = emptyList(),
 ) {
     var typingQuery: String by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
@@ -104,37 +108,45 @@ fun CouponScreenContent(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = {
-                            typingQuery = typingQuery.trim()
-                            onSearchTriggered(typingQuery)
+                            onSearchTriggered(typingQuery.trim())
                             focusManager.clearFocus()
                         })
                     },
         ) {
             SearchBar(
                 query = typingQuery,
-                onQueryUpdate = { typingQuery = it },
+                onQueryUpdate = {
+                    typingQuery = it
+                    onSearchTriggered(it.trim())
+                },
                 onSearch = {
-                    typingQuery = typingQuery.trim()
-                    onSearchTriggered(typingQuery)
+                    onSearchTriggered(typingQuery.trim())
                     focusManager.clearFocus()
                 },
                 onClearQuery = {
                     typingQuery = ""
-                    onSearchTriggered(typingQuery)
+                    onSearchTriggered("")
                     focusManager.clearFocus()
                 },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
-
             LazyColumn(
                 modifier = Modifier.weight(1f),
             ) {
-                items(coupons) { coupon ->
-                    CouponCard(
-                        couponUiModel = coupon,
-                        onClick = { onCouponDetailClick(coupon.id) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
+                items(
+                    count = coupons.itemCount,
+                    key = coupons.itemKey { it.id },
+                ) { index ->
+                    val coupon = coupons[index]
+                    if (coupon != null) {
+                        CouponCard(
+                            couponUiModel = coupon,
+                            onClick = { onCouponDetailClick(coupon.id) },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                    } else {
+                        Text("로딩중") // TODO: 로딩 스켈레톤 UI
+                    }
                 }
             }
         }
@@ -180,9 +192,12 @@ private val dummyCoupons =
 @Preview(showBackground = true)
 @Composable
 private fun CouponScreenContentPreview() {
+    val pagingDataFlow = flowOf(PagingData.from(dummyCoupons))
+    val dummyPagingItems = pagingDataFlow.collectAsLazyPagingItems()
+
     CouponScreenContent(
-        coupons = dummyCoupons,
-        onCouponAddClick = { },
+        coupons = dummyPagingItems,
+        onCouponAddClick = {},
         onCouponDetailClick = {},
         onSearchTriggered = {},
     )

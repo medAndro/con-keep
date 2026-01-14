@@ -3,6 +3,7 @@ agp = "8.13.2"
 barcodeScanning = "17.3.0"
 coreSplashscreen = "1.2.0"
 kotlinxCoroutinesPlayServices = "1.10.2"
+paging3 = "3.3.6"
 supabaseBom = "3.2.6"
 credentials = "1.5.0"
 googleid = "1.1.1"
@@ -69,6 +70,7 @@ hilt-navigation-compose = {module = "androidx.hilt:hilt-navigation-compose",vers
 room-runtime = {module = "androidx.room:room-runtime",version.ref = "room"}
 room-ktx = {module = "androidx.room:room-ktx",version.ref = "room"}
 room-compiler = {module = "androidx.room:room-compiler",version.ref = "room"}
+androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 
 # Supabase
 realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt" }
@@ -93,6 +95,9 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3"
 coil-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3"}
 zoomable-image-coil3 = { module = "me.saket.telephoto:zoomable-image-coil3", version.ref = "zoomableImageCoil3" }
 
+# Paging 3
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging3" }
+androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
