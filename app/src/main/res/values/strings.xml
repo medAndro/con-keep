@@ -40,6 +40,7 @@
     <!-- 정렬 바 -->
     <string name="sort_recent">최근 등록순</string>
     <string name="sort_expiry">만료 임박순</string>
+    <string name="coupon_count">%1$s 쿠폰 %2$d 개</string>
 
     <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>

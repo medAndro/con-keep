@@ -38,8 +38,9 @@ fun CouponFilterChipRow(
             FilterChip(
                 selected = isSelected,
                 onClick = { onFilterSelected(filter) },
-                modifier = Modifier
-                    .height(27.dp),
+                modifier =
+                    Modifier
+                        .height(27.dp),
                 label = {
                     Text(
                         text = filter.getDisplayTitle(),
@@ -85,4 +86,3 @@ fun CouponFilterChipRowUsedPreview() {
         )
     }
 }
-
