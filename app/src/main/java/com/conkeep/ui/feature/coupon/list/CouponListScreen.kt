@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ fun CouponScreen(
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
+    val couponCount by viewModel.couponCount.collectAsState(initial = 0)
 
     LaunchedEffect(Unit) {
         viewModel.searchCoupons("")
@@ -68,6 +70,7 @@ fun CouponScreen(
 
     CouponScreenContent(
         coupons = coupons,
+        couponCount = couponCount,
         onCouponAddClick = {
             pickMedia.launch(
                 PickVisualMediaRequest(
@@ -86,6 +89,7 @@ fun CouponScreen(
 @Composable
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
+    couponCount: Int = 0,
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
     onSearchTriggered: (String) -> Unit,
@@ -136,7 +140,7 @@ fun CouponScreenContent(
             )
 
             CouponSortRow(
-                totalCount = 30,
+                totalCount = couponCount,
                 selectFilterType = CouponFilterType.EXPIRED,
                 selectedSort = CouponSortType.EXPIRY,
                 isFilterExpanded = true,

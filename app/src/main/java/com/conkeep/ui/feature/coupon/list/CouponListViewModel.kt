@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.data.mapper.toCouponCategory
 import com.conkeep.data.processor.CouponPreProcessResult
@@ -15,6 +14,8 @@ import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
+import com.conkeep.ui.feature.coupon.model.CouponFilterType
+import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,11 +23,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -42,23 +46,45 @@ class CouponListViewModel
     constructor(
         private val couponRepository: CouponRepository,
         private val couponProcessor: CouponProcessor,
-        private val authManager: SupabaseAuthManager,
     ) : ViewModel() {
         private val _searchQuery = MutableStateFlow("")
         val searchQuery = _searchQuery.asStateFlow()
 
+        private val _couponFilterType = MutableStateFlow(CouponFilterType.ALL)
+        val couponFilterType = _couponFilterType.asStateFlow()
+
+        private val _couponSortType = MutableStateFlow(CouponSortType.RECENT)
+        val couponSortType = _couponSortType.asStateFlow()
+
+        // 오늘 날짜 (ISO 8601 YYYY-MM-DD 형식)
+        private val today: String =
+            Clock.System
+                .now()
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+                .date
+                .toString()
+
         val coupons: Flow<PagingData<CouponUiModel>> =
             searchQuery
-                .debounce(500L)
+                .debounce(DEBOUNCE_TIMEOUT)
                 .distinctUntilChanged()
-                .flatMapLatest { query ->
-                    val userId = authManager.currentUser?.id ?: ""
+                .flatMapLatest { query: String ->
                     couponRepository
-                        .searchCoupons(userId, query)
+                        .searchCoupons(query)
                         .map { pagingData ->
                             pagingData.map { it.toUiModel() }
                         }
                 }.cachedIn(viewModelScope)
+
+        val couponCount: Flow<Int> =
+            combine(
+                searchQuery.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
+                couponFilterType,
+            ) { query, filter ->
+                query to filter
+            }.flatMapLatest { (query, filter) ->
+                couponRepository.getCouponCount(query, today, filter.value)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         fun searchCoupons(query: String) {
             _searchQuery.value = query
@@ -163,5 +189,9 @@ class CouponListViewModel
             // Repository 호출 → ID 반환 받음
             couponRepository.addCoupon(preCoupon)
             return localId // 로컬 ID 반환
+        }
+
+        companion object {
+            private const val DEBOUNCE_TIMEOUT = 500L
         }
     }

@@ -58,10 +58,7 @@ class CouponRepository
         @param:R2UploadClient private val r2Client: HttpClient,
         @param:AuthClient private val authClient: HttpClient,
     ) {
-        fun searchCoupons(
-            userId: String,
-            query: String,
-        ): Flow<PagingData<Coupon>> =
+        fun searchCoupons(query: String): Flow<PagingData<Coupon>> =
             Pager(
                 config =
                     PagingConfig(
@@ -69,12 +66,29 @@ class CouponRepository
                         enablePlaceholders = false,
                         initialLoadSize = 40,
                     ),
-                pagingSourceFactory = { couponDao.searchCouponsPaging(userId, query) },
+                pagingSourceFactory = {
+                    couponDao.searchCouponsPaging(
+                        authManager.currentUser?.id ?: "",
+                        query,
+                    )
+                },
             ).flow.map { pagingData: PagingData<CouponEntity> ->
                 pagingData.map {
                     it.toDomain()
                 }
             }
+
+        fun getCouponCount(
+            query: String,
+            today: String,
+            filterType: Int,
+        ): Flow<Int> =
+            couponDao.getCouponsCount(
+                userId = authManager.currentUser?.id ?: "",
+                searchQuery = query,
+                today = today,
+                filterType = filterType,
+            )
 
         fun getCoupon(id: String): Flow<Coupon?> =
             couponDao

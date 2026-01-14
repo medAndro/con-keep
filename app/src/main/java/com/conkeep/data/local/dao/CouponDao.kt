@@ -92,6 +92,38 @@ interface CouponDao {
         sortType: Int,
     ): PagingSource<Int, CouponEntity>
 
+    /**
+     * [전체 개수 조회 쿼리]
+     * searchCouponsPaging 쿼리와 동일한 WHERE 조건을 사용하여
+     * 검색/필터링된 결과의 전체 개수를 실시간으로 반환합니다.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM coupons 
+        WHERE user_id = :userId 
+        AND (
+            :searchQuery = '' OR 
+            product_name LIKE '%' || :searchQuery || '%' OR 
+            brand LIKE '%' || :searchQuery || '%' OR 
+            coupon_pin LIKE '%' || :searchQuery || '%'
+        )
+        AND (
+            CASE 
+                WHEN :filterType = 1 THEN is_used = 0 AND expiry_date >= :today
+                WHEN :filterType = 2 THEN is_used = 1
+                WHEN :filterType = 3 THEN is_used = 0 AND expiry_date < :today
+                ELSE 1 
+            END
+        )
+    """,
+    )
+    fun getCouponsCount(
+        userId: String,
+        searchQuery: String,
+        today: String,
+        filterType: Int,
+    ): Flow<Int>
+
     @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_used = 0 ORDER BY expiry_date ASC")
     fun getActiveCoupons(userId: String): Flow<List<CouponEntity>>
 
