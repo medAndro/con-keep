@@ -42,6 +42,7 @@ import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
 import com.conkeep.ui.feature.coupon.list.component.CouponSortRow
 import com.conkeep.ui.feature.coupon.list.component.SearchBar
 import com.conkeep.ui.feature.coupon.list.component.couponCountSummaryFixture
+import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
@@ -56,7 +57,7 @@ fun CouponScreen(
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
-    val couponCount by viewModel.couponCount.collectAsStateWithLifecycle()
+    val couponCountHeaderState by viewModel.couponCountHeaderState.collectAsStateWithLifecycle()
     val couponCountSummary by viewModel.couponCountSummary.collectAsStateWithLifecycle()
     val couponSortType by viewModel.couponSortType.collectAsStateWithLifecycle()
     val couponFilterType by viewModel.couponFilterType.collectAsStateWithLifecycle()
@@ -77,7 +78,7 @@ fun CouponScreen(
 
     CouponScreenContent(
         coupons = coupons,
-        couponCount = couponCount,
+        couponCountHeaderState = couponCountHeaderState,
         selectedSortType = couponSortType,
         couponFilterType = couponFilterType,
         couponCountSummary = couponCountSummary,
@@ -105,7 +106,7 @@ fun CouponScreen(
 @Composable
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
-    couponCount: Int = 0,
+    couponCountHeaderState: CouponCountHeaderState,
     isFilterExpanded: Boolean = false,
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
@@ -163,7 +164,8 @@ fun CouponScreenContent(
             )
 
             CouponSortRow(
-                totalCount = couponCount,
+                isSearched = couponCountHeaderState.isSearchActive,
+                count = couponCountHeaderState.totalCount,
                 selectFilterType = couponFilterType,
                 selectedSort = selectedSortType,
                 isFilterExpanded = isFilterExpanded,
@@ -248,7 +250,7 @@ private fun CouponScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponScreenContent(
             coupons = dummyPagingItems,
-            couponCount = 30,
+            couponCountHeaderState = CouponCountHeaderState(),
             isFilterExpanded = true,
             onCouponAddClick = {},
             onCouponDetailClick = {},

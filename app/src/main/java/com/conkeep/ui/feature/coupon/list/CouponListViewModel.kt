@@ -14,6 +14,7 @@ import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
+import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
@@ -78,15 +79,20 @@ class CouponListViewModel
                         }
                 }.cachedIn(viewModelScope)
 
-        val couponCount: StateFlow<Int> =
+        val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
             combine(
                 searchQuery.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
                 couponFilterType,
             ) { query, filter ->
                 query to filter
             }.flatMapLatest { (query, filter) ->
-                couponRepository.getCouponCount(query, today, filter.value)
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+                couponRepository.getCouponCount(query, today, filter.value).map { count ->
+                    CouponCountHeaderState(
+                        totalCount = count,
+                        isSearchActive = query.isNotBlank(), // 검색어가 있고, 디바운스가 끝난 시점에만 true
+                    )
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CouponCountHeaderState())
 
         val couponCountSummary: StateFlow<CouponCountSummary> =
             couponRepository

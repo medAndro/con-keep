@@ -27,7 +27,8 @@ import com.conkeep.ui.util.noRippleClickable
 
 @Composable
 fun CouponSortRow(
-    totalCount: Int,
+    isSearched: Boolean,
+    count: Int,
     selectFilterType: CouponFilterType,
     selectedSort: CouponSortType,
     isFilterExpanded: Boolean,
@@ -36,8 +37,13 @@ fun CouponSortRow(
     modifier: Modifier = Modifier,
 ) {
     val sortTitle = selectFilterType.getDisplayTitle()
-    val countText = totalCount.toString()
-    val fullText = stringResource(id = R.string.coupon_count, sortTitle, totalCount)
+    val countText = count.toString()
+    val fullText =
+        stringResource(
+            id = if (isSearched) R.string.coupon_search_result else R.string.coupon_count,
+            sortTitle,
+            count,
+        )
 
     val annotatedString =
         buildAnnotatedString {
@@ -110,7 +116,8 @@ fun CouponSortRow(
 @Composable
 fun CouponSortRowPreview() {
     CouponSortRow(
-        totalCount = 10,
+        isSearched = true,
+        count = 10,
         selectFilterType = CouponFilterType.ALL,
         selectedSort = CouponSortType.RECENT,
         isFilterExpanded = false,
@@ -124,7 +131,8 @@ fun CouponSortRowPreview() {
 @Composable
 fun CouponSortRowPreview2() {
     CouponSortRow(
-        totalCount = 30,
+        isSearched = false,
+        count = 30,
         selectFilterType = CouponFilterType.EXPIRED,
         selectedSort = CouponSortType.EXPIRY,
         isFilterExpanded = true,

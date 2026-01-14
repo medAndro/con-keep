@@ -35,12 +35,14 @@
     <!-- 필터 칩 -->
     <string name="filter_all">전체</string>
     <string name="filter_available">사용 가능</string>
-    <string name="filter_used">사용 완료</string>
+    <string name="filter_used">사용 완료</string>k
     <string name="filter_expired">기간 만료</string>
     <!-- 정렬 바 -->
     <string name="sort_recent">최근 등록순</string>
     <string name="sort_expiry">만료 임박순</string>
-    <string name="coupon_count">%1$s 쿠폰 %2$d 개</string>
+    <string name="searched_coupon">검색된</string>
+    <string name="coupon_count">%1$s 쿠폰 %2$d개</string>
+    <string name="coupon_search_result">%1$s 쿠폰에서 %2$d개 찾음</string>
 
     <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
