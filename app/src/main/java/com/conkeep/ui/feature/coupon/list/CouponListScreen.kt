@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.paging.PagingData
@@ -54,6 +55,7 @@ fun CouponScreen(
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
     val couponCount by viewModel.couponCount.collectAsState(initial = 0)
+    val couponSortType by viewModel.couponSortType.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.searchCoupons("")
@@ -71,6 +73,8 @@ fun CouponScreen(
     CouponScreenContent(
         coupons = coupons,
         couponCount = couponCount,
+        selectedSortType = couponSortType,
+        isFilterExpanded = false,
         onCouponAddClick = {
             pickMedia.launch(
                 PickVisualMediaRequest(
@@ -81,6 +85,7 @@ fun CouponScreen(
         onCouponDetailClick = { couponId ->
             backStack.add(Route.CouponDetailScreen(id = couponId))
         },
+        onCouponSortClick = viewModel::toggleCouponFilterType,
         onSearchTriggered = viewModel::searchCoupons,
     )
 }
@@ -90,8 +95,11 @@ fun CouponScreen(
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
     couponCount: Int = 0,
+    selectedSortType: CouponSortType = CouponSortType.RECENT,
+    isFilterExpanded: Boolean = false,
     onCouponAddClick: () -> Unit,
     onCouponDetailClick: (String) -> Unit,
+    onCouponSortClick: () -> Unit,
     onSearchTriggered: (String) -> Unit,
 ) {
     var typingQuery: String by remember { mutableStateOf("") }
@@ -142,10 +150,10 @@ fun CouponScreenContent(
             CouponSortRow(
                 totalCount = couponCount,
                 selectFilterType = CouponFilterType.EXPIRED,
-                selectedSort = CouponSortType.EXPIRY,
+                selectedSort = selectedSortType,
                 isFilterExpanded = true,
                 onFilterClick = {},
-                onSortClick = {},
+                onSortClick = onCouponSortClick,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
 
@@ -225,6 +233,10 @@ private fun CouponScreenContentPreview() {
             onCouponAddClick = {},
             onCouponDetailClick = {},
             onSearchTriggered = {},
+            couponCount = 30,
+            selectedSortType = CouponSortType.RECENT,
+            isFilterExpanded = true,
+            onCouponSortClick = {},
         )
     }
 }

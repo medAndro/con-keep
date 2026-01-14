@@ -24,6 +24,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -53,7 +54,7 @@ class CouponListViewModel
         private val _couponFilterType = MutableStateFlow(CouponFilterType.ALL)
         val couponFilterType = _couponFilterType.asStateFlow()
 
-        private val _couponSortType = MutableStateFlow(CouponSortType.RECENT)
+        private val _couponSortType = MutableStateFlow(CouponSortType.EXPIRY)
         val couponSortType = _couponSortType.asStateFlow()
 
         // 오늘 날짜 (ISO 8601 YYYY-MM-DD 형식)
@@ -76,7 +77,7 @@ class CouponListViewModel
                         }
                 }.cachedIn(viewModelScope)
 
-        val couponCount: Flow<Int> =
+        val couponCount: StateFlow<Int> =
             combine(
                 searchQuery.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
                 couponFilterType,
@@ -88,6 +89,14 @@ class CouponListViewModel
 
         fun searchCoupons(query: String) {
             _searchQuery.value = query
+        }
+
+        fun toggleCouponFilterType() {
+            _couponSortType.value =
+                when (_couponSortType.value) {
+                    CouponSortType.RECENT -> CouponSortType.EXPIRY
+                    CouponSortType.EXPIRY -> CouponSortType.RECENT
+                }
         }
 
         fun addCouponFromUri(uri: Uri) {
