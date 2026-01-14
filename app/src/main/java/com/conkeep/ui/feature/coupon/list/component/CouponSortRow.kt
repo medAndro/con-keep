@@ -31,7 +31,7 @@ fun CouponSortRow(
     selectFilterType: CouponFilterType,
     selectedSort: CouponSortType,
     isFilterExpanded: Boolean,
-    onFilterClick: () -> Unit,
+    onFilterChipExpandClick: () -> Unit,
     onSortClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -66,7 +66,10 @@ fun CouponSortRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            modifier = Modifier.noRippleClickable { onFilterClick() }.padding(vertical = 8.dp),
+            modifier =
+                Modifier
+                    .noRippleClickable { onFilterChipExpandClick() }
+                    .padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -111,7 +114,7 @@ fun CouponSortRowPreview() {
         selectFilterType = CouponFilterType.ALL,
         selectedSort = CouponSortType.RECENT,
         isFilterExpanded = false,
-        onFilterClick = {},
+        onFilterChipExpandClick = {},
         onSortClick = {},
         modifier = Modifier,
     )
@@ -125,7 +128,7 @@ fun CouponSortRowPreview2() {
         selectFilterType = CouponFilterType.EXPIRED,
         selectedSort = CouponSortType.EXPIRY,
         isFilterExpanded = true,
-        onFilterClick = {},
+        onFilterChipExpandClick = {},
         onSortClick = {},
         modifier = Modifier,
     )
