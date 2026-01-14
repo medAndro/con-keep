@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -37,8 +36,13 @@ import androidx.paging.compose.itemKey
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.navigation.Route
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
+import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
+import com.conkeep.ui.feature.coupon.list.component.CouponSortRow
 import com.conkeep.ui.feature.coupon.list.component.SearchBar
+import com.conkeep.ui.feature.coupon.model.CouponFilterType
+import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.theme.ConKeepTheme
 import kotlinx.coroutines.flow.flowOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,6 +134,23 @@ fun CouponScreenContent(
                 },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
+
+            CouponSortRow(
+                totalCount = 30,
+                selectFilterType = CouponFilterType.EXPIRED,
+                selectedSort = CouponSortType.EXPIRY,
+                isFilterExpanded = true,
+                onFilterClick = {},
+                onSortClick = {},
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+
+            CouponFilterChipRow(
+                selectedFilter = CouponFilterType.ALL,
+                onFilterSelected = {},
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            )
+
             LazyColumn(
                 modifier = Modifier.weight(1f),
             ) {
@@ -194,11 +215,12 @@ private val dummyCoupons =
 private fun CouponScreenContentPreview() {
     val pagingDataFlow = flowOf(PagingData.from(dummyCoupons))
     val dummyPagingItems = pagingDataFlow.collectAsLazyPagingItems()
-
-    CouponScreenContent(
-        coupons = dummyPagingItems,
-        onCouponAddClick = {},
-        onCouponDetailClick = {},
-        onSearchTriggered = {},
-    )
+    ConKeepTheme(darkTheme = false) {
+        CouponScreenContent(
+            coupons = dummyPagingItems,
+            onCouponAddClick = {},
+            onCouponDetailClick = {},
+            onSearchTriggered = {},
+        )
+    }
 }

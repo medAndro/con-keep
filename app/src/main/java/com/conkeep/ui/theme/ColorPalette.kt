@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 object ColorPalette {
     // ========== Yellow ==========
     val YellowLight = Color(0xFFFFF3D1)
+    val YellowLightDark = Color(0xFFECE5D1)
     val YellowLightDarker = Color(0xFFB4AE9D)
     val YellowBase = Color(0xFFFFD248)
     val YellowBg = Color(0xFFFFF8E6)

@@ -1,9 +1,9 @@
 package com.conkeep.ui.feature.coupon.list.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -23,6 +23,7 @@ import com.conkeep.ui.feature.coupon.model.getDisplayTitle
 import com.conkeep.ui.theme.ConKeepColors.brandAccent
 import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.PretendardMedium16
+import com.conkeep.ui.util.noRippleClickable
 
 @Composable
 fun CouponSortRow(
@@ -65,7 +66,7 @@ fun CouponSortRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            modifier = Modifier.clickable { onFilterClick() },
+            modifier = Modifier.noRippleClickable { onFilterClick() }.padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -83,7 +84,7 @@ fun CouponSortRow(
         }
 
         Row(
-            modifier = Modifier.clickable { onSortClick() },
+            modifier = Modifier.noRippleClickable { onSortClick() },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
