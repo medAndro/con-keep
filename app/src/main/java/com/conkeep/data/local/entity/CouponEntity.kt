@@ -2,9 +2,20 @@ package com.conkeep.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "coupons")
+@Entity(
+    tableName = "coupons",
+    indices = [
+        // 1. 유저별 사용여부 + 생성일순 (사용가능/완료/만료 필터링 후 등록순 정렬 인덱싱)
+        Index(value = ["user_id", "is_used", "created_at"]),
+        // 2. 유저별 사용여부 + 유효기간순 (사용가능/완료/만료 필터링 후 만료임박순 정렬 인덱싱)
+        Index(value = ["user_id", "is_used", "expiry_date"]),
+        // 3. 전체 보기에서의 우선순위 정렬 인덱싱 (사용여부와 유효기간을 함께 고려)
+        Index(value = ["user_id", "expiry_date", "is_used"]),
+    ],
+)
 data class CouponEntity(
     @PrimaryKey
     val id: String,
