@@ -20,6 +20,7 @@ import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
+import com.conkeep.util.TimeProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -49,6 +50,7 @@ class CouponListViewModel
     constructor(
         private val couponRepository: CouponRepository,
         private val couponProcessor: CouponProcessor,
+        private val timeProvider: TimeProvider,
     ) : ViewModel() {
         private val _searchQuery = MutableStateFlow("")
         val searchQuery = _searchQuery.asStateFlow()
@@ -59,25 +61,26 @@ class CouponListViewModel
         private val _couponSortType = MutableStateFlow(CouponSortType.EXPIRY)
         val couponSortType = _couponSortType.asStateFlow()
 
-        // 오늘 날짜 (ISO 8601 YYYY-MM-DD 형식)
-        private val today: String =
-            Clock.System
-                .now()
-                .toLocalDateTime(TimeZone.currentSystemDefault())
-                .date
-                .toString()
+        private val todayIso8601: String = timeProvider.getToday().toString()
 
         val coupons: Flow<PagingData<CouponUiModel>> =
-            searchQuery
-                .debounce(DEBOUNCE_TIMEOUT)
-                .distinctUntilChanged()
-                .flatMapLatest { query: String ->
-                    couponRepository
-                        .searchCoupons(query)
-                        .map { pagingData ->
-                            pagingData.map { it.toUiModel() }
-                        }
-                }.cachedIn(viewModelScope)
+            combine(
+                searchQuery.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
+                couponFilterType,
+                couponSortType,
+            ) { query, filter, sort ->
+                Triple(query, filter, sort)
+            }.flatMapLatest { (query, filter, sort) ->
+                couponRepository
+                    .searchCoupons(
+                        query = query,
+                        today = todayIso8601,
+                        filterType = filter.value,
+                        sortType = sort.value,
+                    ).map { pagingData ->
+                        pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
+                    }
+            }.cachedIn(viewModelScope)
 
         val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
             combine(
@@ -86,7 +89,7 @@ class CouponListViewModel
             ) { query, filter ->
                 query to filter
             }.flatMapLatest { (query, filter) ->
-                couponRepository.getCouponCount(query, today, filter.value).map { count ->
+                couponRepository.getCouponCount(query, todayIso8601, filter.value).map { count ->
                     CouponCountHeaderState(
                         totalCount = count,
                         isSearchActive = query.isNotBlank(), // 검색어가 있고, 디바운스가 끝난 시점에만 true
@@ -96,7 +99,7 @@ class CouponListViewModel
 
         val couponCountSummary: StateFlow<CouponCountSummary> =
             couponRepository
-                .getCouponSummary(today)
+                .getCouponSummary(todayIso8601)
                 .stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),

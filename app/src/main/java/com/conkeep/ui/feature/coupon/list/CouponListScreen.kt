@@ -209,11 +209,21 @@ fun CouponScreenContent(
 private val dummyCoupons =
     listOf(
         CouponUiModel(
-            id = "1",
+            id = "0",
             number = "1234-5678-9012",
             name = "스타벅스 아이스 아메리카노 T",
             expiryDate = "2025.12.31",
             isUsed = false,
+            isExpired = false,
+            localStatus = CouponLocalStatus.RECOGNIZED,
+        ),
+        CouponUiModel(
+            id = "1",
+            number = "1234-5678-3333",
+            name = "스타벅스 아이스 콜드부루 T",
+            expiryDate = "2000.12.31",
+            isUsed = false,
+            isExpired = true,
             localStatus = CouponLocalStatus.RECOGNIZED,
         ),
         CouponUiModel(
@@ -222,6 +232,7 @@ private val dummyCoupons =
             name = "배스킨라빈스 싱글레귤러",
             expiryDate = "2025.12.15",
             isUsed = false,
+            isExpired = false,
             localStatus = CouponLocalStatus.PREPROCESSED,
         ),
         CouponUiModel(
@@ -230,6 +241,7 @@ private val dummyCoupons =
             name = "[기프티콘] 파리바게뜨 우유식빵",
             expiryDate = "2026.01.20",
             isUsed = true,
+            isExpired = false,
             localStatus = CouponLocalStatus.AI_FAILED,
         ),
         CouponUiModel(
@@ -238,6 +250,7 @@ private val dummyCoupons =
             name = "교촌치킨 허니콤보 웨지감자 세트",
             expiryDate = "2026.02.10",
             isUsed = false,
+            isExpired = false,
             localStatus = CouponLocalStatus.PENDING,
         ),
     )

@@ -69,9 +69,10 @@ interface CouponDao {
             END
         )
         ORDER BY 
-            -- 1. 전체 보기(filterType=0)일 때 상태 우선순위: 사용가능(0) > 사용완료(1) > 기간만료(2)
+            -- 1. 우선순위 그룹화 (만료임박순일 때만 적용)
+            -- 사용가능(0) > 사용완료(1) > 기간만료(2) 순서로 그룹화
             CASE 
-                WHEN :filterType = 0 THEN 
+                WHEN :sortType = 1 THEN 
                     CASE 
                         WHEN is_used = 0 AND expiry_date >= :today THEN 0
                         WHEN is_used = 1 THEN 1
@@ -80,11 +81,15 @@ interface CouponDao {
                 ELSE 0 
             END ASC,
             
-            -- 2. 실제 정렬 조건 (최근등록순 또는 만료임박순)
+            -- 2. 실제 정렬 조건 (최근등록순)
             CASE WHEN :sortType = 0 THEN created_at END DESC,
-            CASE WHEN :sortType = 1 THEN expiry_date END ASC,
             
-            -- 3. 동일 조건 시 최종 정렬
+            -- 3. 실제 정렬 조건 (만료임박순): 오늘 날짜와의 절댓값이 가까운 기준
+            CASE 
+                WHEN :sortType = 1 THEN ABS(julianday(expiry_date) - julianday(:today)) 
+            END ASC,
+            
+            -- 4. 동일 조건 시
             id DESC
     """,
     )
