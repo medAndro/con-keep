@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -62,6 +64,39 @@ fun CouponScreen(
     val couponSortType by viewModel.couponSortType.collectAsStateWithLifecycle()
     val couponFilterType by viewModel.couponFilterType.collectAsStateWithLifecycle()
     var isFilterChipExpanded by rememberSaveable { mutableStateOf(true) }
+    var typingQuery: String by remember { mutableStateOf("") }
+
+    val listState = rememberLazyListState()
+
+    var shouldScrollToTop by remember { mutableStateOf(false) }
+
+    // 전처리 쿠폰 등록 여부를 받아 스크롤 예약 등록
+    LaunchedEffect(viewModel.couponAddedEvent) {
+        viewModel.couponAddedEvent.collect {
+            viewModel.updateSortType(CouponSortType.RECENT)
+            viewModel.changeCouponFilterType(CouponFilterType.ALL)
+            typingQuery = ""
+            viewModel.searchCoupons("")
+            shouldScrollToTop = true
+        }
+    }
+    // 쿠폰 목록이 변경될 경우 스크롤 예약을 확인 후, 스크롤을 최상위로 올림
+    LaunchedEffect(coupons.loadState) {
+        if (shouldScrollToTop) {
+            if (coupons.itemCount > 0) {
+                listState.animateScrollToItem(0)
+                shouldScrollToTop = false
+            }
+        }
+    }
+
+    // 필터 변경시 스크롤 최상단 이동
+    LaunchedEffect(couponSortType, couponFilterType) {
+        if (coupons.itemCount > 0) {
+            listState.animateScrollToItem(0)
+            shouldScrollToTop = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.searchCoupons("")
@@ -72,12 +107,19 @@ fun CouponScreen(
             contract = ActivityResultContracts.PickVisualMedia(),
         ) { uri ->
             uri?.let {
+                typingQuery = ""
+                viewModel.searchCoupons("")
+                viewModel.updateSortType(CouponSortType.RECENT)
+                viewModel.changeCouponFilterType(CouponFilterType.ALL)
                 viewModel.addCouponFromUri(uri)
             }
         }
 
     CouponScreenContent(
         coupons = coupons,
+        typingQuery = typingQuery,
+        onTypingQueryUpdate = { typingQuery = it },
+        listState = listState,
         couponCountHeaderState = couponCountHeaderState,
         selectedSortType = couponSortType,
         couponFilterType = couponFilterType,
@@ -106,6 +148,9 @@ fun CouponScreen(
 @Composable
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
+    typingQuery: String,
+    onTypingQueryUpdate: (String) -> Unit,
+    listState: LazyListState,
     couponCountHeaderState: CouponCountHeaderState,
     isFilterExpanded: Boolean = false,
     onCouponAddClick: () -> Unit,
@@ -118,7 +163,6 @@ fun CouponScreenContent(
     selectedSortType: CouponSortType = CouponSortType.RECENT,
     onFilterTypeClick: (CouponFilterType) -> Unit,
 ) {
-    var typingQuery: String by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -126,7 +170,12 @@ fun CouponScreenContent(
             TopAppBar(
                 title = { Text("내 쿠폰") },
                 actions = {
-                    Button(onClick = onCouponAddClick) {
+                    Button(onClick = {
+                        focusManager.clearFocus()
+                        onCouponAddClick()
+                        onTypingQueryUpdate("")
+                        onSearchTriggered("")
+                    }) {
                         Text("+")
                     }
                 },
@@ -148,7 +197,7 @@ fun CouponScreenContent(
             SearchBar(
                 query = typingQuery,
                 onQueryUpdate = {
-                    typingQuery = it
+                    onTypingQueryUpdate(it)
                     onSearchTriggered(it.trim())
                 },
                 onSearch = {
@@ -156,7 +205,7 @@ fun CouponScreenContent(
                     focusManager.clearFocus()
                 },
                 onClearQuery = {
-                    typingQuery = ""
+                    onTypingQueryUpdate("")
                     onSearchTriggered("")
                     focusManager.clearFocus()
                 },
@@ -184,6 +233,7 @@ fun CouponScreenContent(
             }
 
             LazyColumn(
+                state = listState,
                 modifier = Modifier.weight(1f),
             ) {
                 items(
@@ -263,6 +313,9 @@ private fun CouponScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponScreenContent(
             coupons = dummyPagingItems,
+            typingQuery = "",
+            onTypingQueryUpdate = {},
+            listState = rememberLazyListState(),
             couponCountHeaderState = CouponCountHeaderState(),
             isFilterExpanded = true,
             onCouponAddClick = {},

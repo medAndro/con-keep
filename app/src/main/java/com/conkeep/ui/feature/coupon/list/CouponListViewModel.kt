@@ -25,9 +25,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -60,6 +62,9 @@ class CouponListViewModel
 
         private val _couponSortType = MutableStateFlow(CouponSortType.EXPIRY)
         val couponSortType = _couponSortType.asStateFlow()
+
+        private val _couponAddedEvent = MutableSharedFlow<Unit>()
+        val couponAddedEvent = _couponAddedEvent.asSharedFlow()
 
         private val todayIso8601: String = timeProvider.getToday().toString()
 
@@ -118,6 +123,10 @@ class CouponListViewModel
                 }
         }
 
+        fun updateSortType(sortType: CouponSortType) {
+            _couponSortType.value = sortType
+        }
+
         fun changeCouponFilterType(filterType: CouponFilterType) {
             _couponFilterType.value = filterType
         }
@@ -131,6 +140,7 @@ class CouponListViewModel
 
                     // 2. 순차적 처리 (Fail-Fast)
                     val couponId = addPreCouponToDb(preProcessResult)
+                    _couponAddedEvent.emit(Unit)
                     val urlResponse =
                         couponRepository
                             .getPresignedUrl(
