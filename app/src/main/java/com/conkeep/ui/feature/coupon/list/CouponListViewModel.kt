@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -69,8 +68,9 @@ class CouponListViewModel
         init {
             viewModelScope.launch {
                 searchQueryInput
-                    .debounce(DEBOUNCE_TIMEOUT)
-                    .distinctUntilChanged()
+                    .debounce { query ->
+                        if (query.isBlank()) 0L else DEBOUNCE_TIMEOUT
+                    }.distinctUntilChanged()
                     .collect { debouncedQuery ->
                         _queryConfig.value = _queryConfig.value.copy(query = debouncedQuery)
                     }
@@ -92,22 +92,17 @@ class CouponListViewModel
                 }.cachedIn(viewModelScope)
 
         val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
-            combine(
-                searchQueryInput.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
-                queryConfig,
-            ) { query, filter ->
-                query to filter
-            }.flatMapLatest { (query, queryConfig) ->
-                couponRepository
-                    .getCouponCount(query, todayIso8601, queryConfig.filter.value)
-                    .map { count ->
-                        CouponCountHeaderState(
-                            totalCount = count,
-                            isSearchActive = query.isNotBlank(), // 검색어가 있고, 디바운스가 끝난 시점에만 true
-                        )
-                    }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CouponCountHeaderState())
-
+            _queryConfig
+                .flatMapLatest { config ->
+                    couponRepository
+                        .getCouponCount(config.query, todayIso8601, config.filter.value)
+                        .map { count ->
+                            CouponCountHeaderState(
+                                totalCount = count,
+                                isSearchActive = config.query.isNotBlank(),
+                            )
+                        }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CouponCountHeaderState())
         val couponCountSummary: StateFlow<CouponCountSummary> =
             couponRepository
                 .getCouponSummary(todayIso8601)
