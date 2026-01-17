@@ -89,8 +89,9 @@ fun CouponScreen(
     }
 
     // 데이터 로드 완료 후 예약된 ID가 있으면 해당 위치로 정밀 스크롤
-    LaunchedEffect(coupons.loadState.refresh) {
-        if (pendingScrollId != null && coupons.loadState.refresh is LoadState.NotLoading) {
+    LaunchedEffect(coupons.loadState.refresh, coupons.itemCount) {
+        val isRefreshFinished = coupons.loadState.refresh is LoadState.NotLoading
+        if (isRefreshFinished && pendingScrollId != null && coupons.itemCount > 0) {
             val targetIndex =
                 (0 until coupons.itemCount).firstOrNull {
                     coupons.peek(it)?.id == pendingScrollId
