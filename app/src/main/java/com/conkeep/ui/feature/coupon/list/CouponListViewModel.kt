@@ -17,6 +17,7 @@ import com.conkeep.domain.model.CouponCategory
 import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
+import com.conkeep.ui.feature.coupon.model.CouponQueryConfig
 import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
@@ -54,52 +55,57 @@ class CouponListViewModel
         private val couponProcessor: CouponProcessor,
         private val timeProvider: TimeProvider,
     ) : ViewModel() {
-        private val _searchQuery = MutableStateFlow("")
-        val searchQuery = _searchQuery.asStateFlow()
+        private val _queryConfig = MutableStateFlow(CouponQueryConfig())
+        val queryConfig = _queryConfig.asStateFlow()
 
-        private val _couponFilterType = MutableStateFlow(CouponFilterType.ALL)
-        val couponFilterType = _couponFilterType.asStateFlow()
+        private val _searchQueryInput = MutableStateFlow("")
+        val searchQueryInput = _searchQueryInput.asStateFlow()
 
-        private val _couponSortType = MutableStateFlow(CouponSortType.EXPIRY)
-        val couponSortType = _couponSortType.asStateFlow()
-
-        private val _couponAddedEvent = MutableSharedFlow<Unit>()
+        private val _couponAddedEvent = MutableSharedFlow<String>()
         val couponAddedEvent = _couponAddedEvent.asSharedFlow()
 
         private val todayIso8601: String = timeProvider.getToday().toString()
 
-        val coupons: Flow<PagingData<CouponUiModel>> =
-            combine(
-                searchQuery.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
-                couponFilterType,
-                couponSortType,
-            ) { query, filter, sort ->
-                Triple(query, filter, sort)
-            }.flatMapLatest { (query, filter, sort) ->
-                couponRepository
-                    .searchCoupons(
-                        query = query,
-                        today = todayIso8601,
-                        filterType = filter.value,
-                        sortType = sort.value,
-                    ).map { pagingData ->
-                        pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
+        init {
+            viewModelScope.launch {
+                searchQueryInput
+                    .debounce(DEBOUNCE_TIMEOUT)
+                    .distinctUntilChanged()
+                    .collect { debouncedQuery ->
+                        _queryConfig.value = _queryConfig.value.copy(query = debouncedQuery)
                     }
-            }.cachedIn(viewModelScope)
+            }
+        }
+
+        val coupons: Flow<PagingData<CouponUiModel>> =
+            _queryConfig
+                .flatMapLatest { config: CouponQueryConfig ->
+                    couponRepository
+                        .searchCoupons(
+                            query = config.query,
+                            today = todayIso8601,
+                            filterType = config.filter.value,
+                            sortType = config.sort.value,
+                        ).map { pagingData ->
+                            pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
+                        }
+                }.cachedIn(viewModelScope)
 
         val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
             combine(
-                searchQuery.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
-                couponFilterType,
+                searchQueryInput.debounce(DEBOUNCE_TIMEOUT).distinctUntilChanged(),
+                queryConfig,
             ) { query, filter ->
                 query to filter
-            }.flatMapLatest { (query, filter) ->
-                couponRepository.getCouponCount(query, todayIso8601, filter.value).map { count ->
-                    CouponCountHeaderState(
-                        totalCount = count,
-                        isSearchActive = query.isNotBlank(), // 검색어가 있고, 디바운스가 끝난 시점에만 true
-                    )
-                }
+            }.flatMapLatest { (query, queryConfig) ->
+                couponRepository
+                    .getCouponCount(query, todayIso8601, queryConfig.filter.value)
+                    .map { count ->
+                        CouponCountHeaderState(
+                            totalCount = count,
+                            isSearchActive = query.isNotBlank(), // 검색어가 있고, 디바운스가 끝난 시점에만 true
+                        )
+                    }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CouponCountHeaderState())
 
         val couponCountSummary: StateFlow<CouponCountSummary> =
@@ -111,24 +117,47 @@ class CouponListViewModel
                     CouponCountSummary(),
                 )
 
+        /**
+         * 새로 등록된 쿠폰을 보여주기 위한 준비
+         */
+        fun readyToShowNewCoupon() {
+            _searchQueryInput.value = "" // 입력 Flow 즉시 비우기 (디바운스 덮어쓰기 방지)
+            _queryConfig.value =
+                CouponQueryConfig(
+                    query = "",
+                    filter = CouponFilterType.ALL,
+                    sort = CouponSortType.RECENT,
+                )
+        }
+
+        /**
+         * 검색 키워드만 리셋(필터는 유지)
+         */
+        fun clearSearchKeyword() {
+            _searchQueryInput.value = "" // 입력 Flow 즉시 비우기 (디바운스 덮어쓰기 방지)
+            _queryConfig.value =
+                queryConfig.value.copy(
+                    query = "",
+                )
+        }
+
         fun searchCoupons(query: String) {
-            _searchQuery.value = query
+            _searchQueryInput.value = query
         }
 
         fun toggleCouponSortType() {
-            _couponSortType.value =
-                when (_couponSortType.value) {
-                    CouponSortType.RECENT -> CouponSortType.EXPIRY
-                    CouponSortType.EXPIRY -> CouponSortType.RECENT
-                }
-        }
-
-        fun updateSortType(sortType: CouponSortType) {
-            _couponSortType.value = sortType
+            _queryConfig.value =
+                queryConfig.value.copy(
+                    sort =
+                        when (queryConfig.value.sort) {
+                            CouponSortType.RECENT -> CouponSortType.EXPIRY
+                            CouponSortType.EXPIRY -> CouponSortType.RECENT
+                        },
+                )
         }
 
         fun changeCouponFilterType(filterType: CouponFilterType) {
-            _couponFilterType.value = filterType
+            _queryConfig.value = queryConfig.value.copy(filter = filterType)
         }
 
         fun addCouponFromUri(uri: Uri) {
@@ -140,7 +169,7 @@ class CouponListViewModel
 
                     // 2. 순차적 처리 (Fail-Fast)
                     val couponId = addPreCouponToDb(preProcessResult)
-                    _couponAddedEvent.emit(Unit)
+                    _couponAddedEvent.emit(couponId)
                     val urlResponse =
                         couponRepository
                             .getPresignedUrl(

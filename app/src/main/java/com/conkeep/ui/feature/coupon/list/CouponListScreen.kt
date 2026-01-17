@@ -33,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -61,45 +62,45 @@ fun CouponScreen(
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
     val couponCountHeaderState by viewModel.couponCountHeaderState.collectAsStateWithLifecycle()
     val couponCountSummary by viewModel.couponCountSummary.collectAsStateWithLifecycle()
-    val couponSortType by viewModel.couponSortType.collectAsStateWithLifecycle()
-    val couponFilterType by viewModel.couponFilterType.collectAsStateWithLifecycle()
+    val queryConfig by viewModel.queryConfig.collectAsStateWithLifecycle()
     var isFilterChipExpanded by rememberSaveable { mutableStateOf(true) }
     var typingQuery: String by remember { mutableStateOf("") }
 
     val listState = rememberLazyListState()
 
-    var shouldScrollToTop by remember { mutableStateOf(false) }
+    // 특정 항목으로 스크롤하기 위한 예약 ID
+    var pendingScrollId by remember { mutableStateOf<String?>(null) }
 
-    // 전처리 쿠폰 등록 여부를 받아 스크롤 예약 등록
+    // 쿠폰 등록 완료 이벤트 수집 및 추가된 항목ID 수집
     LaunchedEffect(viewModel.couponAddedEvent) {
-        viewModel.couponAddedEvent.collect {
-            viewModel.updateSortType(CouponSortType.RECENT)
-            viewModel.changeCouponFilterType(CouponFilterType.ALL)
+        viewModel.couponAddedEvent.collect { couponId: String ->
+            pendingScrollId = couponId
+            viewModel.readyToShowNewCoupon()
             typingQuery = ""
-            viewModel.searchCoupons("")
-            shouldScrollToTop = true
         }
     }
-    // 쿠폰 목록이 변경될 경우 스크롤 예약을 확인 후, 스크롤을 최상위로 올림
-    LaunchedEffect(coupons.loadState) {
-        if (shouldScrollToTop) {
-            if (coupons.itemCount > 0) {
-                listState.animateScrollToItem(0)
-                shouldScrollToTop = false
+
+    // 일반적인 필터/정렬 클릭 변경 시 스크롤 최상단 이동
+    // pendingScrollId가 있을 때는 등록 로직의 스크롤이 우선되어야 하므로 제외합니다.
+    LaunchedEffect(queryConfig.filter, queryConfig.sort) {
+        if (coupons.itemCount > 0 && pendingScrollId == null) {
+            listState.animateScrollToItem(0)
+        }
+    }
+
+    // 데이터 로드 완료 후 예약된 ID가 있으면 해당 위치로 정밀 스크롤
+    LaunchedEffect(coupons.loadState.refresh) {
+        if (pendingScrollId != null && coupons.loadState.refresh is LoadState.NotLoading) {
+            val targetIndex =
+                (0 until coupons.itemCount).firstOrNull {
+                    coupons.peek(it)?.id == pendingScrollId
+                }
+
+            if (targetIndex != null) {
+                listState.animateScrollToItem(targetIndex)
+                pendingScrollId = null
             }
         }
-    }
-
-    // 필터 변경시 스크롤 최상단 이동
-    LaunchedEffect(couponSortType, couponFilterType) {
-        if (coupons.itemCount > 0) {
-            listState.animateScrollToItem(0)
-            shouldScrollToTop = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.searchCoupons("")
     }
 
     val pickMedia: ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?> =
@@ -108,9 +109,6 @@ fun CouponScreen(
         ) { uri ->
             uri?.let {
                 typingQuery = ""
-                viewModel.searchCoupons("")
-                viewModel.updateSortType(CouponSortType.RECENT)
-                viewModel.changeCouponFilterType(CouponFilterType.ALL)
                 viewModel.addCouponFromUri(uri)
             }
         }
@@ -121,8 +119,8 @@ fun CouponScreen(
         onTypingQueryUpdate = { typingQuery = it },
         listState = listState,
         couponCountHeaderState = couponCountHeaderState,
-        selectedSortType = couponSortType,
-        couponFilterType = couponFilterType,
+        selectedSortType = queryConfig.sort,
+        couponFilterType = queryConfig.filter,
         couponCountSummary = couponCountSummary,
         isFilterExpanded = isFilterChipExpanded,
         onCouponAddClick = {
@@ -141,6 +139,10 @@ fun CouponScreen(
         onFilterChipExpandClick = {
             isFilterChipExpanded = !isFilterChipExpanded
         },
+        onClearSearchQuery = {
+            typingQuery = ""
+            viewModel.clearSearchKeyword()
+        },
     )
 }
 
@@ -158,6 +160,7 @@ fun CouponScreenContent(
     onCouponSortClick: () -> Unit,
     onSearchTriggered: (String) -> Unit,
     onFilterChipExpandClick: () -> Unit,
+    onClearSearchQuery: () -> Unit,
     couponFilterType: CouponFilterType = CouponFilterType.ALL,
     couponCountSummary: CouponCountSummary = CouponCountSummary(),
     selectedSortType: CouponSortType = CouponSortType.RECENT,
@@ -173,8 +176,6 @@ fun CouponScreenContent(
                     Button(onClick = {
                         focusManager.clearFocus()
                         onCouponAddClick()
-                        onTypingQueryUpdate("")
-                        onSearchTriggered("")
                     }) {
                         Text("+")
                     }
@@ -189,7 +190,6 @@ fun CouponScreenContent(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = {
-                            onSearchTriggered(typingQuery.trim())
                             focusManager.clearFocus()
                         })
                     },
@@ -205,8 +205,7 @@ fun CouponScreenContent(
                     focusManager.clearFocus()
                 },
                 onClearQuery = {
-                    onTypingQueryUpdate("")
-                    onSearchTriggered("")
+                    onClearSearchQuery()
                     focusManager.clearFocus()
                 },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -326,6 +325,8 @@ private fun CouponScreenContentPreview() {
             selectedSortType = CouponSortType.RECENT,
             couponCountSummary = couponCountSummaryFixture,
             onFilterChipExpandClick = {},
-        ) {}
+            onFilterTypeClick = {},
+            onClearSearchQuery = {},
+        )
     }
 }
