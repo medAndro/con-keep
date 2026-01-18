@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -68,7 +67,10 @@ fun CouponScreen(
     val couponCountSummary by viewModel.couponCountSummary.collectAsStateWithLifecycle()
     val queryConfig by viewModel.queryConfig.collectAsStateWithLifecycle()
     var isFilterChipExpanded by rememberSaveable { mutableStateOf(true) }
-    var typingQuery: String by remember { mutableStateOf("") }
+    var typingQuery: String by rememberSaveable { mutableStateOf("") }
+
+    var prevFilter by rememberSaveable { mutableStateOf(queryConfig.filter) }
+    var prevSort by rememberSaveable { mutableStateOf(queryConfig.sort) }
 
     val listState = rememberLazyListState()
 
@@ -102,7 +104,16 @@ fun CouponScreen(
 
     // 일반적인 필터/정렬 클릭 변경 시 스크롤 최상단 이동
     LaunchedEffect(queryConfig.filter, queryConfig.sort) {
-        if (coupons.itemCount > 0) {
+        val filterChanged = queryConfig.filter != prevFilter
+        val sortChanged = queryConfig.sort != prevSort
+
+        if (filterChanged || sortChanged) {
+            Log.d(
+                "CouponScreen",
+                "필터/정렬 변경: $prevFilter→${queryConfig.filter}, $prevSort→${queryConfig.sort}",
+            )
+            prevFilter = queryConfig.filter
+            prevSort = queryConfig.sort
             listState.animateScrollToItem(0)
         }
     }
