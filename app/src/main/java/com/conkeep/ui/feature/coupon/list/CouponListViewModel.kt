@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -57,6 +58,9 @@ class CouponListViewModel
         private val _queryConfig = MutableStateFlow(CouponQueryConfig())
         val queryConfig = _queryConfig.asStateFlow()
 
+        private val _resetTrigger = MutableStateFlow(0)
+        val resetTrigger = _resetTrigger.asStateFlow()
+
         private val _searchQueryInput = MutableStateFlow("")
         val searchQueryInput = _searchQueryInput.asStateFlow()
 
@@ -78,18 +82,19 @@ class CouponListViewModel
         }
 
         val coupons: Flow<PagingData<CouponUiModel>> =
-            _queryConfig
-                .flatMapLatest { config: CouponQueryConfig ->
-                    couponRepository
-                        .searchCoupons(
-                            query = config.query,
-                            today = todayIso8601,
-                            filterType = config.filter.value,
-                            sortType = config.sort.value,
-                        ).map { pagingData ->
-                            pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
-                        }
-                }.cachedIn(viewModelScope)
+            combine(queryConfig, resetTrigger) { config, _ ->
+                config
+            }.flatMapLatest { config ->
+                couponRepository
+                    .searchCoupons(
+                        query = config.query,
+                        today = todayIso8601,
+                        filterType = config.filter.value,
+                        sortType = config.sort.value,
+                    ).map { pagingData ->
+                        pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
+                    }
+            }.cachedIn(viewModelScope)
 
         val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
             _queryConfig
@@ -123,6 +128,7 @@ class CouponListViewModel
                     filter = CouponFilterType.ALL,
                     sort = CouponSortType.RECENT,
                 )
+            _resetTrigger.value += 1
         }
 
         /**

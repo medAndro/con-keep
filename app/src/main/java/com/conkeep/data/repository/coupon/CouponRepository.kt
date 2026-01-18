@@ -71,6 +71,7 @@ class CouponRepository
                         enablePlaceholders = false,
                         initialLoadSize = 40,
                     ),
+                initialKey = 0,
                 pagingSourceFactory = {
                     couponDao.searchCouponsPaging(
                         userId = authManager.currentUser?.id ?: "",
