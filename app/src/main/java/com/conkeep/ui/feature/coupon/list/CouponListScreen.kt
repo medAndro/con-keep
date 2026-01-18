@@ -1,6 +1,7 @@
 package com.conkeep.ui.feature.coupon.list
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -24,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -33,7 +35,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -51,7 +52,10 @@ import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepTheme
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withTimeoutOrNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,39 +72,38 @@ fun CouponScreen(
 
     val listState = rememberLazyListState()
 
-    // 특정 항목으로 스크롤하기 위한 예약 ID
-    var pendingScrollId by remember { mutableStateOf<String?>(null) }
+    // 새 쿠폰 추가 이벤트 수신시 스크롤 최근 등록순 전체로 필터를 변경 후, 쿠폰이 추가될 때까지 대기 한 뒤 최상단으로 이동
+    LaunchedEffect(viewModel) {
+        viewModel.couponAddedEvent.collectLatest { couponId ->
+            Log.d("CouponScreen", "새 쿠폰 추가: $couponId")
 
-    // 쿠폰 등록 완료 이벤트 수집 및 추가된 항목ID 수집
-    LaunchedEffect(viewModel.couponAddedEvent) {
-        viewModel.couponAddedEvent.collect { couponId: String ->
-            pendingScrollId = couponId
-            viewModel.readyToShowNewCoupon()
-            typingQuery = ""
+            runCatching {
+                typingQuery = ""
+                viewModel.readyToShowNewCoupon()
+
+                val found =
+                    withTimeoutOrNull(3000) {
+                        snapshotFlow { coupons.peek(0)?.id }
+                            .first { it == couponId }
+                    }
+
+                if (found != null) {
+                    Log.d("CouponScreen", "쿠폰 $couponId 발견")
+                    listState.animateScrollToItem(0)
+                } else {
+                    Log.w("CouponScreen", "타임아웃, 강제 스크롤")
+                    listState.animateScrollToItem(0)
+                }
+            }.onFailure { e ->
+                Log.e("CouponScreen", "쿠폰 추가 스크롤 실패", e)
+            }
         }
     }
 
     // 일반적인 필터/정렬 클릭 변경 시 스크롤 최상단 이동
-    // pendingScrollId가 있을 때는 등록 로직의 스크롤이 우선되어야 하므로 제외합니다.
     LaunchedEffect(queryConfig.filter, queryConfig.sort) {
-        if (coupons.itemCount > 0 && pendingScrollId == null) {
+        if (coupons.itemCount > 0) {
             listState.animateScrollToItem(0)
-        }
-    }
-
-    // 데이터 로드 완료 후 예약된 ID가 있으면 해당 위치로 정밀 스크롤
-    LaunchedEffect(coupons.loadState.refresh, coupons.itemCount) {
-        val isRefreshFinished = coupons.loadState.refresh is LoadState.NotLoading
-        if (isRefreshFinished && pendingScrollId != null && coupons.itemCount > 0) {
-            val targetIndex =
-                (0 until coupons.itemCount).firstOrNull {
-                    coupons.peek(it)?.id == pendingScrollId
-                }
-
-            if (targetIndex != null) {
-                listState.animateScrollToItem(targetIndex)
-                pendingScrollId = null
-            }
         }
     }
 
