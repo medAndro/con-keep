@@ -1,15 +1,18 @@
 package com.conkeep.ui.feature.coupon.list.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,30 +40,27 @@ fun CouponFilterChipRow(
         items(CouponFilterType.entries) { filter ->
             val isSelected = selectedFilter == filter
 
-            FilterChip(
+            Surface(
                 selected = isSelected,
                 onClick = { onFilterSelected(filter) },
-                modifier =
-                    Modifier
-                        .height(27.dp),
-                label = {
+                modifier = Modifier.height(27.dp),
+                shape = RoundedCornerShape(100.dp),
+                color = if (isSelected) brandPrimary else brandSecondaryDarker,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 9.dp)
+                            .wrapContentHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text(
                         text = "${filter.getDisplayTitle()} · ${couponCountSummary.getCount(filter)}",
                         style = PretendardSemibold13,
+                        color = if (isSelected) textPrimary else textSecondary,
                     )
-                },
-                shape = RoundedCornerShape(100.dp),
-                colors =
-                    FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = brandPrimary,
-                        selectedLabelColor = textPrimary,
-                        containerColor = brandSecondaryDarker,
-                        labelColor = textSecondary,
-                    ),
-                border = null,
-                leadingIcon = null,
-                trailingIcon = null,
-            )
+                }
+            }
         }
     }
 }
