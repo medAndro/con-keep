@@ -171,7 +171,15 @@ class CouponListViewModel
         }
 
         fun changeCouponFilterType(filterType: CouponFilterType) {
-            _queryConfig.value = queryConfig.value.copy(filter = filterType)
+            _queryConfig.value =
+                queryConfig.value.copy(
+                    filter = filterType,
+                    sort =
+                        when (filterType) {
+                            CouponFilterType.USED -> CouponSortType.RECENT_USED
+                            else -> CouponSortType.EXPIRY
+                        },
+                )
         }
 
         fun addCouponFromUri(uri: Uri) {
