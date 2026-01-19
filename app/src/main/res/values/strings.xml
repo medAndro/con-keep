@@ -40,6 +40,7 @@
     <!-- 정렬 바 -->
     <string name="sort_recent">최근 등록순</string>
     <string name="sort_expiry">만료 임박순</string>
+    <string name="sort_recent_used">최근 사용순</string>
     <string name="searched_coupon">검색된</string>
     <string name="coupon_count">%1$s 쿠폰 %2$d개</string>
     <string name="coupon_search_result">%1$s 쿠폰에서 %2$d개 찾음</string>

@@ -90,7 +90,7 @@ class CouponListViewModel
                         query = config.query,
                         today = todayIso8601,
                         filterType = config.filter.value,
-                        sortType = config.sort.value,
+                        sortType = config.sort.sortType,
                     ).map { pagingData ->
                         pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
                     }
@@ -126,7 +126,7 @@ class CouponListViewModel
                 CouponQueryConfig(
                     query = "",
                     filter = CouponFilterType.ALL,
-                    sort = CouponSortType.RECENT,
+                    sort = CouponSortType.RECENT_ADD,
                 )
             _resetTrigger.value += 1
         }
@@ -150,9 +150,22 @@ class CouponListViewModel
             _queryConfig.value =
                 queryConfig.value.copy(
                     sort =
-                        when (queryConfig.value.sort) {
-                            CouponSortType.RECENT -> CouponSortType.EXPIRY
-                            CouponSortType.EXPIRY -> CouponSortType.RECENT
+                        when (queryConfig.value.filter) {
+                            CouponFilterType.USED -> {
+                                when (queryConfig.value.sort) {
+                                    CouponSortType.RECENT_USED -> CouponSortType.EXPIRY
+                                    CouponSortType.EXPIRY -> CouponSortType.RECENT_USED
+                                    else -> CouponSortType.EXPIRY
+                                }
+                            }
+
+                            else -> {
+                                when (queryConfig.value.sort) {
+                                    CouponSortType.RECENT_ADD -> CouponSortType.EXPIRY
+                                    CouponSortType.EXPIRY -> CouponSortType.RECENT_ADD
+                                    else -> CouponSortType.EXPIRY
+                                }
+                            }
                         },
                 )
         }

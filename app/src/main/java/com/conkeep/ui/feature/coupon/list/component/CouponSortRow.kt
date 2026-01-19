@@ -119,7 +119,7 @@ fun CouponSortRowPreview() {
         isSearched = true,
         count = 10,
         selectFilterType = CouponFilterType.ALL,
-        selectedSort = CouponSortType.RECENT,
+        selectedSort = CouponSortType.RECENT_ADD,
         isFilterExpanded = false,
         onFilterChipExpandClick = {},
         onSortClick = {},

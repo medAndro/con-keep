@@ -178,7 +178,7 @@ fun CouponScreenContent(
     onClearSearchQuery: () -> Unit,
     couponFilterType: CouponFilterType = CouponFilterType.ALL,
     couponCountSummary: CouponCountSummary = CouponCountSummary(),
-    selectedSortType: CouponSortType = CouponSortType.RECENT,
+    selectedSortType: CouponSortType = CouponSortType.RECENT_ADD,
     onFilterTypeClick: (CouponFilterType) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -337,7 +337,7 @@ private fun CouponScreenContentPreview() {
             onCouponSortClick = {},
             onSearchTriggered = {},
             couponFilterType = CouponFilterType.ALL,
-            selectedSortType = CouponSortType.RECENT,
+            selectedSortType = CouponSortType.RECENT_ADD,
             couponCountSummary = couponCountSummaryFixture,
             onFilterChipExpandClick = {},
             onFilterTypeClick = {},

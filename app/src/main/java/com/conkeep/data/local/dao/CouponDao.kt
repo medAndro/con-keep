@@ -48,7 +48,7 @@ interface CouponDao {
      * @param searchQuery 검색어, 비어있다면 전체 반환, 존재하면 상품명, 브랜드, 쿠폰 번호에서 검색
      * @param today: 현재 날짜 (ISO 8601 형식: "YYYY-MM-DD")
      * @param filterType: 0(전체), 1(사용가능), 2(사용완료), 3(기간만료)
-     * @param sortType: 0(최근 등록순), 1(만료 임박순)
+     * @param sortType: 0(최근 등록순), 1(만료 임박순), 2(최근 사용순)
      */
     @Query(
         """
@@ -85,11 +85,12 @@ interface CouponDao {
             CASE WHEN :sortType = 0 THEN created_at END DESC,
             
             -- 3. 실제 정렬 조건 (만료임박순): 오늘 날짜와의 절댓값이 가까운 기준
-            CASE 
-                WHEN :sortType = 1 THEN ABS(julianday(expiry_date) - julianday(:today)) 
-            END ASC,
+            CASE WHEN :sortType = 1 THEN ABS(julianday(expiry_date) - julianday(:today)) END ASC,
+
+            -- 4. 실제 정렬 조건 (최근사용순)
+            CASE WHEN :sortType = 2 THEN used_at END DESC,
             
-            -- 4. 동일 조건 시
+            -- 5. 동일 조건 시
             id DESC
     """,
     )
