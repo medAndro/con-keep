@@ -59,7 +59,21 @@ fun CouponCard(
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "${if (couponUiModel.isUsed) "[사용]" else "[미사용]"} ${
+                    "${
+                        when {
+                            couponUiModel.isUsed -> {
+                                "[사용 완료]"
+                            }
+
+                            couponUiModel.isExpired -> {
+                                "[만료]"
+                            }
+
+                            else -> {
+                                "[사용 가능]"
+                            }
+                        }
+                    } ${
                         when (couponUiModel.localStatus) {
                             CouponLocalStatus.PREPROCESSED -> "AI 인식중..."
                             CouponLocalStatus.RECOGNIZED -> couponUiModel.name
@@ -92,6 +106,7 @@ fun CouponCardPreview() {
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     expiryDate = "2026-12-31",
                     isUsed = false,
+                    isExpired = false,
                     localImagePath = null,
                     localStatus = CouponLocalStatus.RECOGNIZED,
                 ),

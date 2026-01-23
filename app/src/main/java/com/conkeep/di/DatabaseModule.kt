@@ -25,7 +25,7 @@ object DatabaseModule {
                 context,
                 CouponDatabase::class.java,
                 "coupon_database",
-            ).fallbackToDestructiveMigration(true) // 개발 중에만 사용
+            ).fallbackToDestructiveMigration(true) // Todo: 개발 중에만 사용하며 배포시 제거 필요
             .build()
 
     @Provides

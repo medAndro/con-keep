@@ -30,6 +30,7 @@ val PretendardSemibold =
         fontFamily = PretendardFontFamily,
         fontWeight = FontWeight.SemiBold,
     )
+val PretendardSemibold13 = PretendardSemibold.copy(fontSize = 13.sp)
 val PretendardSemibold12 = PretendardSemibold.copy(fontSize = 12.sp)
 val PretendardSemibold16 = PretendardSemibold.copy(fontSize = 16.sp)
 

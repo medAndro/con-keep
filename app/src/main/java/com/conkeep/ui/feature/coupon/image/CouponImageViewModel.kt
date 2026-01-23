@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
+import com.conkeep.util.TimeProvider
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -21,6 +22,7 @@ class CouponImageViewModel
     @AssistedInject
     constructor(
         private val couponRepository: CouponRepository,
+        private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
     ) : ViewModel() {
         @AssistedFactory
@@ -32,7 +34,7 @@ class CouponImageViewModel
             couponRepository
                 .getCoupon(couponId)
                 .map { domainCoupon ->
-                    domainCoupon?.toUiModel()
+                    domainCoupon?.toUiModel(timeProvider.getToday())
                 }.stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5000),

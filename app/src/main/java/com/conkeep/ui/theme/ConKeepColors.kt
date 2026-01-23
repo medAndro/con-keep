@@ -17,6 +17,9 @@ object ConKeepColors {
     val brandSecondary: Color
         get() = ColorPalette.YellowLight
 
+    val brandSecondaryDarker: Color
+        get() = ColorPalette.YellowLightDark
+
     val brandAccent: Color
         get() = ColorPalette.OrangeVivid
 
