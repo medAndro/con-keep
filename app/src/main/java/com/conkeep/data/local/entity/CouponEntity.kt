@@ -14,6 +14,8 @@ import androidx.room.PrimaryKey
         Index(value = ["user_id", "is_used", "expiry_date"]),
         // 3. 전체 보기에서의 우선순위 정렬 인덱싱 (사용여부와 유효기간을 함께 고려)
         Index(value = ["user_id", "expiry_date", "is_used"]),
+        // 4. 사용완료에서 최근 사용순 정렬 인덱싱
+        Index(value = ["user_id", "is_used", "used_at"]),
     ],
 )
 data class CouponEntity(
