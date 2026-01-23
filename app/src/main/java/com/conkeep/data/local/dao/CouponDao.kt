@@ -20,29 +20,6 @@ interface CouponDao {
     fun getCouponFlow(id: String): Flow<CouponEntity?>
 
     /**
-     * 검색 쿼리
-     * 검색어(searchQuery)가 비어있으면 전체 목록을 반환하고,
-     * 검색어가 존재하면 상품명, 브랜드, 쿠폰 번호 중 하나라도 포함하는 쿠폰 목록을 반환합니다.
-     */
-    @Query(
-        """
-        SELECT * FROM coupons 
-        WHERE user_id = :userId 
-        AND (
-            :searchQuery = '' OR 
-            product_name LIKE '%' || :searchQuery || '%' OR 
-            brand LIKE '%' || :searchQuery || '%' OR 
-            coupon_pin LIKE '%' || :searchQuery || '%'
-        )
-        ORDER BY created_at DESC
-    """,
-    )
-    fun searchCouponsPaging(
-        userId: String,
-        searchQuery: String,
-    ): PagingSource<Int, CouponEntity>
-
-    /**
      * [통합 검색/필터/정렬 쿼리]
      * @param userId: 사용자 ID
      * @param searchQuery 검색어, 비어있다면 전체 반환, 존재하면 상품명, 브랜드, 쿠폰 번호에서 검색
