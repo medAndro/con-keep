@@ -17,19 +17,26 @@ class LocalFileManager
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
+        private val imageFolderName = "coupon_images"
+
         suspend fun saveCouponImage(
             uri: Uri,
             mimeType: String?,
         ): String? =
             withContext(Dispatchers.IO) {
                 try {
+                    val imageDir =
+                        File(context.filesDir, imageFolderName).apply {
+                            if (!exists()) mkdirs()
+                        }
+
                     val extension =
                         MimeTypeMap
                             .getSingleton()
                             .getExtensionFromMimeType(mimeType) ?: "jpg"
 
                     val fileName = "coupon_${System.currentTimeMillis()}.$extension"
-                    val destinationFile = File(context.filesDir, fileName)
+                    val destinationFile = File(imageDir, fileName)
 
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         FileOutputStream(destinationFile).use { output ->
