@@ -1,6 +1,7 @@
 package com.conkeep.ui.feature.coupon.image
 
 import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -72,6 +73,17 @@ fun CouponImageScreen(
         onBackClick = {
             if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                 backStack.removeLastOrNull()
+            }
+        },
+        onShareClick = {
+            val shareUri = viewModel.getShareUri()
+            if (shareUri != null) {
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "image/*"
+                    putExtra(Intent.EXTRA_STREAM, shareUri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "쿠폰 공유"))
             }
         },
     )

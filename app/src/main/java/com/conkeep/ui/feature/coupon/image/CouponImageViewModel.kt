@@ -1,7 +1,9 @@
 package com.conkeep.ui.feature.coupon.image
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.local.file.LocalFileManager
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
@@ -24,6 +26,7 @@ class CouponImageViewModel
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
+        private val fileManager: LocalFileManager,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -41,7 +44,10 @@ class CouponImageViewModel
                     initialValue = null,
                 )
 
-        fun shareCoupon() {
+        fun getShareUri(): Uri? {
+            val path = coupon.value?.localImagePath ?: return null
+            val name = "${coupon.value?.name}_${coupon.value?.number}"
+            return fileManager.getShareUriWithCustomName(path, name)
         }
 
         fun saveCoupon() {
