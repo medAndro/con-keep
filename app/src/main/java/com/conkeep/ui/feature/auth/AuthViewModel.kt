@@ -27,7 +27,7 @@ class AuthViewModel
                     .onSuccess { user ->
                         Toast.makeText(activity, "${user.email} 로그인 성공", Toast.LENGTH_SHORT).show()
                     }.onFailure { error ->
-                        Toast.makeText(activity, "${error.message} 로그인 실패", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, "${error.message}", Toast.LENGTH_SHORT).show()
                     }
             }
         }
