@@ -51,6 +51,7 @@
     <string name="coupon_image_saved">갤러리에 쿠폰 이미지를 저장하였습니다.</string>
     <string name="coupon_image_save_failed">쿠폰 이미지 저장에 실패하였습니다.</string>
     <string name="coupon_image_processing_failed">이미지 파일 처리에 실패하였습니다.</string>
+    <string name="coupon_image_save_permission_not_grant">이미지 저장을 위해 앱 설정에서 파일 권한을 허용해주세요.</string>
 
 
 </resources>
