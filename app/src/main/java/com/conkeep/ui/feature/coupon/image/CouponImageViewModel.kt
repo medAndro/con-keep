@@ -1,7 +1,9 @@
 package com.conkeep.ui.feature.coupon.image
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.local.file.LocalFileManager
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = CouponImageViewModel.Factory::class)
@@ -24,6 +27,7 @@ class CouponImageViewModel
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
+        private val fileManager: LocalFileManager,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -41,9 +45,25 @@ class CouponImageViewModel
                     initialValue = null,
                 )
 
-        fun shareCoupon() {
+        fun shareCoupon(onResult: (Uri?) -> Unit) {
+            val currentCoupon = coupon.value ?: return
+            val path = currentCoupon.localImagePath ?: return
+            val name = "${coupon.value?.name}_${coupon.value?.number}"
+
+            viewModelScope.launch {
+                val shareUri = fileManager.getShareUriWithCustomName(path, name)
+                onResult(shareUri)
+            }
         }
 
-        fun saveCoupon() {
+        fun saveCoupon(onResult: (Boolean?) -> Unit) {
+            val currentCoupon = coupon.value ?: return
+            val path = currentCoupon.localImagePath ?: return
+            val name = "${coupon.value?.name}_${coupon.value?.number}"
+
+            viewModelScope.launch {
+                val saveResult = fileManager.exportImageToPublic(path, name)
+                onResult(saveResult)
+            }
         }
     }
