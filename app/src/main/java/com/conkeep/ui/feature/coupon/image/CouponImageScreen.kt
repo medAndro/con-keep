@@ -2,6 +2,7 @@ package com.conkeep.ui.feature.coupon.image
 
 import android.app.Activity
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -50,6 +51,10 @@ fun CouponImageScreen(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val window = remember(context) { (context as? Activity)?.window }
+    val shareTitle = stringResource(R.string.coupon_image_share_title)
+    val saveSuccessMsg = stringResource(R.string.coupon_image_saved)
+    val saveFailMsg = stringResource(R.string.coupon_image_save_failed)
+    val shareFailMsg = stringResource(R.string.coupon_image_processing_failed)
 
     if (window != null) {
         val controller =
@@ -60,7 +65,8 @@ fun CouponImageScreen(
         DisposableEffect(controller) {
             controller.apply {
                 hide(WindowInsetsCompat.Type.systemBars())
-                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
 
             onDispose {
@@ -75,15 +81,43 @@ fun CouponImageScreen(
                 backStack.removeLastOrNull()
             }
         },
-        onShareClick = {
-            val shareUri = viewModel.getShareUri()
-            if (shareUri != null) {
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "image/*"
-                    putExtra(Intent.EXTRA_STREAM, shareUri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        onSaveClick = {
+            viewModel.saveCoupon { success ->
+                if (success != null && success) {
+                    Toast
+                        .makeText(
+                            context,
+                            saveSuccessMsg,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                } else {
+                    Toast
+                        .makeText(
+                            context,
+                            saveFailMsg,
+                            Toast.LENGTH_SHORT,
+                        ).show()
                 }
-                context.startActivity(Intent.createChooser(intent, "쿠폰 공유"))
+            }
+        },
+        onShareClick = {
+            viewModel.shareCoupon { shareUri ->
+                if (shareUri != null) {
+                    val intent =
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "image/*"
+                            putExtra(Intent.EXTRA_STREAM, shareUri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    context.startActivity(Intent.createChooser(intent, shareTitle))
+                } else {
+                    Toast
+                        .makeText(
+                            context,
+                            shareFailMsg,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                }
             }
         },
     )

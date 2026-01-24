@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = CouponImageViewModel.Factory::class)
@@ -44,12 +45,25 @@ class CouponImageViewModel
                     initialValue = null,
                 )
 
-        fun getShareUri(): Uri? {
-            val path = coupon.value?.localImagePath ?: return null
+        fun shareCoupon(onResult: (Uri?) -> Unit) {
+            val currentCoupon = coupon.value ?: return
+            val path = currentCoupon.localImagePath ?: return
             val name = "${coupon.value?.name}_${coupon.value?.number}"
-            return fileManager.getShareUriWithCustomName(path, name)
+
+            viewModelScope.launch {
+                val shareUri = fileManager.getShareUriWithCustomName(path, name)
+                onResult(shareUri)
+            }
         }
 
-        fun saveCoupon() {
+        fun saveCoupon(onResult: (Boolean?) -> Unit) {
+            val currentCoupon = coupon.value ?: return
+            val path = currentCoupon.localImagePath ?: return
+            val name = "${coupon.value?.name}_${coupon.value?.number}"
+
+            viewModelScope.launch {
+                val shareUri = fileManager.exportImageToPublic(path, name)
+                onResult(shareUri)
+            }
         }
     }
