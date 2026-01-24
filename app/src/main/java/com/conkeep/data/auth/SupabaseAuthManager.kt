@@ -1,6 +1,10 @@
 package com.conkeep.data.auth
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.provider.Settings
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.conkeep.BuildConfig
@@ -75,6 +79,7 @@ class SupabaseAuthManager
                         .Builder()
                         .setFilterByAuthorizedAccounts(false) // 모든 계정 표시
                         .setServerClientId(BuildConfig.WEB_CLIENT_ID)
+                        .setAutoSelectEnabled(true)
                         .build()
 
                 val request =
@@ -105,10 +110,38 @@ class SupabaseAuthManager
                         ?: throw Exception("로그인 후 사용자 정보를 가져오지 못했습니다.")
 
                 Result.success(user)
+            } catch (e: androidx.credentials.exceptions.NoCredentialException) {
+                promptAddGoogleAccount(activity)
+                Result.failure(NoGoogleAccountException("구글 계정을 먼저 추가해주세요"))
+            } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                Result.failure(e)
             } catch (e: Exception) {
-                // 사용자가 취소한 경우 등에 대한 예외 처리 필요
+                Log.e("SupabaseAuth", "Google 로그인 실패", e)
                 Result.failure(e)
             }
+
+        /**
+         * 구글 계정 추가 화면 열기
+         */
+        private fun promptAddGoogleAccount(activity: Activity) {
+            try {
+                val intent =
+                    Intent(Settings.ACTION_ADD_ACCOUNT).apply {
+                        // 구글 계정만 표시
+                        putExtra(Settings.EXTRA_ACCOUNT_TYPES, arrayOf("com.google"))
+                    }
+                activity.startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                // 일부 기기에서 ACTION_ADD_ACCOUNT를 지원하지 않을 수 있음
+                Log.e("SupabaseAuth", "계정 추가 화면을 열 수 없습니다", e)
+                // 폴백: 동기화 설정 화면
+                try {
+                    activity.startActivity(Intent(Settings.ACTION_SYNC_SETTINGS))
+                } catch (e2: Exception) {
+                    Log.e("SupabaseAuth", "설정 화면을 열 수 없습니다", e2)
+                }
+            }
+        }
 
         suspend fun signOut() {
             auth.signOut()
@@ -122,3 +155,7 @@ class SupabaseAuthManager
             }
         }
     }
+
+class NoGoogleAccountException(
+    message: String,
+) : Exception(message)
