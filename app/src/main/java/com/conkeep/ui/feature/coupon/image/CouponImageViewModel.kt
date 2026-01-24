@@ -62,8 +62,8 @@ class CouponImageViewModel
             val name = "${coupon.value?.name}_${coupon.value?.number}"
 
             viewModelScope.launch {
-                val shareUri = fileManager.exportImageToPublic(path, name)
-                onResult(shareUri)
+                val saveResult = fileManager.exportImageToPublic(path, name)
+                onResult(saveResult)
             }
         }
     }
