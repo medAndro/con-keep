@@ -18,7 +18,7 @@ class AuthViewModel
         // 로그인 상태를 관찰할 수 있는 Flow
         val isLoggedIn = authManager.isLoggedIn
 
-        fun getCurrentUser() = authManager.currentUser
+        fun getCurrentUser() = authManager.currentUserFlow
 
         fun signIn(activity: Activity) {
             viewModelScope.launch {
