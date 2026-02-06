@@ -8,16 +8,15 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.navigation.Route
+import com.conkeep.ui.component.TopBar
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
 import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
 import com.conkeep.ui.feature.coupon.list.component.CouponSortRow
@@ -185,15 +185,10 @@ fun CouponScreenContent(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("내 쿠폰") },
-                actions = {
-                    Button(onClick = {
-                        focusManager.clearFocus()
-                        onCouponAddClick()
-                    }) {
-                        Text("+")
-                    }
+            TopBar(
+                onClickAdd = {
+                    focusManager.clearFocus()
+                    onCouponAddClick()
                 },
             )
         },
@@ -209,6 +204,7 @@ fun CouponScreenContent(
                         })
                     },
         ) {
+            Spacer(modifier = Modifier.padding(top = 16.dp))
             SearchBar(
                 query = typingQuery,
                 onQueryUpdate = {
@@ -223,7 +219,7 @@ fun CouponScreenContent(
                     onClearSearchQuery()
                     focusManager.clearFocus()
                 },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
 
             CouponSortRow(
