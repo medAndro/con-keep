@@ -42,7 +42,7 @@ fun ExpirationBadge(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier.height(21.dp),
+        modifier = modifier.height(21.dp),
         shape = RoundedCornerShape(8.dp),
         color =
             when (status) {

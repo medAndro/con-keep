@@ -109,6 +109,20 @@ fun CouponCard(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.matchParentSize(),
                     )
+                    if ((couponUiModel.isUsed || couponUiModel.isExpired) && couponUiModel.localStatus == CouponLocalStatus.RECOGNIZED) {
+                        ExpirationBadge(
+                            status = if (couponUiModel.isUsed) ExpirationBadgeStatus.Safe else ExpirationBadgeStatus.Expiring,
+                            text =
+                                if (couponUiModel.isUsed) {
+                                    stringResource(
+                                        R.string.filter_used,
+                                    )
+                                } else {
+                                    stringResource(R.string.filter_expired)
+                                },
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
                     if (couponUiModel.isMonetary) {
                         Box(
                             modifier =
