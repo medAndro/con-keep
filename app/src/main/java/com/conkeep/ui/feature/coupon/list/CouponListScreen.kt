@@ -298,10 +298,12 @@ private val dummyCoupons =
         CouponUiModel(
             id = "3",
             number = "1111-2222-3333",
-            name = "[기프티콘] 파리바게뜨 우유식빵",
+            name = "네이버페이 1만원권",
             expiryDate = "2026.01.20",
             isUsed = true,
             isExpired = false,
+            isMonetary = true,
+            amount = 10000,
             localStatus = CouponLocalStatus.AI_FAILED,
         ),
         CouponUiModel(

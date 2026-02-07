@@ -15,6 +15,8 @@ fun Coupon.toUiModel(today: LocalDate): CouponUiModel =
         isExpired = expiryDate?.let { it < today } ?: true,
         localImagePath = localImagePath,
         r2Url = imageUrl,
+        isMonetary = isMonetary,
+        amount = amount,
         localStatus =
             localStatus?.let { statusStr ->
                 runCatching { CouponLocalStatus.valueOf(statusStr) }.getOrNull()

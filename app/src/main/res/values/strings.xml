@@ -34,6 +34,10 @@
     <!--    쿠폰 목록 화면-->
     <string name="coupon_list_screen_search_bar_placeholder">상품명이나 브랜드로 검색하세요</string>
     <string name="coupon_list_screen_search_bar_clear_description">검색 입력 초기화</string>
+
+    <!--    쿠폰 목록의 쿠폰 카드-->
+    <string name="coupon_card_monetary_value">%,1d₩</string>
+
     <!-- 필터 칩 -->
     <string name="filter_all">전체</string>
     <string name="filter_available">사용 가능</string>

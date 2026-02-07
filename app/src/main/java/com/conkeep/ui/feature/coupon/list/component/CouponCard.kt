@@ -1,28 +1,38 @@
 package com.conkeep.ui.feature.coupon.list.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.theme.ConKeepColors.bgSurface
+import com.conkeep.ui.theme.ConKeepColors.borderDefault
 import com.conkeep.ui.theme.ConKeepTheme
+import com.conkeep.ui.theme.PretendardSemibold13
 import java.io.File
 
 @Composable
@@ -32,32 +42,74 @@ fun CouponCard(
     modifier: Modifier = Modifier,
 ) {
     val isPreview = LocalInspectionMode.current
+    val imageShape = RoundedCornerShape(8.dp)
 
     Card(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = bgSurface,
+            ),
     ) {
-        Row {
-            AsyncImage(
-                model =
-                    if (isPreview) {
-                        R.drawable.ic_corn_ms_emoji
-                    } else {
-                        couponUiModel.localImagePath?.let { File(it) }
-                    },
-                contentDescription = "쿠폰 이미지",
-                placeholder = painterResource(R.drawable.ic_corn_ms_emoji),
-                error = painterResource(R.drawable.ic_corn_ms_emoji),
-                contentScale = ContentScale.Crop,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(13.dp),
+        ) {
+            Box(
                 modifier =
                     Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-            )
-
-            Column(modifier = Modifier.padding(16.dp)) {
+                        .size(width = 84.dp, height = 87.dp)
+                        .clip(imageShape)
+                        .border(1.dp, borderDefault, imageShape),
+            ) {
+                AsyncImage(
+                    model =
+                        if (isPreview) {
+                            R.drawable.ic_corn_ms_emoji
+                        } else {
+                            couponUiModel.localImagePath?.let {
+                                File(
+                                    it,
+                                )
+                            }
+                        },
+                    contentDescription = "쿠폰 이미지",
+                    placeholder = painterResource(R.drawable.ic_corn_ms_emoji),
+                    error = painterResource(R.drawable.ic_corn_ms_emoji),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+                if (couponUiModel.isMonetary) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(27.dp)
+                                .align(Alignment.BottomCenter)
+                                .background(borderDefault),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.coupon_card_monetary_value, couponUiModel.amount ?: 0),
+                            style = PretendardSemibold13,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = 15.dp,
+                        end = 13.dp,
+                        top = 3.dp,
+                        bottom = 3.dp,
+                    ),
+            ) {
                 Text(
                     "${
                         when {
@@ -96,7 +148,7 @@ fun CouponCard(
 
 @Preview
 @Composable
-fun CouponCardPreview() {
+fun CouponCardMonetaryPreview() {
     ConKeepTheme {
         CouponCard(
             couponUiModel =
@@ -108,6 +160,33 @@ fun CouponCardPreview() {
                     isUsed = false,
                     isExpired = false,
                     localImagePath = null,
+                    r2Url = null,
+                    isMonetary = true,
+                    amount = 1234567,
+                    localStatus = CouponLocalStatus.RECOGNIZED,
+                ),
+            onClick = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+fun CouponCardNormalPreview() {
+    ConKeepTheme {
+        CouponCard(
+            couponUiModel =
+                CouponUiModel(
+                    id = "1",
+                    number = "1234567890",
+                    name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
+                    expiryDate = "2026-12-31",
+                    isUsed = false,
+                    isExpired = false,
+                    localImagePath = null,
+                    r2Url = null,
+                    isMonetary = false,
+                    amount = null,
                     localStatus = CouponLocalStatus.RECOGNIZED,
                 ),
             onClick = {},

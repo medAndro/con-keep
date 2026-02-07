@@ -11,5 +11,7 @@ data class CouponUiModel(
     val isExpired: Boolean,
     val localImagePath: String? = null,
     val r2Url: String? = null,
+    val isMonetary: Boolean = false,
+    val amount: Int? = null,
     val localStatus: CouponLocalStatus? = null,
 )
