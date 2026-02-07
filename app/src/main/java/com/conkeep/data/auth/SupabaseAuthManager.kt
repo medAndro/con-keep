@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -35,6 +36,7 @@ class SupabaseAuthManager
         supabase: SupabaseClient,
     ) {
         val auth = supabase.auth
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
         // 로그인 상태 (StateFlow)
         val isLoggedIn: StateFlow<Boolean> =
@@ -47,12 +49,39 @@ class SupabaseAuthManager
                     initialValue = false,
                 )
 
-        // 현재 사용자 정보
-        val currentUser: UserInfo?
-            get() = auth.currentUserOrNull()
+        // 현재 사용자 정보 Flow
+        val currentUserFlow: StateFlow<UserInfo?> =
+            auth.sessionStatus
+                .map { status ->
+                    if (status is SessionStatus.Authenticated) {
+                        status.session.user
+                    } else {
+                        auth.currentUserOrNull()
+                    }
+                }.distinctUntilChanged()
+                .stateIn(
+                    scope = scope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = auth.currentUserOrNull(),
+                )
 
-        val accessToken: String?
-            get() = auth.currentSessionOrNull()?.accessToken
+        // 현재 사용자 ID Flow
+        val currentUserIdFlow: StateFlow<String?> =
+            currentUserFlow
+                .map { it?.id }
+                .stateIn(scope, SharingStarted.Eagerly, auth.currentUserOrNull()?.id)
+
+        // 액세스 토큰 Flow
+        val accessTokenFlow: StateFlow<String?> =
+            auth.sessionStatus
+                .map { status ->
+                    if (status is SessionStatus.Authenticated) {
+                        status.session.accessToken
+                    } else {
+                        auth.currentSessionOrNull()?.accessToken
+                    }
+                }.distinctUntilChanged()
+                .stateIn(scope, SharingStarted.Eagerly, auth.currentSessionOrNull()?.accessToken)
 
         suspend fun awaitInitialSession(): Boolean =
             auth.sessionStatus
