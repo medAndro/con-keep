@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,7 @@ import coil3.compose.AsyncImage
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponLocalStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.feature.coupon.model.badgeStatus
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
@@ -50,7 +52,7 @@ fun CouponCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cardAlpha = if (couponUiModel.isUsed || couponUiModel.isExpired) 0.6f else 1f
+    val cardAlpha = if (couponUiModel.isUsed || couponUiModel.isExpired) 0.8f else 1f
     val isPreview = LocalInspectionMode.current
     val imageShape = RoundedCornerShape(8.dp)
 
@@ -133,7 +135,7 @@ fun CouponCard(
                     modifier =
                         Modifier.padding(
                             start = 15.dp,
-                            end = 13.dp,
+                            end = 0.dp,
                             top = 3.dp,
                             bottom = 3.dp,
                         ),
@@ -164,25 +166,44 @@ fun CouponCard(
                         minLines = 2,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                            Modifier
+                                .padding(end = 13.dp)
+                                .fillMaxWidth(),
                     )
                     Row(
                         modifier =
                             Modifier
+                                .fillMaxWidth()
                                 .height(21.dp)
                                 .padding(top = 1.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (couponUiModel.expiryDate != null) {
                             Text(
-                                stringResource(
-                                    R.string.coupon_card_expiry_date_format,
-                                    couponUiModel.expiryDate.year,
-                                    couponUiModel.expiryDate.month.number,
-                                    couponUiModel.expiryDate.day,
-                                ),
+                                text =
+                                    stringResource(
+                                        R.string.coupon_card_expiry_date_format,
+                                        couponUiModel.expiryDate.year,
+                                        couponUiModel.expiryDate.month.number,
+                                        couponUiModel.expiryDate.day,
+                                    ),
                                 style = PretendardMedium12,
                                 color = textBrandGray,
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        if (couponUiModel.dDay != null) {
+                            ExpirationBadge(
+                                status = couponUiModel.badgeStatus,
+                                text =
+                                    when {
+                                        couponUiModel.dDay == 0 -> "D-0"
+                                        couponUiModel.dDay > 0 -> "D+${couponUiModel.dDay}"
+                                        else -> "D${couponUiModel.dDay}"
+                                    },
                             )
                         }
                     }
@@ -204,6 +225,7 @@ fun CouponCardMonetaryPreview() {
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     brand = "스타벅스",
                     expiryDate = LocalDate.parse("2026-12-31"),
+                    dDay = 0,
                     isUsed = false,
                     isExpired = false,
                     localImagePath = null,
@@ -229,6 +251,7 @@ fun CouponCardNormalPreview() {
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     brand = "스타벅스",
                     expiryDate = LocalDate.parse("2026-12-31"),
+                    dDay = -10,
                     isUsed = false,
                     isExpired = false,
                     localImagePath = null,
@@ -254,6 +277,7 @@ fun CouponCardUsedPreview() {
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글+탕종 파마산 치즈 베이글+",
                     brand = "스타벅스",
                     expiryDate = LocalDate.parse("2026-12-31"),
+                    dDay = -123,
                     isUsed = true,
                     isExpired = false,
                     localImagePath = null,
