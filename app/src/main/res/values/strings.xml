@@ -37,6 +37,8 @@
 
     <!--    쿠폰 목록의 쿠폰 카드-->
     <string name="coupon_card_monetary_value">%,1d₩</string>
+    <string name="coupon_card_image_description">쿠폰 이미지</string>
+    <string name="coupon_card_expiry_date_format">%1$d년 %2$d월 %3$d일 까지</string>
 
     <!-- 필터 칩 -->
     <string name="filter_all">전체</string>

@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.datetime.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -272,7 +273,8 @@ private val dummyCoupons =
             id = "0",
             number = "1234-5678-9012",
             name = "스타벅스 아이스 아메리카노 T",
-            expiryDate = "2025.12.31",
+            brand = "스타벅스",
+            expiryDate = LocalDate.parse("2025-12-31"),
             isUsed = false,
             isExpired = false,
             localStatus = CouponLocalStatus.RECOGNIZED,
@@ -281,7 +283,8 @@ private val dummyCoupons =
             id = "1",
             number = "1234-5678-3333",
             name = "스타벅스 아이스 콜드부루 T",
-            expiryDate = "2000.12.31",
+            brand = "스타벅스",
+            expiryDate = LocalDate.parse("2000-12-31"),
             isUsed = false,
             isExpired = true,
             localStatus = CouponLocalStatus.RECOGNIZED,
@@ -290,7 +293,8 @@ private val dummyCoupons =
             id = "2",
             number = "9876-5432-1098",
             name = "배스킨라빈스 싱글레귤러",
-            expiryDate = "2025.12.15",
+            brand = "배스킨라빈스",
+            expiryDate = LocalDate.parse("2025-12-15"),
             isUsed = false,
             isExpired = false,
             localStatus = CouponLocalStatus.PREPROCESSED,
@@ -299,7 +303,8 @@ private val dummyCoupons =
             id = "3",
             number = "1111-2222-3333",
             name = "네이버페이 1만원권",
-            expiryDate = "2026.01.20",
+            brand = "네이버페이",
+            expiryDate = LocalDate.parse("2026-01-20"),
             isUsed = true,
             isExpired = false,
             isMonetary = true,
@@ -310,7 +315,8 @@ private val dummyCoupons =
             id = "4",
             number = "5555-6666-7777",
             name = "교촌치킨 허니콤보 웨지감자 세트",
-            expiryDate = "2026.02.10",
+            brand = "교촌치킨",
+            expiryDate = LocalDate.parse("2026-02-10"),
             isUsed = false,
             isExpired = false,
             localStatus = CouponLocalStatus.PENDING,
