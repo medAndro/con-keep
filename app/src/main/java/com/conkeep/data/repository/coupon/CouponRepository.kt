@@ -43,7 +43,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -70,6 +69,7 @@ class CouponRepository
             sortType: Int,
         ): Flow<PagingData<Coupon>> =
             authManager.currentUserIdFlow
+                .filterNotNull()
                 .flatMapLatest { userId ->
                     Pager(
                         config =
@@ -81,7 +81,7 @@ class CouponRepository
                         initialKey = 0,
                         pagingSourceFactory = {
                             couponDao.searchCouponsPaging(
-                                userId = userId ?: "", // ID 스트림에 따라 자동 재시작
+                                userId = userId,
                                 searchQuery = query,
                                 today = today,
                                 filterType = filterType,
@@ -98,25 +98,16 @@ class CouponRepository
             today: String,
             filterType: Int,
         ): Flow<Int> =
-            authManager.currentUserIdFlow.flatMapLatest { userId ->
-                if (userId.isNullOrEmpty()) {
-                    flowOf(0) // ID가 없으면 0 반환하며 대기
-                } else {
-                    // ID가 들어오는 순간 Room 쿼리를 다시 실행
-                    couponDao.getCouponsCount(userId, query, today, filterType)
-                }
+            authManager.currentUserIdFlow.filterNotNull().flatMapLatest { userId ->
+                couponDao.getCouponsCount(userId, query, today, filterType)
             }
 
         fun getCouponSummary(today: String): Flow<CouponCountSummary> =
-            authManager.currentUserIdFlow.flatMapLatest { userId ->
-                if (userId.isNullOrEmpty()) {
-                    flowOf(CouponCountSummary())
-                } else {
-                    couponDao.getCouponSummaryFlow(
-                        userId = userId,
-                        today = today,
-                    )
-                }
+            authManager.currentUserIdFlow.filterNotNull().flatMapLatest { userId ->
+                couponDao.getCouponSummaryFlow(
+                    userId = userId,
+                    today = today,
+                )
             }
 
         fun getCoupon(id: String): Flow<Coupon?> =
