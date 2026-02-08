@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             delay(100) // 최소 표시 시간
 
-            authManager.awaitInitialSessionV2()
+            authManager.awaitInitialSession()
             val isLoggedIn = authManager.isLoggedIn.value
 
             Log.d("MainActivity", "세션 상태: $isLoggedIn")

@@ -16,18 +16,18 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Clock
 
 @Singleton
 class SupabaseAuthManager
@@ -71,27 +71,28 @@ class SupabaseAuthManager
                 .map { it?.id }
                 .stateIn(scope, SharingStarted.Eagerly, auth.currentUserOrNull()?.id)
 
-        // 액세스 토큰 Flow
-        val accessTokenFlow: StateFlow<String?> =
-            auth.sessionStatus
-                .map { status ->
-                    if (status is SessionStatus.Authenticated) {
-                        status.session.accessToken
-                    } else {
-                        auth.currentSessionOrNull()?.accessToken
-                    }
-                }.distinctUntilChanged()
-                .stateIn(scope, SharingStarted.Eagerly, auth.currentSessionOrNull()?.accessToken)
-
-        suspend fun awaitInitialSession(): Boolean =
-            auth.sessionStatus
-                .filter { it !is SessionStatus.Initializing } // 초기화 완료까지 대기
-                .first()
-                .let { it is SessionStatus.Authenticated }
-
-        suspend fun awaitInitialSessionV2(): Boolean {
+        suspend fun awaitInitialSession(): Boolean {
             auth.awaitInitialization()
             return auth.currentSessionOrNull() != null
+        }
+
+        suspend fun getValidAccessToken(): String? {
+            val session: UserSession = auth.currentSessionOrNull() ?: return null
+
+            // 만료 2분 전에 미리 갱신 시도
+            val expiresIn = (session.expiresAt - Clock.System.now()).inWholeSeconds
+            Log.d("SupabaseAuth", "토큰 만료 시간: $expiresIn")
+            return if (expiresIn < 120) {
+                try {
+                    auth.refreshCurrentSession()
+                    auth.currentSessionOrNull()?.accessToken
+                } catch (e: Exception) {
+                    Log.e("SupabaseAuth", "토큰 갱신 실패", e)
+                    null
+                }
+            } else {
+                session.accessToken
+            }
         }
 
         /**
