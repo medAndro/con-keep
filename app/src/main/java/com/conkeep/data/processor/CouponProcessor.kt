@@ -11,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 class CouponProcessor
@@ -21,38 +22,39 @@ class CouponProcessor
     ) {
         suspend fun preProcessImage(uri: Uri): CouponPreProcessResult =
             withContext(Dispatchers.IO) {
-                val mimeType = context.contentResolver.getType(uri)
-                val path = fileManager.saveCouponImage(uri, mimeType)
-                val barcode = scanBarcodeFromUri(context, uri)
+                val tempFile =
+                    fileManager.createRawImageCacheFileFromUri(uri)
+                        ?: throw Exception("임시 파일 생성 실패")
 
-                CouponPreProcessResult(
-                    localPath = path,
-                    barcode = barcode,
-                    mimeType = mimeType,
-                )
+                try {
+                    val finalFile = fileManager.optimizeImage(tempFile)
+                    val barcode = scanBarcodeFromFile(finalFile)
+                    val finalPath =
+                        fileManager.saveProcessedFile(finalFile)
+                            ?: throw Exception("최종 파일 저장 실패")
+
+                    CouponPreProcessResult(
+                        localPath = finalPath,
+                        barcode = barcode,
+                        mimeType = "image/webp",
+                    )
+                } finally {
+                    if (tempFile.exists()) tempFile.delete()
+                }
             }
 
-        suspend fun scanBarcodeFromUri(
-            context: Context,
-            uri: Uri,
-        ): String? =
+        private suspend fun scanBarcodeFromFile(file: File): String? =
             withContext(Dispatchers.IO) {
                 try {
-                    val image = InputImage.fromFilePath(context, uri)
-
-                    // 스캐너 옵션 (쿠폰은 보통 CODE_128, EAN_13, QR이지만 전체 검사)
+                    val image = InputImage.fromFilePath(context, Uri.fromFile(file))
                     val options =
                         BarcodeScannerOptions
                             .Builder()
-                            .setBarcodeFormats(
-                                Barcode.FORMAT_ALL_FORMATS,
-                            ).build()
+                            .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+                            .build()
 
                     val scanner = BarcodeScanning.getClient(options)
-
                     val barcodes = scanner.process(image).await()
-
-                    // 인식된 바코드들 중 첫 번째 값의 displayValue 반환
                     barcodes.firstOrNull()?.displayValue
                 } catch (e: Exception) {
                     e.printStackTrace()
