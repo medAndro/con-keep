@@ -7,6 +7,7 @@
     <string name="topbar_share_description">공유하기</string>
     <string name="topbar_save_description">저장하기</string>
     <string name="topbar_conkeep_logo_description">ConKeep 로고</string>
+    <string name="topbar_search_toggle_description">검색바 열기/닫기</string>
     <string name="topbar_add_coupon_description">쿠폰 추가</string>
 
     <!--     로그인 화면-->
