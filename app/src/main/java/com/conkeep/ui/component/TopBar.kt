@@ -36,8 +36,12 @@ import com.conkeep.ui.theme.PretendardBold24
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(onClickAdd: () -> Unit) {
+fun TopBar(
+    onClickSearchBarToggle: () -> Unit,
+    onClickAdd: () -> Unit,
+) {
     val cornEmojiPainter: Painter = painterResource(R.drawable.ic_corn_ms_emoji)
+    val searchImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_search)
     val plusImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_plus)
 
     Surface(
@@ -73,20 +77,41 @@ fun TopBar(onClickAdd: () -> Unit) {
                     )
                 }
 
-                // 오른쪽: 추가 버튼
-                Surface(
-                    onClick = onClickAdd,
-                    color = brandSecondary,
-                    shape = CircleShape,
-                    modifier = Modifier.size(45.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = plusImageVector,
-                            contentDescription = stringResource(R.string.topbar_add_coupon_description),
-                            tint = textPrimary,
-                            modifier = Modifier.size(24.dp),
-                        )
+                Row {
+                    // 오른쪽: 검색 토글 버튼
+                    Surface(
+                        onClick = onClickSearchBarToggle,
+                        color = brandSecondary,
+                        shape = CircleShape,
+                        modifier = Modifier.size(45.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = searchImageVector,
+                                contentDescription = stringResource(R.string.topbar_search_toggle_description),
+                                tint = textPrimary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.padding(end = 12.dp))
+
+                    // 오른쪽: 추가 버튼
+                    Surface(
+                        onClick = onClickAdd,
+                        color = brandSecondary,
+                        shape = CircleShape,
+                        modifier = Modifier.size(45.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = plusImageVector,
+                                contentDescription = stringResource(R.string.topbar_add_coupon_description),
+                                tint = textPrimary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -103,6 +128,7 @@ fun TopBarPreview() {
     ConKeepTheme {
         Surface {
             TopBar(
+                onClickSearchBarToggle = {},
                 onClickAdd = {},
             )
         }

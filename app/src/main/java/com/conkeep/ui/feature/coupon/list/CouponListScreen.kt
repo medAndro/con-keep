@@ -6,9 +6,13 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -183,10 +187,14 @@ fun CouponScreenContent(
     onFilterTypeClick: (CouponFilterType) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
+    var isSearchBarShow by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopBar(
+                onClickSearchBarToggle = {
+                    isSearchBarShow = !isSearchBarShow
+                },
                 onClickAdd = {
                     focusManager.clearFocus()
                     onCouponAddClick()
@@ -205,23 +213,33 @@ fun CouponScreenContent(
                         })
                     },
         ) {
-            Spacer(modifier = Modifier.padding(top = 16.dp))
-            SearchBar(
-                query = typingQuery,
-                onQueryUpdate = {
-                    onTypingQueryUpdate(it)
-                    onSearchTriggered(it.trim())
-                },
-                onSearch = {
-                    onSearchTriggered(typingQuery.trim())
-                    focusManager.clearFocus()
-                },
-                onClearQuery = {
-                    onClearSearchQuery()
-                    focusManager.clearFocus()
-                },
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-            )
+            AnimatedVisibility(
+                visible = isSearchBarShow,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                SearchBar(
+                    query = typingQuery,
+                    onQueryUpdate = {
+                        onTypingQueryUpdate(it)
+                        onSearchTriggered(it.trim())
+                    },
+                    onSearch = {
+                        onSearchTriggered(typingQuery.trim())
+                        focusManager.clearFocus()
+                    },
+                    onClearQuery = {
+                        onClearSearchQuery()
+                        focusManager.clearFocus()
+                    },
+                    modifier =
+                        Modifier.padding(
+                            top = 20.dp,
+                            start = 24.dp,
+                            end = 24.dp,
+                        ),
+                )
+            }
 
             CouponSortRow(
                 isSearched = couponCountHeaderState.isSearchActive,
@@ -231,10 +249,14 @@ fun CouponScreenContent(
                 isFilterExpanded = isFilterExpanded,
                 onFilterChipExpandClick = onFilterChipExpandClick,
                 onSortClick = onCouponSortClick,
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.padding(top = 8.dp, start = 20.dp, end = 20.dp),
             )
 
-            if (isFilterExpanded) {
+            AnimatedVisibility(
+                visible = isFilterExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
                 CouponFilterChipRow(
                     selectedFilter = couponFilterType,
                     couponCountSummary = couponCountSummary,
