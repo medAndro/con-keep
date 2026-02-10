@@ -188,15 +188,12 @@ class CouponRepository
             withContext(Dispatchers.IO) {
                 try {
                     val response =
-                        r2Client.get("${BuildConfig.BASE_URL}/upload-url") {
+                        authClient.get("${BuildConfig.BASE_URL}/upload-url") {
                             url {
                                 parameters.append("ext", file.extension.lowercase())
                                 parameters.append("contentType", contentType)
                                 parameters.append("fileSize", file.length().toString())
                             }
-                            // AuthManager의 JWT 토큰 인증 헤더
-                            val token = authManager.accessTokenFlow.filterNotNull().first()
-                            header(HttpHeaders.Authorization, "Bearer $token")
                         }
 
                     if (response.status == HttpStatusCode.OK) {

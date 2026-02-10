@@ -1,5 +1,6 @@
 package com.conkeep.di
 
+import android.util.Log
 import com.conkeep.BuildConfig
 import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
@@ -87,7 +88,7 @@ object SupabaseModule {
                     loadTokens {
                         val accessToken = supabaseClient.SupabaseAuth.currentAccessTokenOrNull()
                         if (accessToken != null) {
-                            BearerTokens(accessToken, refreshToken = "")
+                            BearerTokens(accessToken, refreshToken = "not_used")
                         } else {
                             null // 토큰 없으면 요청 실패
                         }
@@ -96,6 +97,21 @@ object SupabaseModule {
                     sendWithoutRequest { request ->
                         val apiHost = URL(BuildConfig.BASE_URL).host
                         request.url.host == apiHost
+                    }
+                    refreshTokens {
+                        try {
+                            supabaseClient.SupabaseAuth.refreshCurrentSession()
+
+                            val newToken = supabaseClient.SupabaseAuth.currentAccessTokenOrNull()
+                            if (newToken != null) {
+                                BearerTokens(newToken, refreshToken = "not_used")
+                            } else {
+                                null // 갱신 실패 → 로그아웃 필요
+                            }
+                        } catch (e: Exception) {
+                            Log.e("AuthClient", "토큰 갱신 실패", e)
+                            null // 갱신 실패
+                        }
                     }
                 }
             }
