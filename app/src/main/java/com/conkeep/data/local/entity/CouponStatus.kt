@@ -17,5 +17,5 @@ enum class CouponStatus {
     AI_FAILED,
 
     /** 6. 업로드 실패: 네트워크 문제 등으로 R2 업로드 자체가 실패함 */
-    UPLOAD_FAILED
+    UPLOAD_FAILED,
 }

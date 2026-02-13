@@ -28,13 +28,18 @@ fun CouponEntity.toDomain(): Coupon =
         // Long → LocalDateTime
         usedAt =
             usedAt?.let { epochMilli ->
-                Instant.fromEpochMilliseconds(epochMilli)
+                Instant
+                    .fromEpochMilliseconds(epochMilli)
                     .toLocalDateTime(TimeZone.currentSystemDefault())
             },
-        createdAt = Instant.fromEpochMilliseconds(createdAt)
-            .toLocalDateTime(TimeZone.currentSystemDefault()),
-        updatedAt = Instant.fromEpochMilliseconds(updatedAt)
-            .toLocalDateTime(TimeZone.currentSystemDefault()),
+        createdAt =
+            Instant
+                .fromEpochMilliseconds(createdAt)
+                .toLocalDateTime(TimeZone.currentSystemDefault()),
+        updatedAt =
+            Instant
+                .fromEpochMilliseconds(updatedAt)
+                .toLocalDateTime(TimeZone.currentSystemDefault()),
         isSynced = isSynced,
         status = status,
     )
