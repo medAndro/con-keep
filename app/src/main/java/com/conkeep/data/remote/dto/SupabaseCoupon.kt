@@ -1,7 +1,7 @@
 package com.conkeep.data.remote.dto
 
 import com.conkeep.data.local.entity.CouponEntity
-import com.conkeep.data.local.entity.CouponLocalStatus
+import com.conkeep.data.local.entity.CouponStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -32,7 +32,6 @@ data class SupabaseCoupon(
 fun SupabaseCoupon.toEntity(): CouponEntity =
     CouponEntity(
         id = id,
-        remoteId = id,
         userId = userId,
         imageUrl = imageUrl,
         imageKey = imageKey,
@@ -54,7 +53,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         createdAt = Instant.parse(createdAt).toEpochMilli(),
         updatedAt = Instant.parse(updatedAt).toEpochMilli(),
         isSynced = true,
-        localStatus = CouponLocalStatus.PENDING.name,
+        status = CouponStatus.PENDING.name,
     )
 
 // Entity to DTO 변환

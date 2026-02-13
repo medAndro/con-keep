@@ -1,6 +1,6 @@
 package com.conkeep.ui.feature.coupon.model
 
-import com.conkeep.data.local.entity.CouponLocalStatus
+import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadgeStatus
 import kotlinx.datetime.LocalDate
 
@@ -17,7 +17,7 @@ data class CouponUiModel(
     val r2Url: String? = null,
     val isMonetary: Boolean = false,
     val amount: Int? = null,
-    val localStatus: CouponLocalStatus? = null,
+    val status: CouponStatus? = null,
 )
 
 val CouponUiModel.badgeStatus: ExpirationBadgeStatus

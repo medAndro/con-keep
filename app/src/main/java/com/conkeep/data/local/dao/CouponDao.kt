@@ -178,7 +178,7 @@ interface CouponDao {
         is_monetary = COALESCE(:isMonetary, is_monetary),
         amount = COALESCE(:amount, amount),
         category = COALESCE(:category, category),
-        local_status = COALESCE(:localStatus, local_status),
+        status = COALESCE(:status, status),
         
         updated_at = :updatedAt
     WHERE id = :couponId
@@ -193,7 +193,7 @@ interface CouponDao {
         isMonetary: Boolean?,
         amount: Int?,
         category: String?,
-        localStatus: String?,
+        status: String?,
         updatedAt: Long,
     ): Int
 

@@ -11,7 +11,6 @@ import kotlin.time.Instant
 fun CouponEntity.toDomain(): Coupon =
     Coupon(
         id = id,
-        remoteId = remoteId,
         userId = userId,
         imageUrl = imageUrl,
         imageKey = imageKey,
@@ -29,12 +28,15 @@ fun CouponEntity.toDomain(): Coupon =
         // Long → LocalDateTime
         usedAt =
             usedAt?.let { epochMilli ->
-                Instant.fromEpochMilliseconds(epochMilli).toLocalDateTime(TimeZone.currentSystemDefault())
+                Instant.fromEpochMilliseconds(epochMilli)
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
             },
-        createdAt = Instant.fromEpochMilliseconds(createdAt).toLocalDateTime(TimeZone.currentSystemDefault()),
-        updatedAt = Instant.fromEpochMilliseconds(updatedAt).toLocalDateTime(TimeZone.currentSystemDefault()),
+        createdAt = Instant.fromEpochMilliseconds(createdAt)
+            .toLocalDateTime(TimeZone.currentSystemDefault()),
+        updatedAt = Instant.fromEpochMilliseconds(updatedAt)
+            .toLocalDateTime(TimeZone.currentSystemDefault()),
         isSynced = isSynced,
-        localStatus = localStatus, // 추가!
+        status = status,
     )
 
 fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
@@ -42,7 +44,6 @@ fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
 fun Coupon.toEntity(): CouponEntity =
     CouponEntity(
         id = id,
-        remoteId = remoteId,
         userId = userId,
         imageUrl = imageUrl,
         imageKey = imageKey,
@@ -62,7 +63,7 @@ fun Coupon.toEntity(): CouponEntity =
         createdAt = createdAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         updatedAt = updatedAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         isSynced = isSynced,
-        localStatus = localStatus,
+        status = status,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }

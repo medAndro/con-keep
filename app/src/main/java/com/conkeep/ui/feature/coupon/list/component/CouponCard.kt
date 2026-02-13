@@ -31,7 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.conkeep.R
-import com.conkeep.data.local.entity.CouponLocalStatus
+import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.feature.coupon.model.badgeStatus
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
@@ -109,7 +109,7 @@ fun CouponCard(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.matchParentSize(),
                     )
-                    if ((couponUiModel.isUsed || couponUiModel.isExpired) && couponUiModel.localStatus == CouponLocalStatus.RECOGNIZED) {
+                    if ((couponUiModel.isUsed || couponUiModel.isExpired) && couponUiModel.status == CouponStatus.SUCCESS) {
                         ExpirationBadge(
                             status = if (couponUiModel.isUsed) ExpirationBadgeStatus.Safe else ExpirationBadgeStatus.Expiring,
                             text =
@@ -169,11 +169,13 @@ fun CouponCard(
                     }
                     Text(
                         text =
-                            when (couponUiModel.localStatus) {
-                                CouponLocalStatus.PREPROCESSED -> "AI 인식중..."
-                                CouponLocalStatus.RECOGNIZED -> couponUiModel.name
-                                CouponLocalStatus.AI_FAILED -> "AI 인식 실패..."
-                                CouponLocalStatus.PENDING -> "초기 상태"
+                            when (couponUiModel.status) {
+                                CouponStatus.ANALYZING -> "AI 인식중..."
+                                CouponStatus.SUCCESS -> couponUiModel.name
+                                CouponStatus.AI_FAILED -> "AI 인식 실패..."
+                                CouponStatus.PENDING -> "초기 상태"
+                                CouponStatus.UPLOADING -> "업로드 중..."
+                                CouponStatus.UPLOAD_FAILED -> "업로드 실패..."
                                 null -> ""
                             },
                         style = PretendardSemibold16,
@@ -246,7 +248,7 @@ fun CouponCardMonetaryPreview() {
                     r2Url = null,
                     isMonetary = true,
                     amount = 1234567,
-                    localStatus = CouponLocalStatus.RECOGNIZED,
+                    status = CouponStatus.SUCCESS,
                 ),
             onClick = {},
         )
@@ -272,7 +274,7 @@ fun CouponCardNormalPreview() {
                     r2Url = null,
                     isMonetary = false,
                     amount = null,
-                    localStatus = CouponLocalStatus.RECOGNIZED,
+                    status = CouponStatus.SUCCESS,
                 ),
             onClick = {},
         )
@@ -298,7 +300,7 @@ fun CouponCardUsedPreview() {
                     r2Url = null,
                     isMonetary = false,
                     amount = null,
-                    localStatus = CouponLocalStatus.RECOGNIZED,
+                    status = CouponStatus.SUCCESS,
                 ),
             onClick = {},
         )

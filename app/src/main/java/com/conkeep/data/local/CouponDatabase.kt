@@ -7,7 +7,7 @@ import com.conkeep.data.local.entity.CouponEntity
 
 @Database(
     entities = [CouponEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class CouponDatabase : RoomDatabase() {
