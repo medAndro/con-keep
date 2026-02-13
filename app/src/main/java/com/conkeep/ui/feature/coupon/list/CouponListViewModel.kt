@@ -8,9 +8,9 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.conkeep.data.local.entity.CouponStatus
-import com.conkeep.data.mapper.toCouponCategory
 import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.processor.CouponProcessor
+import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
@@ -39,252 +39,255 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CouponListViewModel
-@Inject
-constructor(
-    private val couponRepository: CouponRepository,
-    private val couponProcessor: CouponProcessor,
-    private val timeProvider: TimeProvider,
-) : ViewModel() {
-    private val _queryConfig = MutableStateFlow(CouponQueryConfig())
-    val queryConfig = _queryConfig.asStateFlow()
+    @Inject
+    constructor(
+        private val couponRepository: CouponRepository,
+        private val couponProcessor: CouponProcessor,
+        private val timeProvider: TimeProvider,
+    ) : ViewModel() {
+        private val _queryConfig = MutableStateFlow(CouponQueryConfig())
+        val queryConfig = _queryConfig.asStateFlow()
 
-    private val _resetTrigger = MutableStateFlow(0)
-    val resetTrigger = _resetTrigger.asStateFlow()
+        private val _resetTrigger = MutableStateFlow(0)
+        val resetTrigger = _resetTrigger.asStateFlow()
 
-    private val _searchQueryInput = MutableStateFlow("")
-    val searchQueryInput = _searchQueryInput.asStateFlow()
+        private val _searchQueryInput = MutableStateFlow("")
+        val searchQueryInput = _searchQueryInput.asStateFlow()
 
-    private val _couponAddedEvent = MutableSharedFlow<String>()
-    val couponAddedEvent = _couponAddedEvent.asSharedFlow()
+        private val _couponAddedEvent = MutableSharedFlow<String>()
+        val couponAddedEvent = _couponAddedEvent.asSharedFlow()
 
-    private val todayIso8601: String = timeProvider.getToday().toString()
+        private val todayIso8601: String = timeProvider.getToday().toString()
 
-    init {
-        viewModelScope.launch {
-            searchQueryInput
-                .debounce { query ->
-                    if (query.isBlank()) 0L else DEBOUNCE_TIMEOUT
-                }.distinctUntilChanged()
-                .collect { debouncedQuery ->
-                    _queryConfig.value = _queryConfig.value.copy(query = debouncedQuery)
-                }
-        }
-    }
-
-    val coupons: Flow<PagingData<CouponUiModel>> =
-        combine(queryConfig, resetTrigger) { config, _ ->
-            config
-        }.flatMapLatest { config ->
-            couponRepository
-                .searchCoupons(
-                    query = config.query,
-                    today = todayIso8601,
-                    filterType = config.filter.value,
-                    sortType = config.sort.sortType,
-                ).map { pagingData ->
-                    pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
-                }
-        }.cachedIn(viewModelScope)
-
-    val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
-        _queryConfig
-            .flatMapLatest { config ->
-                couponRepository
-                    .getCouponCount(config.query, todayIso8601, config.filter.value)
-                    .map { count ->
-                        CouponCountHeaderState(
-                            totalCount = count,
-                            isSearchActive = config.query.isNotBlank(),
-                        )
+        init {
+            viewModelScope.launch {
+                searchQueryInput
+                    .debounce { query ->
+                        if (query.isBlank()) 0L else DEBOUNCE_TIMEOUT
+                    }.distinctUntilChanged()
+                    .collect { debouncedQuery ->
+                        _queryConfig.value = _queryConfig.value.copy(query = debouncedQuery)
                     }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CouponCountHeaderState())
-    val couponCountSummary: StateFlow<CouponCountSummary> =
-        couponRepository
-            .getCouponSummary(todayIso8601)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                CouponCountSummary(),
-            )
+        }
 
-    /**
-     * 새로 등록된 쿠폰을 보여주기 위한 준비
-     */
-    fun readyToShowNewCoupon() {
-        _searchQueryInput.value = "" // 입력 Flow 즉시 비우기 (디바운스 덮어쓰기 방지)
-        _queryConfig.value =
-            CouponQueryConfig(
-                query = "",
-                filter = CouponFilterType.ALL,
-                sort = CouponSortType.RECENT_ADD,
-            )
-        _resetTrigger.value += 1
-    }
+        val coupons: Flow<PagingData<CouponUiModel>> =
+            combine(queryConfig, resetTrigger) { config, _ ->
+                config
+            }.flatMapLatest { config ->
+                couponRepository
+                    .searchCoupons(
+                        query = config.query,
+                        today = todayIso8601,
+                        filterType = config.filter.value,
+                        sortType = config.sort,
+                    ).map { pagingData ->
+                        pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
+                    }
+            }.cachedIn(viewModelScope)
 
-    /**
-     * 검색 키워드만 리셋(필터는 유지)
-     */
-    fun clearSearchKeyword() {
-        _searchQueryInput.value = "" // 입력 Flow 즉시 비우기 (디바운스 덮어쓰기 방지)
-        _queryConfig.value =
-            queryConfig.value.copy(
-                query = "",
-            )
-    }
-
-    fun searchCoupons(query: String) {
-        _searchQueryInput.value = query
-    }
-
-    fun toggleCouponSortType() {
-        _queryConfig.value =
-            queryConfig.value.copy(
-                sort =
-                    when (queryConfig.value.filter) {
-                        CouponFilterType.USED -> {
-                            when (queryConfig.value.sort) {
-                                CouponSortType.RECENT_USED -> CouponSortType.EXPIRY
-                                CouponSortType.EXPIRY -> CouponSortType.RECENT_USED
-                                else -> CouponSortType.EXPIRY
-                            }
-                        }
-
-                        else -> {
-                            when (queryConfig.value.sort) {
-                                CouponSortType.RECENT_ADD -> CouponSortType.EXPIRY
-                                CouponSortType.EXPIRY -> CouponSortType.RECENT_ADD
-                                else -> CouponSortType.EXPIRY
-                            }
-                        }
-                    },
-            )
-    }
-
-    fun changeCouponFilterType(filterType: CouponFilterType) {
-        _queryConfig.value =
-            queryConfig.value.copy(
-                filter = filterType,
-                sort =
-                    when (filterType) {
-                        CouponFilterType.USED -> CouponSortType.RECENT_USED
-                        else -> CouponSortType.EXPIRY
-                    },
-            )
-    }
-
-    fun addCouponFromUri(uri: Uri) {
-        viewModelScope.launch {
-            try {
-                // 1. 전처리
-                val preProcessResult = couponProcessor.preProcessImage(uri)
-                val path = preProcessResult.localPath ?: throw IllegalStateException("로컬 경로 없음")
-
-                // 2. 순차적 처리 (Fail-Fast)
-                val couponId = addPreCouponToDb(preProcessResult)
-                _couponAddedEvent.emit(couponId)
-                val urlResponse =
+        val couponCountHeaderState: StateFlow<CouponCountHeaderState> =
+            _queryConfig
+                .flatMapLatest { config ->
                     couponRepository
-                        .getPresignedUrl(
+                        .getCouponCount(config.query, todayIso8601, config.filter.value)
+                        .map { count ->
+                            CouponCountHeaderState(
+                                totalCount = count,
+                                isSearchActive = config.query.isNotBlank(),
+                            )
+                        }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CouponCountHeaderState())
+        val couponCountSummary: StateFlow<CouponCountSummary> =
+            couponRepository
+                .getCouponSummary(todayIso8601)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    CouponCountSummary(),
+                )
+
+        /**
+         * 새로 등록된 쿠폰을 보여주기 위한 준비
+         */
+        fun readyToShowNewCoupon() {
+            _searchQueryInput.value = "" // 입력 Flow 즉시 비우기 (디바운스 덮어쓰기 방지)
+            _queryConfig.value =
+                CouponQueryConfig(
+                    query = "",
+                    filter = CouponFilterType.ALL,
+                    sort = CouponSortType.RECENT_ADD,
+                )
+            _resetTrigger.value += 1
+        }
+
+        /**
+         * 검색 키워드만 리셋(필터는 유지)
+         */
+        fun clearSearchKeyword() {
+            _searchQueryInput.value = "" // 입력 Flow 즉시 비우기 (디바운스 덮어쓰기 방지)
+            _queryConfig.value =
+                queryConfig.value.copy(
+                    query = "",
+                )
+        }
+
+        fun searchCoupons(query: String) {
+            _searchQueryInput.value = query
+        }
+
+        fun toggleCouponSortType() {
+            _queryConfig.value =
+                queryConfig.value.copy(
+                    sort =
+                        when (queryConfig.value.filter) {
+                            CouponFilterType.USED -> {
+                                when (queryConfig.value.sort) {
+                                    CouponSortType.RECENT_USED -> CouponSortType.EXPIRY
+                                    CouponSortType.EXPIRY -> CouponSortType.RECENT_USED
+                                    else -> CouponSortType.EXPIRY
+                                }
+                            }
+
+                            else -> {
+                                when (queryConfig.value.sort) {
+                                    CouponSortType.RECENT_ADD -> CouponSortType.EXPIRY
+                                    CouponSortType.EXPIRY -> CouponSortType.RECENT_ADD
+                                    else -> CouponSortType.EXPIRY
+                                }
+                            }
+                        },
+                )
+        }
+
+        fun changeCouponFilterType(filterType: CouponFilterType) {
+            _queryConfig.value =
+                queryConfig.value.copy(
+                    filter = filterType,
+                    sort =
+                        when (filterType) {
+                            CouponFilterType.USED -> CouponSortType.RECENT_USED
+                            else -> CouponSortType.EXPIRY
+                        },
+                )
+        }
+
+        fun addCouponFromUri(uri: Uri) {
+            viewModelScope.launch {
+                var couponId: String? = null
+                try {
+                    // 1. 전처리
+                    val preProcessResult = couponProcessor.preProcessImage(uri)
+                    val path = preProcessResult.localPath ?: throw IllegalStateException("로컬 경로 없음")
+
+                    // 2. 순차적 처리 (Fail-Fast)
+                    val (id, createdInstant) = addPreCouponToDb(preProcessResult)
+                    couponId = id
+                    _couponAddedEvent.emit(couponId)
+                    val urlResponse =
+                        couponRepository
+                            .getPresignedUrl(
+                                File(path),
+                                preProcessResult.mimeType ?: "image/jpeg",
+                            ).getOrThrow()
+
+                    couponRepository
+                        .uploadCouponImageR2(
                             File(path),
+                            urlResponse.uploadPresignedUrl,
                             preProcessResult.mimeType ?: "image/jpeg",
                         ).getOrThrow()
 
-                couponRepository
-                    .uploadCouponImageR2(
-                        File(path),
-                        urlResponse.uploadPresignedUrl,
-                        preProcessResult.mimeType ?: "image/jpeg",
-                    ).getOrThrow()
+                    // 3. 성공 후 업데이트
+                    couponRepository.updateR2Info(
+                        couponId,
+                        urlResponse.imageUrl,
+                        urlResponse.r2ObjectKey,
+                    )
 
-                // 3. 성공 후 업데이트
-                couponRepository.updateR2Info(
-                    couponId,
-                    urlResponse.imageUrl,
-                    urlResponse.r2ObjectKey,
-                )
+                    // AI 성공 시 추가 업데이트
+                    val aiResponse =
+                        couponRepository.aiCouponRecognizing(
+                            couponId,
+                            urlResponse.imageUrl,
+                            preProcessResult.barcode,
+                            createdInstant.toString(), // "2026-02-13T14:41:00Z" (끝에 Z가 붙음)
+                        )
+                    aiResponse.fold(
+                        onSuccess = { dto: CouponDto ->
+                            val finalDto =
+                                dto.copy(
+                                    couponPin =
+                                        preProcessResult.barcode.takeUnless { it.isNullOrEmpty() }
+                                            ?: dto.couponPin,
+                                    status = CouponStatus.SUCCESS.name,
+                                )
 
-                // AI 성공 시 추가 업데이트
-                val aiResponse = couponRepository.aiCouponRecognizing(urlResponse.imageUrl)
-                aiResponse.fold(
-                    onSuccess = { response ->
-                        // 성공: RECOGNIZED + 쿠폰 정보
-                        val finalCouponInfo =
-                            response.data.copy(
-                                couponPin =
-                                    preProcessResult.barcode.takeUnless { it.isNullOrEmpty() }
-                                        ?: response.data.couponPin?.filter { !it.isWhitespace() },
-                                category =
-                                    response.data.category
-                                        .toCouponCategory()
-                                        .name,
+                            couponRepository.syncCouponFromServer(finalDto)
+                            Log.d("CouponViewModel", "AI 분석 및 동기화 성공: ${dto.createdAt}, ${dto.id}")
+                        },
+                        onFailure = {
+                            // 실패: FAILED 상태
+                            couponRepository.updateStatus(
+                                couponId,
+                                CouponStatus.AI_FAILED.name,
                             )
-                        couponRepository.updateAiRecognitionInfo(
-                            couponId,
-                            finalCouponInfo,
-                            success = true,
-                        )
-                    },
-                    onFailure = {
-                        // 실패: FAILED 상태
-                        couponRepository.updateAiRecognitionInfo(
-                            couponId,
-                            null,
-                            success = false,
-                        )
-                    },
-                )
-            } catch (e: Exception) {
-                Log.e("CouponViewModel", "쿠폰 등록 실패: ${e.message}")
+                        },
+                    )
+                } catch (e: Exception) {
+                    couponId?.let {
+                        couponRepository.updateStatus(it, CouponStatus.AI_FAILED.name)
+                    }
+
+                    Log.e("CouponViewModel", "쿠폰 등록 실패: ${e.message}")
+                }
             }
         }
+
+        private suspend fun addPreCouponToDb(couponPreProcessResult: CouponPreProcessResult): Pair<String, Instant> {
+            val nowInstant = Clock.System.now()
+            val localId = UUID.randomUUID().toString()
+            Log.d("CouponViewModel", "$nowInstant, 로컬 ID: $localId")
+
+            val preCoupon =
+                Coupon(
+                    id = localId,
+                    userId = "", // supabase user_id
+                    imageUrl = null,
+                    imageKey = null,
+                    thumbnailUrl = null,
+                    localImagePath = couponPreProcessResult.localPath,
+                    productName = null,
+                    brand = null,
+                    couponPin = couponPreProcessResult.barcode,
+                    expiryDate = null,
+                    isMonetary = false,
+                    amount = null,
+                    category = CouponCategory.ETC,
+                    userMemo = null,
+                    isUsed = false,
+                    usedAt = null,
+                    createdAt = nowInstant,
+                    updatedAt = nowInstant,
+                    isSynced = false,
+                    status = CouponStatus.ANALYZING.name,
+                )
+
+            // Repository 호출 → ID 반환 받음
+            couponRepository.addCoupon(preCoupon)
+            return localId to nowInstant // 로컬 ID 반환
+        }
+
+        companion object {
+            private const val DEBOUNCE_TIMEOUT = 500L
+        }
     }
-
-    private suspend fun addPreCouponToDb(couponPreProcessResult: CouponPreProcessResult): String {
-        val now = Clock.System.now()
-        val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
-        val localId = UUID.randomUUID().toString()
-
-        val preCoupon =
-            Coupon(
-                id = localId,
-                userId = "", // supabase user_id
-                imageUrl = null,
-                imageKey = null,
-                thumbnailUrl = null,
-                localImagePath = couponPreProcessResult.localPath,
-                productName = null,
-                brand = null,
-                couponPin = couponPreProcessResult.barcode,
-                expiryDate = null,
-                isMonetary = false,
-                amount = null,
-                category = CouponCategory.ETC,
-                userMemo = null,
-                isUsed = false,
-                usedAt = null,
-                createdAt = localDateTime,
-                updatedAt = localDateTime,
-                isSynced = false,
-                status = CouponStatus.ANALYZING.name,
-            )
-
-        // Repository 호출 → ID 반환 받음
-        couponRepository.addCoupon(preCoupon)
-        return localId // 로컬 ID 반환
-    }
-
-    companion object {
-        private const val DEBOUNCE_TIMEOUT = 500L
-    }
-}

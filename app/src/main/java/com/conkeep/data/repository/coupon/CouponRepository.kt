@@ -7,11 +7,11 @@ import androidx.paging.map
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
-import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
+import com.conkeep.data.remote.dto.AiAnalyzeRequest
 import com.conkeep.data.remote.dto.AiCouponResponse
-import com.conkeep.data.remote.dto.CouponInfo
+import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toEntity
@@ -19,6 +19,7 @@ import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
+import com.conkeep.ui.feature.coupon.model.CouponSortType
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
@@ -46,242 +47,221 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 @OptIn(ExperimentalCoroutinesApi::class)
 class CouponRepository
-@Inject
-constructor(
-    private val supabase: SupabaseClient,
-    private val couponDao: CouponDao,
-    private val authManager: SupabaseAuthManager,
-    @param:R2UploadClient private val r2Client: HttpClient,
-    @param:AuthClient private val authClient: HttpClient,
-) {
-    fun searchCoupons(
-        query: String,
-        today: String,
-        filterType: Int,
-        sortType: Int,
-    ): Flow<PagingData<Coupon>> =
-        authManager.currentUserIdFlow
-            .filterNotNull()
-            .flatMapLatest { userId ->
-                Pager(
-                    config =
-                        PagingConfig(
-                            pageSize = 20,
-                            enablePlaceholders = false,
-                            initialLoadSize = 40,
-                        ),
-                    initialKey = 0,
-                    pagingSourceFactory = {
-                        couponDao.searchCouponsPaging(
-                            userId = userId,
-                            searchQuery = query,
-                            today = today,
-                            filterType = filterType,
-                            sortType = sortType,
-                        )
-                    },
-                ).flow
-            }.map { pagingData ->
-                pagingData.map { it.toDomain() }
-            }
-
-    fun getCouponCount(
-        query: String,
-        today: String,
-        filterType: Int,
-    ): Flow<Int> =
-        authManager.currentUserIdFlow.filterNotNull().flatMapLatest { userId ->
-            couponDao.getCouponsCount(userId, query, today, filterType)
-        }
-
-    fun getCouponSummary(today: String): Flow<CouponCountSummary> =
-        authManager.currentUserIdFlow.filterNotNull().flatMapLatest { userId ->
-            couponDao.getCouponSummaryFlow(
-                userId = userId,
-                today = today,
-            )
-        }
-
-    fun getCoupon(id: String): Flow<Coupon?> =
-        couponDao
-            .getCouponFlow(id)
-            .map { entity -> entity?.toDomain() }
-
-    suspend fun addCoupon(coupon: Coupon): String {
-        // currentUserIdFlow의 가장 최신 유효 값을 가져옴
-        val userId = authManager.currentUserIdFlow.filterNotNull().first()
-        couponDao.insert(coupon.copy(userId = userId).toEntity())
-        return coupon.id
-    }
-
-    suspend fun updateAiRecognitionInfo(
-        couponId: String,
-        couponInfo: CouponInfo?,
-        success: Boolean,
+    @Inject
+    constructor(
+        private val supabase: SupabaseClient,
+        private val couponDao: CouponDao,
+        private val authManager: SupabaseAuthManager,
+        @param:R2UploadClient private val r2Client: HttpClient,
+        @param:AuthClient private val authClient: HttpClient,
     ) {
-        val now = System.currentTimeMillis()
-        val status =
-            if (success) {
-                CouponStatus.SUCCESS.name
-            } else {
-                CouponStatus.AI_FAILED.name
-            }
-        val finalExpiryDate =
-            when {
-                !couponInfo?.expiryDate.isNullOrEmpty() -> {
-                    couponInfo.expiryDate.takeIf {
-                        runCatching {
-                            LocalDate.parse(
-                                it,
-                                DateTimeFormatter.ISO_LOCAL_DATE,
+        fun searchCoupons(
+            query: String,
+            today: String,
+            filterType: Int,
+            sortType: CouponSortType,
+        ): Flow<PagingData<Coupon>> =
+            authManager.currentUserIdFlow
+                .filterNotNull()
+                .flatMapLatest { userId ->
+                    Pager(
+                        config =
+                            PagingConfig(
+                                pageSize = 20,
+                                enablePlaceholders = false,
+                                initialLoadSize = 40,
+                            ),
+                        initialKey = 0,
+                        pagingSourceFactory = {
+                            couponDao.searchCouponsPaging(
+                                userId = userId,
+                                searchQuery = query,
+                                today = today,
+                                filterType = filterType,
+                                sortType = sortType,
                             )
-                        }.isSuccess
-                    }
+                        },
+                    ).flow
+                }.map { pagingData ->
+                    pagingData.map { it.toDomain() }
                 }
 
-                couponInfo?.dday != null -> {
-                    LocalDate
-                        .now()
-                        .plusDays(-couponInfo.dday.toLong())
-                        .format(DateTimeFormatter.ISO_LOCAL_DATE)
-                }
-
-                else -> {
-                    null
-                }
+        fun getCouponCount(
+            query: String,
+            today: String,
+            filterType: Int,
+        ): Flow<Int> =
+            authManager.currentUserIdFlow.filterNotNull().flatMapLatest { userId ->
+                couponDao.getCouponsCount(userId, query, today, filterType)
             }
 
-        couponDao.updateAiRecognitionInfo(
-            couponId = couponId,
-            productName = couponInfo?.productName,
-            brand = couponInfo?.brand,
-            couponPin = couponInfo?.couponPin,
-            expiryDate = finalExpiryDate,
-            isMonetary = couponInfo?.isMonetary,
-            amount = couponInfo?.amount,
-            category = couponInfo?.category,
-            updatedAt = now,
-            status = status,
-        )
-    }
+        fun getCouponSummary(today: String): Flow<CouponCountSummary> =
+            authManager.currentUserIdFlow.filterNotNull().flatMapLatest { userId ->
+                couponDao.getCouponSummaryFlow(
+                    userId = userId,
+                    today = today,
+                )
+            }
 
-    suspend fun updateR2Info(
-        couponId: String,
-        r2Url: String,
-        r2Key: String,
-    ) {
-        couponDao.updateR2Info(couponId, r2Url, r2Key)
-    }
+        fun getCoupon(id: String): Flow<Coupon?> =
+            couponDao
+                .getCouponFlow(id)
+                .map { entity -> entity?.toDomain() }
 
-    suspend fun getPresignedUrl(
-        file: File,
-        contentType: String,
-    ): Result<PresignedUrlResponse> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response =
-                    authClient.get("${BuildConfig.BASE_URL}/upload-url") {
-                        url {
-                            parameters.append("ext", file.extension.lowercase())
-                            parameters.append("contentType", contentType)
-                            parameters.append("fileSize", file.length().toString())
+        suspend fun addCoupon(coupon: Coupon): String {
+            // currentUserIdFlow의 가장 최신 유효 값을 가져옴
+            val userId = authManager.currentUserIdFlow.filterNotNull().first()
+            couponDao.insert(coupon.copy(userId = userId).toEntity())
+            return coupon.id
+        }
+
+        suspend fun updateR2Info(
+            couponId: String,
+            r2Url: String,
+            r2Key: String,
+        ) {
+            couponDao.updateR2Info(couponId, r2Url, r2Key)
+        }
+
+        suspend fun getPresignedUrl(
+            file: File,
+            contentType: String,
+        ): Result<PresignedUrlResponse> =
+            withContext(Dispatchers.IO) {
+                try {
+                    val response =
+                        authClient.get("${BuildConfig.BASE_URL}/upload-url") {
+                            url {
+                                parameters.append("ext", file.extension.lowercase())
+                                parameters.append("contentType", contentType)
+                                parameters.append("fileSize", file.length().toString())
+                            }
                         }
-                    }
 
-                if (response.status == HttpStatusCode.OK) {
-                    Result.success(response.body<PresignedUrlResponse>())
-                } else {
-                    Result.failure(Exception("PresignedUrl 생성 실패: ${response.status}"))
+                    if (response.status == HttpStatusCode.OK) {
+                        Result.success(response.body<PresignedUrlResponse>())
+                    } else {
+                        Result.failure(Exception("PresignedUrl 생성 실패: ${response.status}"))
+                    }
+                } catch (e: Exception) {
+                    Result.failure(e)
                 }
-            } catch (e: Exception) {
-                Result.failure(e)
             }
+
+        suspend fun uploadCouponImageR2(
+            imageFile: File,
+            uploadUrl: String,
+            contentType: String,
+        ): Result<Unit> =
+            withContext(Dispatchers.IO) {
+                if (!imageFile.exists()) {
+                    return@withContext Result.failure(Exception("파일이 존재하지 않습니다: ${imageFile.absolutePath}"))
+                }
+                try {
+                    val response: HttpResponse =
+                        r2Client.put(uploadUrl) {
+                            setBody(imageFile.readChannel())
+                            contentType(ContentType.parse(contentType))
+                            header(HttpHeaders.ContentLength, imageFile.length().toString())
+                        }
+
+                    if (response.status.isSuccess()) {
+                        Result.success(Unit)
+                    } else {
+                        Result.failure(Exception("R2 업로드 실패: ${response.status}"))
+                    }
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+
+        suspend fun aiCouponRecognizing(
+            couponId: String,
+            imageUrl: String,
+            barcode: String?,
+            createAt: String,
+        ): Result<CouponDto> =
+            try {
+                val response: AiCouponResponse =
+                    authClient
+                        .post("${BuildConfig.BASE_URL}/analyze") {
+                            contentType(ContentType.Application.Json)
+                            setBody(AiAnalyzeRequest(couponId, imageUrl, barcode, createAt))
+                        }.body()
+
+                if (response.success) {
+                    Result.success(response.data)
+                } else {
+                    Result.failure(Exception("분석 실패 (서버 로직 에러)"))
+                }
+            } catch (e: ClientRequestException) {
+                Result.failure(Exception("분석 실패: ${e.response.status}"))
+            } catch (e: TimeoutCancellationException) {
+                Result.failure(Exception("분석 시간 초과 (네트워크 상태를 확인하세요)"))
+            } catch (e: Exception) {
+                Result.failure(Exception("분석 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
+            }
+
+        suspend fun syncCouponFromServer(dto: CouponDto) {
+            val localCoupon = couponDao.getCouponById(dto.id)
+
+            // 1. 충돌 방지: 사용자가 수동 수정을 시작했다면(isDirty) 서버 데이터로 덮어쓰지 않음
+            if (localCoupon?.isDirty == true) return
+
+            // 2. DTO -> Entity 변환 (로컬 경로 보존)
+            // localCoupon이 있다면 기존 localImagePath를 가져와서 합쳐줍니다.
+            val entity =
+                dto.toEntity(
+                    existingLocalPath = localCoupon?.localImagePath,
+                )
+
+            // 3. 로컬 DB 갱신
+            couponDao.insert(entity)
         }
 
-    suspend fun uploadCouponImageR2(
-        imageFile: File,
-        uploadUrl: String,
-        contentType: String,
-    ): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            if (!imageFile.exists()) {
-                return@withContext Result.failure(Exception("파일이 존재하지 않습니다: ${imageFile.absolutePath}"))
-            }
-            try {
-                val response: HttpResponse =
-                    r2Client.put(uploadUrl) {
-                        setBody(imageFile.readChannel())
-                        contentType(ContentType.parse(contentType))
-                        header(HttpHeaders.ContentLength, imageFile.length().toString())
-                    }
+        suspend fun updateStatus(
+            id: String,
+            couponStatus: String,
+        ) {
+            couponDao.updateStatus(id, couponStatus)
+        }
 
-                if (response.status.isSuccess()) {
+        suspend fun markAsUsed(
+            id: String,
+            timestamp: Long,
+        ) {
+            couponDao.markAsUsed(id, timestamp)
+        }
+
+        // 백그라운드에서 Supabase → Room 동기화
+        suspend fun syncFromSupabase(): Result<Unit> =
+            withContext(Dispatchers.IO) {
+                try {
+                    val userId =
+                        authManager.currentUserIdFlow.first()
+                            ?: return@withContext Result.failure(Exception("Not logged in"))
+
+                    val remoteCoupons =
+                        supabase
+                            .from("coupons")
+                            .select {
+                                filter { eq("user_id", userId) }
+                            }.decodeList<SupabaseCoupon>()
+
+                    couponDao.insertAll(remoteCoupons.map { it.toEntity() })
                     Result.success(Unit)
-                } else {
-                    Result.failure(Exception("R2 업로드 실패: ${response.status}"))
+                } catch (e: Exception) {
+                    Result.failure(e)
                 }
-            } catch (e: Exception) {
-                Result.failure(e)
             }
-        }
 
-    suspend fun aiCouponRecognizing(imageUrl: String): Result<AiCouponResponse> =
-        try {
-            val response: AiCouponResponse =
-                authClient
-                    .post("${BuildConfig.BASE_URL}/analyze") {
-                        contentType(ContentType.Application.Json)
-                        setBody(mapOf("imageUrl" to imageUrl))
-                        // @AuthClient이므로 Bearer 토큰 자동 삽입됨
-                    }.body()
-
-            Result.success(response)
-        } catch (e: ClientRequestException) {
-            Result.failure(Exception("분석 실패: ${e.response.status}"))
-        } catch (_: TimeoutCancellationException) {
-            Result.failure(Exception("분석 시간 초과"))
-        } catch (e: Exception) {
-            Result.failure(Exception("분석 오류: ${e.message}"))
-        }
-
-    suspend fun markAsUsed(
-        id: String,
-        timestamp: Long,
-    ) {
-        couponDao.markAsUsed(id, timestamp)
-    }
-
-    // 백그라운드에서 Supabase → Room 동기화
-    suspend fun syncFromSupabase(): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                val userId =
-                    authManager.currentUserIdFlow.first()
-                        ?: return@withContext Result.failure(Exception("Not logged in"))
-
-                val remoteCoupons =
-                    supabase
-                        .from("coupons")
-                        .select {
-                            filter { eq("user_id", userId) }
-                        }.decodeList<SupabaseCoupon>()
-
-                couponDao.insertAll(remoteCoupons.map { it.toEntity() })
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-    // TODO : 로컬 변경사항 → Supabase 업로드
+        // TODO : 로컬 변경사항 → Supabase 업로드
 //        suspend fun syncToSupabase(coupon: Coupon): Result<Unit> =
 //            withContext(Dispatchers.IO) {
 //                try {
@@ -298,4 +278,4 @@ constructor(
 //                    Result.failure(e)
 //                }
 //            }
-}
+    }

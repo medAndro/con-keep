@@ -68,5 +68,5 @@ data class CouponEntity(
     @ColumnInfo(name = "is_dirty")
     val isDirty: Boolean = false,
     @ColumnInfo(name = "is_deleted")
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
 )

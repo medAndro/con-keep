@@ -1,11 +1,10 @@
 package com.conkeep.data.mapper
 
 import com.conkeep.data.local.entity.CouponEntity
+import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.domain.model.Coupon
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
+import java.time.OffsetDateTime
 import kotlin.time.Instant
 
 fun CouponEntity.toDomain(): Coupon =
@@ -28,13 +27,15 @@ fun CouponEntity.toDomain(): Coupon =
         // Long → LocalDateTime
         usedAt =
             usedAt?.let { epochMilli ->
-                Instant.fromEpochMilliseconds(epochMilli)
-                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                Instant
+                    .fromEpochMilliseconds(epochMilli)
             },
-        createdAt = Instant.fromEpochMilliseconds(createdAt)
-            .toLocalDateTime(TimeZone.currentSystemDefault()),
-        updatedAt = Instant.fromEpochMilliseconds(updatedAt)
-            .toLocalDateTime(TimeZone.currentSystemDefault()),
+        createdAt =
+            Instant
+                .fromEpochMilliseconds(createdAt),
+        updatedAt =
+            Instant
+                .fromEpochMilliseconds(updatedAt),
         isSynced = isSynced,
         status = status,
     )
@@ -58,12 +59,47 @@ fun Coupon.toEntity(): CouponEntity =
         category = category?.name,
         userMemo = userMemo,
         isUsed = isUsed,
-        // kotlinx.LocalDateTime → Long (Unix timestamp)
-        usedAt = usedAt?.toInstant(TimeZone.currentSystemDefault())?.toEpochMilliseconds(),
-        createdAt = createdAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
-        updatedAt = updatedAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+        // kotlinx.Instant → Long (Unix timestamp)
+        usedAt = usedAt?.toEpochMilliseconds(),
+        createdAt = createdAt.toEpochMilliseconds(),
+        updatedAt = updatedAt.toEpochMilliseconds(),
         isSynced = isSynced,
         status = status,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }
+
+fun CouponDto.toEntity(existingLocalPath: String? = null): CouponEntity {
+    // ISO 8601 문자열을 Long(Epoch Milli)으로 변환하는 헬퍼 함수
+    fun String?.toEpochMilli(): Long =
+        if (this.isNullOrBlank()) {
+            0L
+        } else {
+            OffsetDateTime.parse(this).toInstant().toEpochMilli()
+        }
+
+    return CouponEntity(
+        id = this.id,
+        userId = this.userId,
+        imageUrl = this.imageUrl,
+        imageKey = this.imageKey,
+        thumbnailUrl = this.thumbnailUrl,
+        localImagePath = existingLocalPath, // 로컬 경로는 보존해야 함
+        productName = this.productName,
+        brand = this.brand,
+        couponPin = this.couponPin,
+        expiryDate = this.expiryDate,
+        isMonetary = this.isMonetary,
+        amount = this.amount,
+        category = this.category,
+        userMemo = this.userMemo,
+        isUsed = this.isUsed,
+        usedAt = this.usedAt.toEpochMilli().takeIf { it > 0 },
+        createdAt = this.createdAt.toEpochMilli(),
+        updatedAt = this.updatedAt.toEpochMilli(),
+        isSynced = true, // 서버에서 받았으므로 동기화 완료
+        status = this.status,
+        isDirty = false, // 서버 데이터와 일치하므로 Dirty 해제
+        isDeleted = this.isDeleted,
+    )
+}
