@@ -7,12 +7,11 @@ import androidx.paging.map
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
-import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
 import com.conkeep.data.remote.dto.AiAnalyzeRequest
 import com.conkeep.data.remote.dto.AiCouponResponse
-import com.conkeep.data.remote.dto.CouponInfo
+import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toEntity
@@ -20,6 +19,7 @@ import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
+import com.conkeep.ui.feature.coupon.model.CouponSortType
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
@@ -47,8 +47,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -67,7 +65,7 @@ class CouponRepository
             query: String,
             today: String,
             filterType: Int,
-            sortType: Int,
+            sortType: CouponSortType,
         ): Flow<PagingData<Coupon>> =
             authManager.currentUserIdFlow
                 .filterNotNull()
@@ -121,57 +119,6 @@ class CouponRepository
             val userId = authManager.currentUserIdFlow.filterNotNull().first()
             couponDao.insert(coupon.copy(userId = userId).toEntity())
             return coupon.id
-        }
-
-        suspend fun updateAiRecognitionInfo(
-            couponId: String,
-            couponInfo: CouponInfo?,
-            success: Boolean,
-        ) {
-            val now = System.currentTimeMillis()
-            val status =
-                if (success) {
-                    CouponStatus.SUCCESS.name
-                } else {
-                    CouponStatus.AI_FAILED.name
-                }
-            val finalExpiryDate =
-                when {
-                    !couponInfo?.expiryDate.isNullOrEmpty() -> {
-                        couponInfo.expiryDate.takeIf {
-                            runCatching {
-                                LocalDate.parse(
-                                    it,
-                                    DateTimeFormatter.ISO_LOCAL_DATE,
-                                )
-                            }.isSuccess
-                        }
-                    }
-
-                    couponInfo?.dday != null -> {
-                        LocalDate
-                            .now()
-                            .plusDays(-couponInfo.dday.toLong())
-                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    }
-
-                    else -> {
-                        null
-                    }
-                }
-
-            couponDao.updateAiRecognitionInfo(
-                couponId = couponId,
-                productName = couponInfo?.productName,
-                brand = couponInfo?.brand,
-                couponPin = couponInfo?.couponPin,
-                expiryDate = finalExpiryDate,
-                isMonetary = couponInfo?.isMonetary,
-                amount = couponInfo?.amount,
-                category = couponInfo?.category,
-                updatedAt = now,
-                status = status,
-            )
         }
 
         suspend fun updateR2Info(
@@ -238,23 +185,21 @@ class CouponRepository
             couponId: String,
             imageUrl: String,
             barcode: String?,
-        ): Result<AiCouponResponse> =
+            createAt: String,
+        ): Result<CouponDto> =
             try {
                 val response: AiCouponResponse =
                     authClient
                         .post("${BuildConfig.BASE_URL}/analyze") {
                             contentType(ContentType.Application.Json)
-                            setBody(
-                                AiAnalyzeRequest(
-                                    couponId = couponId,
-                                    imageUrl = imageUrl,
-                                    barcode = barcode,
-                                ),
-                                // @AuthClient이므로 Bearer 토큰 자동 삽입됨
-                            )
+                            setBody(AiAnalyzeRequest(couponId, imageUrl, barcode, createAt))
                         }.body()
 
-                Result.success(response)
+                if (response.success) {
+                    Result.success(response.data)
+                } else {
+                    Result.failure(Exception("분석 실패 (서버 로직 에러)"))
+                }
             } catch (e: ClientRequestException) {
                 Result.failure(Exception("분석 실패: ${e.response.status}"))
             } catch (e: TimeoutCancellationException) {
@@ -262,6 +207,30 @@ class CouponRepository
             } catch (e: Exception) {
                 Result.failure(Exception("분석 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
             }
+
+        suspend fun syncCouponFromServer(dto: CouponDto) {
+            val localCoupon = couponDao.getCouponById(dto.id)
+
+            // 1. 충돌 방지: 사용자가 수동 수정을 시작했다면(isDirty) 서버 데이터로 덮어쓰지 않음
+            if (localCoupon?.isDirty == true) return
+
+            // 2. DTO -> Entity 변환 (로컬 경로 보존)
+            // localCoupon이 있다면 기존 localImagePath를 가져와서 합쳐줍니다.
+            val entity =
+                dto.toEntity(
+                    existingLocalPath = localCoupon?.localImagePath,
+                )
+
+            // 3. 로컬 DB 갱신
+            couponDao.insert(entity)
+        }
+
+        suspend fun updateStatus(
+            id: String,
+            couponStatus: String,
+        ) {
+            couponDao.updateStatus(id, couponStatus)
+        }
 
         suspend fun markAsUsed(
             id: String,

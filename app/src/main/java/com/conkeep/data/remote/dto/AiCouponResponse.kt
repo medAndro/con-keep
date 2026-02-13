@@ -5,21 +5,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AiCouponResponse(
-    val data: CouponInfo,
+    val success: Boolean,
+    val data: CouponDto,
+    @SerialName("db_status") val dbStatus: String,
+    val metadata: AiMetadata? = null,
 )
 
 @Serializable
-data class CouponInfo(
-    @SerialName("product_name")
-    val productName: String?,
-    val brand: String?,
-    @SerialName("coupon_pin")
-    val couponPin: String?,
-    @SerialName("expiry_date")
-    val expiryDate: String?,
-    val dday: Int?,
-    @SerialName("is_monetary")
-    val isMonetary: Boolean,
-    val amount: Int? = null,
-    val category: String,
+data class AiMetadata(
+    val userId: String,
+    val couponId: String,
 )

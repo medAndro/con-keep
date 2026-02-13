@@ -11,6 +11,7 @@ import com.conkeep.data.local.dto.CouponCountResult
 import com.conkeep.data.local.entity.CouponEntity
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
+import com.conkeep.ui.feature.coupon.model.CouponSortType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -76,7 +77,7 @@ interface CouponDao {
         searchQuery: String,
         today: String,
         filterType: Int,
-        sortType: Int,
+        sortType: CouponSortType,
     ): PagingSource<Int, CouponEntity>
 
     /**
@@ -167,35 +168,11 @@ interface CouponDao {
         imageKey: String,
     )
 
-    @Query(
-        """
-    UPDATE OR IGNORE coupons 
-    SET 
-        product_name = COALESCE(:productName, product_name),
-        brand = COALESCE(:brand, brand),
-        coupon_pin = COALESCE(:couponPin, coupon_pin),
-        expiry_date = COALESCE(:expiryDate, expiry_date),
-        is_monetary = COALESCE(:isMonetary, is_monetary),
-        amount = COALESCE(:amount, amount),
-        category = COALESCE(:category, category),
-        status = COALESCE(:status, status),
-        
-        updated_at = :updatedAt
-    WHERE id = :couponId
-""",
+    @Query("UPDATE coupons SET status = :couponStatus WHERE id = :id")
+    suspend fun updateStatus(
+        id: String,
+        couponStatus: String,
     )
-    suspend fun updateAiRecognitionInfo(
-        couponId: String,
-        productName: String?,
-        brand: String?,
-        couponPin: String?,
-        expiryDate: String?,
-        isMonetary: Boolean?,
-        amount: Int?,
-        category: String?,
-        status: String?,
-        updatedAt: Long,
-    ): Int
 
     @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt WHERE id = :id")
     suspend fun markAsUsed(

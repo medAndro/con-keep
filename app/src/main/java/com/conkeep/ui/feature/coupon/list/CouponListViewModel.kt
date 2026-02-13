@@ -8,9 +8,9 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.conkeep.data.local.entity.CouponStatus
-import com.conkeep.data.mapper.toCouponCategory
 import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.processor.CouponProcessor
+import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
@@ -39,12 +39,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -90,7 +89,7 @@ class CouponListViewModel
                         query = config.query,
                         today = todayIso8601,
                         filterType = config.filter.value,
-                        sortType = config.sort.sortType,
+                        sortType = config.sort,
                     ).map { pagingData ->
                         pagingData.map { it.toUiModel(today = timeProvider.getToday()) }
                     }
@@ -184,13 +183,15 @@ class CouponListViewModel
 
         fun addCouponFromUri(uri: Uri) {
             viewModelScope.launch {
+                var couponId: String? = null
                 try {
                     // 1. 전처리
                     val preProcessResult = couponProcessor.preProcessImage(uri)
                     val path = preProcessResult.localPath ?: throw IllegalStateException("로컬 경로 없음")
 
                     // 2. 순차적 처리 (Fail-Fast)
-                    val couponId = addPreCouponToDb(preProcessResult)
+                    val (id, createdInstant) = addPreCouponToDb(preProcessResult)
+                    couponId = id
                     _couponAddedEvent.emit(couponId)
                     val urlResponse =
                         couponRepository
@@ -219,45 +220,43 @@ class CouponListViewModel
                             couponId,
                             urlResponse.imageUrl,
                             preProcessResult.barcode,
+                            createdInstant.toString(), // "2026-02-13T14:41:00Z" (끝에 Z가 붙음)
                         )
                     aiResponse.fold(
-                        onSuccess = { response ->
-                            // 성공: RECOGNIZED + 쿠폰 정보
-                            val finalCouponInfo =
-                                response.data.copy(
+                        onSuccess = { dto: CouponDto ->
+                            val finalDto =
+                                dto.copy(
                                     couponPin =
                                         preProcessResult.barcode.takeUnless { it.isNullOrEmpty() }
-                                            ?: response.data.couponPin?.filter { !it.isWhitespace() },
-                                    category =
-                                        response.data.category
-                                            .toCouponCategory()
-                                            .name,
+                                            ?: dto.couponPin,
+                                    status = CouponStatus.SUCCESS.name,
                                 )
-                            couponRepository.updateAiRecognitionInfo(
-                                couponId,
-                                finalCouponInfo,
-                                success = true,
-                            )
+
+                            couponRepository.syncCouponFromServer(finalDto)
+                            Log.d("CouponViewModel", "AI 분석 및 동기화 성공: ${dto.createdAt}, ${dto.id}")
                         },
                         onFailure = {
                             // 실패: FAILED 상태
-                            couponRepository.updateAiRecognitionInfo(
+                            couponRepository.updateStatus(
                                 couponId,
-                                null,
-                                success = false,
+                                CouponStatus.AI_FAILED.name,
                             )
                         },
                     )
                 } catch (e: Exception) {
+                    couponId?.let {
+                        couponRepository.updateStatus(it, CouponStatus.AI_FAILED.name)
+                    }
+
                     Log.e("CouponViewModel", "쿠폰 등록 실패: ${e.message}")
                 }
             }
         }
 
-        private suspend fun addPreCouponToDb(couponPreProcessResult: CouponPreProcessResult): String {
-            val now = Clock.System.now()
-            val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
+        private suspend fun addPreCouponToDb(couponPreProcessResult: CouponPreProcessResult): Pair<String, Instant> {
+            val nowInstant = Clock.System.now()
             val localId = UUID.randomUUID().toString()
+            Log.d("CouponViewModel", "$nowInstant, 로컬 ID: $localId")
 
             val preCoupon =
                 Coupon(
@@ -277,15 +276,15 @@ class CouponListViewModel
                     userMemo = null,
                     isUsed = false,
                     usedAt = null,
-                    createdAt = localDateTime,
-                    updatedAt = localDateTime,
+                    createdAt = nowInstant,
+                    updatedAt = nowInstant,
                     isSynced = false,
                     status = CouponStatus.ANALYZING.name,
                 )
 
             // Repository 호출 → ID 반환 받음
             couponRepository.addCoupon(preCoupon)
-            return localId // 로컬 ID 반환
+            return localId to nowInstant // 로컬 ID 반환
         }
 
         companion object {

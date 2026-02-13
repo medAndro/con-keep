@@ -1,7 +1,7 @@
 package com.conkeep.domain.model
 
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
+import kotlin.time.Instant
 
 data class Coupon(
     val id: String,
@@ -24,10 +24,10 @@ data class Coupon(
     val userMemo: String?,
     // 사용 정보
     val isUsed: Boolean,
-    val usedAt: LocalDateTime?,
+    val usedAt: Instant?,
     // 메타데이터
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime,
+    val createdAt: Instant,
+    val updatedAt: Instant,
     val isSynced: Boolean,
     // 쿠폰 저장 상태
     val status: String?,
