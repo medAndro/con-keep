@@ -41,7 +41,7 @@ import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.conkeep.data.local.entity.CouponLocalStatus
+import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.navigation.Route
 import com.conkeep.ui.component.TopBar
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
@@ -299,7 +299,7 @@ private val dummyCoupons =
             expiryDate = LocalDate.parse("2025-12-31"),
             isUsed = false,
             isExpired = false,
-            localStatus = CouponLocalStatus.RECOGNIZED,
+            status = CouponStatus.SUCCESS,
         ),
         CouponUiModel(
             id = "1",
@@ -309,7 +309,7 @@ private val dummyCoupons =
             expiryDate = LocalDate.parse("2000-12-31"),
             isUsed = false,
             isExpired = true,
-            localStatus = CouponLocalStatus.RECOGNIZED,
+            status = CouponStatus.SUCCESS,
         ),
         CouponUiModel(
             id = "2",
@@ -319,7 +319,7 @@ private val dummyCoupons =
             expiryDate = LocalDate.parse("2025-12-15"),
             isUsed = false,
             isExpired = false,
-            localStatus = CouponLocalStatus.PREPROCESSED,
+            status = CouponStatus.ANALYZING,
         ),
         CouponUiModel(
             id = "3",
@@ -331,7 +331,7 @@ private val dummyCoupons =
             isExpired = false,
             isMonetary = true,
             amount = 10000,
-            localStatus = CouponLocalStatus.AI_FAILED,
+            status = CouponStatus.AI_FAILED,
         ),
         CouponUiModel(
             id = "4",
@@ -341,7 +341,7 @@ private val dummyCoupons =
             expiryDate = LocalDate.parse("2026-02-10"),
             isUsed = false,
             isExpired = false,
-            localStatus = CouponLocalStatus.PENDING,
+            status = CouponStatus.PENDING,
         ),
     )
 

@@ -1,6 +1,6 @@
 package com.conkeep.ui.mapper
 
-import com.conkeep.data.local.entity.CouponLocalStatus
+import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.domain.model.Coupon
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import kotlinx.datetime.LocalDate
@@ -21,9 +21,9 @@ fun Coupon.toUiModel(today: LocalDate): CouponUiModel {
         r2Url = imageUrl,
         isMonetary = isMonetary,
         amount = amount,
-        localStatus =
-            localStatus?.let { statusStr ->
-                runCatching { CouponLocalStatus.valueOf(statusStr) }.getOrNull()
+        status =
+            status?.let { statusStr ->
+                runCatching { CouponStatus.valueOf(statusStr) }.getOrNull()
             },
     )
 }

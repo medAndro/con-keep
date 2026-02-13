@@ -21,8 +21,6 @@ import androidx.room.PrimaryKey
 data class CouponEntity(
     @PrimaryKey
     val id: String,
-    @ColumnInfo(name = "remote_id")
-    val remoteId: String?,
     @ColumnInfo(name = "user_id")
     val userId: String,
     // 업로드된 이미지 정보 (Supabase와 동기화)
@@ -65,6 +63,10 @@ data class CouponEntity(
     @ColumnInfo(name = "is_synced")
     val isSynced: Boolean = false,
     // 로컬 UI 상태
-    @ColumnInfo(name = "local_status")
-    val localStatus: String? = CouponLocalStatus.PENDING.name,
+    @ColumnInfo(name = "status")
+    val status: String? = CouponStatus.PENDING.name,
+    @ColumnInfo(name = "is_dirty")
+    val isDirty: Boolean = false,
+    @ColumnInfo(name = "is_deleted")
+    val isDeleted: Boolean = false
 )
