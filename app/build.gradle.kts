@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlinSerializaitons)
     alias(libs.plugins.room)
+    alias(libs.plugins.google.services)
 }
 room {
     schemaDirectory("$projectDir/schemas")
@@ -22,8 +23,8 @@ android {
         applicationId = "com.conkeep"
         minSdk = 28
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.0.1"
+        versionCode = 5
+        versionName = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -143,6 +144,8 @@ dependencies {
 
     // Google
     implementation(libs.barcode.scanning)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
 
     // Kotlinx
     implementation(libs.kotlinx.serialization.json)
