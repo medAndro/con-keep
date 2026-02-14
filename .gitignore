@@ -9,6 +9,7 @@
 .gradle/
 /build/
 /*/build/
+/app/release/
 
 # Local configuration & Secrets
 local.properties
