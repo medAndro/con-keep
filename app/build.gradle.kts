@@ -146,6 +146,7 @@ dependencies {
     implementation(libs.barcode.scanning)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
 
     // Kotlinx
     implementation(libs.kotlinx.serialization.json)
