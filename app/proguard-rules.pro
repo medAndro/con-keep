@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# 라인 번호 보존 (에러 발생 위치 파악용)
+-keepattributes SourceFile,LineNumberTable
+# 제네릭 및 애노테이션 정보 보존
+-keepattributes Signature,RuntimeVisibleAnnotations,AnnotationDefault
