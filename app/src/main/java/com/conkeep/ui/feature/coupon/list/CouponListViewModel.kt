@@ -197,6 +197,7 @@ class CouponListViewModel
                         couponRepository
                             .getPresignedUrl(
                                 File(path),
+                                couponId,
                                 preProcessResult.mimeType ?: "image/jpeg",
                             ).getOrThrow()
 

@@ -131,6 +131,7 @@ class CouponRepository
 
         suspend fun getPresignedUrl(
             file: File,
+            couponId: String,
             contentType: String,
         ): Result<PresignedUrlResponse> =
             withContext(Dispatchers.IO) {
@@ -139,6 +140,7 @@ class CouponRepository
                         authClient.get("${BuildConfig.BASE_URL}/upload-url") {
                             url {
                                 parameters.append("ext", file.extension.lowercase())
+                                parameters.append("couponId", couponId)
                                 parameters.append("contentType", contentType)
                                 parameters.append("fileSize", file.length().toString())
                             }
