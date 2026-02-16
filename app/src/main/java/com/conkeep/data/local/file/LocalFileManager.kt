@@ -25,6 +25,7 @@ class LocalFileManager
         private val couponImageDir = File(context.filesDir, "coupon_images")
         private val tempImageDir = File(context.cacheDir, "temp_images")
         private val shareCacheDir = File(context.cacheDir, "share_tmp")
+        private val downloadTempDir = File(context.cacheDir, "download_temp")
 
         init {
             cleanupOldCache()
@@ -38,7 +39,7 @@ class LocalFileManager
                 val currentTime = System.currentTimeMillis()
                 val maxAge = 24 * 60 * 60 * 1000 // 24시간
 
-                listOf(tempImageDir, shareCacheDir).forEach { dir ->
+                listOf(tempImageDir, shareCacheDir, downloadTempDir).forEach { dir ->
                     dir.listFiles()?.forEach { file ->
                         if (currentTime - file.lastModified() > maxAge) {
                             file.delete()
@@ -49,6 +50,32 @@ class LocalFileManager
                 e.printStackTrace()
             }
         }
+
+        /**
+         * 다운로드된 이미지 바이트를 임시 파일로 저장합니다.
+         * @param bytes 이미지 바이트 데이터
+         * @param prefix 파일명 접두사 (예: "download_", "coupon_")
+         * @return 생성된 임시 파일, 실패 시 null
+         */
+        fun createTempFileFromBytes(
+            bytes: ByteArray,
+            prefix: String = "download",
+        ): File? =
+            try {
+                if (!downloadTempDir.exists()) downloadTempDir.mkdirs()
+
+                val tempFile =
+                    File(
+                        downloadTempDir,
+                        "${prefix}_${System.currentTimeMillis()}.webp",
+                    )
+
+                tempFile.writeBytes(bytes)
+                tempFile
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
 
         /**
          * Compressor 입력을 위해 Uri의 데이터를 캐시 디렉토리에 임시 파일로 복사합니다.

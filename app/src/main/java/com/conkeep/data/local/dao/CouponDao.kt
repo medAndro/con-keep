@@ -153,6 +153,15 @@ interface CouponDao {
     @Query("SELECT * FROM coupons WHERE id = :id")
     suspend fun getCouponById(id: String): CouponEntity?
 
+    @Query("UPDATE coupons SET local_image_path = :localPath WHERE id = :couponId")
+    suspend fun updateLocalImagePath(
+        couponId: String,
+        localPath: String,
+    )
+
+    @Query("SELECT local_image_path FROM coupons WHERE id = :couponId")
+    suspend fun getLocalImagePath(couponId: String): String?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(coupon: CouponEntity)
 
