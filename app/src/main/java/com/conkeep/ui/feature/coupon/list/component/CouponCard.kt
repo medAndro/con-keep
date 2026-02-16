@@ -173,9 +173,12 @@ fun CouponCard(
                                 CouponStatus.ANALYZING -> "AI 인식중..."
                                 CouponStatus.SUCCESS -> couponUiModel.name
                                 CouponStatus.AI_FAILED -> "AI 인식 실패..."
-                                CouponStatus.PENDING -> "초기 상태"
-                                CouponStatus.UPLOADING -> "업로드 중..."
-                                CouponStatus.UPLOAD_FAILED -> "업로드 실패..."
+                                CouponStatus.PENDING -> "분석 대기중..."
+                                CouponStatus.UPLOADING -> "이미지 업로드 중..."
+                                CouponStatus.UPLOAD_FAILED -> "이미지 업로드 실패..."
+                                CouponStatus.LOCAL_IMAGE_MISSING -> "서버에서 이미지 로딩중..."
+                                CouponStatus.SERVER_IMAGE_MISSING -> "이미지를 찾을 수 없습니다"
+                                CouponStatus.PERMANENT_FAILED -> "알 수 없는 문제로 업로드에 실패했습니다"
                                 null -> ""
                             },
                         style = PretendardSemibold16,
