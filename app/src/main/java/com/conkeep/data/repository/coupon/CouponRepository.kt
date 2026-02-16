@@ -9,8 +9,8 @@ import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
+import com.conkeep.data.remote.dto.AiAnalyzeJobResponse
 import com.conkeep.data.remote.dto.AiAnalyzeRequest
-import com.conkeep.data.remote.dto.AiCouponResponse
 import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
@@ -182,14 +182,14 @@ class CouponRepository
                 }
             }
 
-        suspend fun aiCouponRecognizing(
+        suspend fun requestAiAnalyzeJob(
             couponId: String,
             imageUrl: String,
             barcode: String?,
             createAt: String,
-        ): Result<CouponDto> =
+        ): Result<String> =
             try {
-                val response: AiCouponResponse =
+                val response: AiAnalyzeJobResponse =
                     authClient
                         .post("${BuildConfig.BASE_URL}/analyze") {
                             contentType(ContentType.Application.Json)
@@ -197,16 +197,16 @@ class CouponRepository
                         }.body()
 
                 if (response.success) {
-                    Result.success(response.data)
+                    Result.success(response.message)
                 } else {
-                    Result.failure(Exception("분석 실패 (서버 로직 에러)"))
+                    Result.failure(Exception("분석 요청 실패 (서버 로직 에러)"))
                 }
             } catch (e: ClientRequestException) {
-                Result.failure(Exception("분석 실패: ${e.response.status}"))
+                Result.failure(Exception("분석 요청 실패: ${e.response.status}"))
             } catch (e: TimeoutCancellationException) {
-                Result.failure(Exception("분석 시간 초과 (네트워크 상태를 확인하세요)"))
+                Result.failure(Exception("분석 요청 시간 초과 (네트워크 상태를 확인하세요)"))
             } catch (e: Exception) {
-                Result.failure(Exception("분석 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
+                Result.failure(Exception("분석 요청 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
             }
 
         suspend fun syncCouponFromServer(dto: CouponDto) {

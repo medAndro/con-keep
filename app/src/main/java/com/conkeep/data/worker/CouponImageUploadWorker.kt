@@ -6,7 +6,6 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.conkeep.data.local.entity.CouponStatus
-import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.repository.coupon.CouponRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -51,10 +50,11 @@ class CouponImageUploadWorker
                         mimeType,
                     ).getOrThrow()
 
-                // 3. AI 분석 요청 (직접 호출 -> fcm 증분 동기화로 변경시 삭제 필요)
-                couponRepository.updateStatus(couponId, CouponStatus.ANALYZING.name)
+                Log.d("CouponImageUploadWorker", "업로드 성공, 분석 시작")
+
+                // 3. AI 분석 요청
                 val aiResponse =
-                    couponRepository.aiCouponRecognizing(
+                    couponRepository.requestAiAnalyzeJob(
                         couponId,
                         urlResponse.imageUrl,
                         barcode,
@@ -62,14 +62,18 @@ class CouponImageUploadWorker
                     )
 
                 aiResponse.fold(
-                    onSuccess = { couponDto: CouponDto ->
-                        // AI 분석 성공 시 로컬 동기화
-                        couponRepository.syncCouponFromServer(couponDto.copy(status = CouponStatus.SUCCESS.name))
+                    onSuccess = { message: String ->
+                        Log.d("CouponImageUploadWorker", "AI 분석 요청 성공: $message")
+                        couponRepository.updateStatus(couponId, CouponStatus.ANALYZING.name)
                         Result.success()
                     },
-                    onFailure = {
-                        // 서버는 살았는데 분석만 실패한 경우 (분석중 연결 끊김 등, 개선 필요)
-                        couponRepository.updateStatus(couponId, CouponStatus.AI_FAILED.name)
+                    onFailure = { throwable ->
+                        Log.e(
+                            "CouponImageUploadWorker",
+                            "AI 분석 요청 실패: ${throwable.message}",
+                            throwable,
+                        )
+                        couponRepository.updateStatus(couponId, CouponStatus.UPLOAD_FAILED.name)
                         Result.failure()
                     },
                 )
