@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.conkeep.data.local.dto.CouponCountResult
 import com.conkeep.data.local.entity.CouponEntity
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
@@ -154,6 +155,9 @@ interface CouponDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(coupon: CouponEntity)
+
+    @Upsert
+    suspend fun upsert(coupon: CouponEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(coupons: List<CouponEntity>)

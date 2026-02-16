@@ -1,5 +1,6 @@
 package com.conkeep.data.repository.coupon
 
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -15,6 +16,7 @@ import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toEntity
+import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
@@ -49,6 +51,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Clock
 
 @Singleton
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,6 +60,7 @@ class CouponRepository
     constructor(
         private val supabase: SupabaseClient,
         private val couponDao: CouponDao,
+        private val userPrefs: UserPreferencesRepository,
         private val authManager: SupabaseAuthManager,
         @param:R2UploadClient private val r2Client: HttpClient,
         @param:AuthClient private val authClient: HttpClient,
@@ -209,22 +213,52 @@ class CouponRepository
                 Result.failure(Exception("분석 요청 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
             }
 
-        suspend fun syncCouponFromServer(dto: CouponDto) {
-            val localCoupon = couponDao.getCouponById(dto.id)
+        suspend fun syncIncremental(): Result<List<CouponDto>> =
+            withContext(Dispatchers.IO) {
+                try {
+                    val lastSyncTime = userPrefs.lastSyncTime.first()
+                    val currentUserId =
+                        authManager.currentUserIdFlow.first()
+                            ?: return@withContext Result.failure(Exception("Not logged in"))
 
-            // 1. 충돌 방지: 사용자가 수동 수정을 시작했다면(isDirty) 서버 데이터로 덮어쓰지 않음
-            if (localCoupon?.isDirty == true) return
+                    val response =
+                        supabase.from("coupons").select {
+                            filter {
+                                gte("updated_at", lastSyncTime)
+                                eq("user_id", currentUserId)
+                                eq("is_deleted", false)
+                            }
+                        }
 
-            // 2. DTO -> Entity 변환 (로컬 경로 보존)
-            // localCoupon이 있다면 기존 localImagePath를 가져와서 합쳐줍니다.
-            val entity =
-                dto.toEntity(
-                    existingLocalPath = localCoupon?.localImagePath,
-                )
+                    val coupons = response.decodeList<CouponDto>()
 
-            // 3. 로컬 DB 갱신
-            couponDao.insert(entity)
-        }
+                    // upsert 로직
+                    coupons.forEach { dto ->
+                        val localCoupon = couponDao.getCouponById(dto.id)
+
+                        // 1. 충돌 방지: 사용자가 수동 수정을 시작했다면(isDirty) 서버 데이터로 덮어쓰지 않음
+                        if (localCoupon?.isDirty == true) return@forEach
+
+                        // 2. DTO -> Entity 변환 (로컬 경로 보존)
+                        // localCoupon이 있다면 기존 localImagePath를 가져와서 합쳐줍니다.
+                        val entity =
+                            dto.toEntity(
+                                existingLocalPath = localCoupon?.localImagePath,
+                            )
+
+                        // 3. 로컬 DB 갱신
+                        couponDao.upsert(entity)
+                        userPrefs.updateLastSyncTime(dto.updatedAt)
+                        // todo: 로컬 이미지가 비었다면 다운로드하는 워커 생성
+                    }
+
+                    userPrefs.updateLastSyncTime(Clock.System.now().toString())
+                    Result.success(coupons)
+                } catch (e: Exception) {
+                    Log.e("CouponRepository", "증분 동기화 실패", e)
+                    Result.failure(e)
+                }
+            }
 
         suspend fun updateStatus(
             id: String,

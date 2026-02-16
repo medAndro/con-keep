@@ -1,8 +1,15 @@
 package com.conkeep
 
 import android.util.Log
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
+import com.conkeep.data.worker.CouponSyncWorker
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -11,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 /**
@@ -28,6 +36,9 @@ class FcmService : FirebaseMessagingService() {
 
     @Inject
     lateinit var userPrefs: UserPreferencesRepository
+
+    @Inject
+    lateinit var workManager: WorkManager
 
     /**
      * 2. 서비스 전용 코루틴 스코프
@@ -82,7 +93,21 @@ class FcmService : FirebaseMessagingService() {
      */
     private fun handleSyncTrigger(timestamp: String?) {
         Log.d(TAG, "동기화 트리거 작동 시점: $timestamp")
-        // TODO: 여기서 WorkManager를 실행하여 실제 데이터를 Supabase에서 가져오는 로직을 수행해야 합니다.
+        val syncRequest =
+            OneTimeWorkRequestBuilder<CouponSyncWorker>()
+                .setConstraints(
+                    Constraints
+                        .Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build(),
+                ).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+
+        workManager.enqueueUniqueWork(
+            "incremental_sync_coupon",
+            ExistingWorkPolicy.KEEP, // 같은 이름의 워커가 이미 있으면 등록 안함
+            syncRequest,
+        )
     }
 
     /**
