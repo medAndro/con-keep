@@ -10,16 +10,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
-import com.conkeep.data.worker.CouponSyncWorker
+import com.conkeep.data.sync.SyncManager
 import com.conkeep.navigation.NavigationRoot
 import com.conkeep.navigation.Route
 import com.conkeep.ui.theme.ConKeepTheme
@@ -31,7 +26,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -47,6 +41,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var workManager: WorkManager
+
+    @Inject
+    lateinit var syncManager: SyncManager
 
     private var isReady = mutableStateOf(false)
     private val initialRoute = mutableStateOf<Route?>(null)
@@ -89,26 +86,7 @@ class MainActivity : ComponentActivity() {
                         launch { handleFcmTokenUpdate() }
 
                         // 3. 쿠폰 증분 업데이트
-                        launch {
-                            val syncRequest =
-                                OneTimeWorkRequestBuilder<CouponSyncWorker>()
-                                    .setConstraints(
-                                        Constraints
-                                            .Builder()
-                                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                                            .build(),
-                                    ).setBackoffCriteria(
-                                        BackoffPolicy.EXPONENTIAL,
-                                        30,
-                                        TimeUnit.SECONDS,
-                                    ).build()
-
-                            workManager.enqueueUniqueWork(
-                                "incremental_sync_coupon",
-                                ExistingWorkPolicy.KEEP, // 같은 이름의 워커가 이미 있으면 등록 안함
-                                syncRequest,
-                            )
-                        }
+                        launch { syncManager.enqueueCouponSync() }
 
                         // 최초 실행 시에만 초기 경로 설정
                         if (initialRoute.value == null) {
