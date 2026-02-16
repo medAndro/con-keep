@@ -124,9 +124,8 @@ class CouponRepository
         suspend fun updateR2Info(
             couponId: String,
             r2Url: String,
-            r2Key: String,
         ) {
-            couponDao.updateR2Info(couponId, r2Url, r2Key)
+            couponDao.updateR2Info(couponId, r2Url)
         }
 
         suspend fun getPresignedUrl(

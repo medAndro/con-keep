@@ -10,8 +10,6 @@ data class CouponDto(
     val id: String,
     @SerialName("user_id") val userId: String,
     @SerialName("image_url") val imageUrl: String?,
-    @SerialName("image_key") val imageKey: String?,
-    @SerialName("thumbnail_url") val thumbnailUrl: String?,
     @SerialName("product_name") val productName: String?,
     val brand: String?,
     @SerialName("coupon_pin") val couponPin: String?,

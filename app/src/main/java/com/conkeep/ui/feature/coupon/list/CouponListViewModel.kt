@@ -198,21 +198,20 @@ class CouponListViewModel
                             .getPresignedUrl(
                                 File(path),
                                 couponId,
-                                preProcessResult.mimeType ?: "image/jpeg",
+                                preProcessResult.mimeType ?: "image/webp",
                             ).getOrThrow()
 
                     couponRepository
                         .uploadCouponImageR2(
                             File(path),
                             urlResponse.uploadPresignedUrl,
-                            preProcessResult.mimeType ?: "image/jpeg",
+                            preProcessResult.mimeType ?: "image/webp",
                         ).getOrThrow()
 
                     // 3. 성공 후 업데이트
                     couponRepository.updateR2Info(
                         couponId,
                         urlResponse.imageUrl,
-                        urlResponse.r2ObjectKey,
                     )
 
                     // AI 성공 시 추가 업데이트
@@ -264,8 +263,6 @@ class CouponListViewModel
                     id = localId,
                     userId = "", // supabase user_id
                     imageUrl = null,
-                    imageKey = null,
-                    thumbnailUrl = null,
                     localImagePath = couponPreProcessResult.localPath,
                     productName = null,
                     brand = null,
