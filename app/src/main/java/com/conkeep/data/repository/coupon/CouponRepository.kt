@@ -324,32 +324,6 @@ class CouponRepository
                 ).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                 .build()
 
-        private fun enqueueCouponImageDownloadWorker(
-            couponId: String,
-            imageUrl: String,
-        ) {
-            val uploadRequest =
-                OneTimeWorkRequestBuilder<CouponImageDownloadWorker>()
-                    .setConstraints(
-                        Constraints
-                            .Builder()
-                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                            .build(),
-                    ).setInputData(
-                        workDataOf(
-                            "COUPON_ID" to couponId,
-                            "IMAGE_URL" to imageUrl,
-                        ),
-                    ).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-                    .build()
-
-            workManager.enqueueUniqueWork(
-                "download_coupon_image_$couponId",
-                ExistingWorkPolicy.KEEP, // 같은 이름의 워커가 이미 있으면 등록 안함
-                uploadRequest,
-            )
-        }
-
         suspend fun downloadAndSaveImage(
             couponId: String,
             imageUrl: String,
