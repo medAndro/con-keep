@@ -107,8 +107,13 @@ class FcmService : FirebaseMessagingService() {
                         return@launch
                     }
 
+                // 캐시된 토큰 삭제
+                userPrefs.fcmToken.first()?.let { cachedToken ->
+                    userRepository.removeDevice(userId, cachedToken)
+                }
+
                 // 서버(Supabase)의 profiles 테이블에 내 주소를 저장합니다.
-                userRepository.updateFcmToken(userId, token)
+                userRepository.registerDevice(userId, token)
 
                 // 나중에 중복 요청을 방지하기 위해 로컬 캐시에도 저장해 둡니다.
                 userPrefs.updateFcmToken(token)
