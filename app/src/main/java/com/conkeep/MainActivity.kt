@@ -10,9 +10,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import androidx.work.WorkManager
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
+import com.conkeep.data.sync.SyncManager
 import com.conkeep.navigation.NavigationRoot
 import com.conkeep.navigation.Route
 import com.conkeep.ui.theme.ConKeepTheme
@@ -36,6 +38,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var userPrefs: UserPreferencesRepository
+
+    @Inject
+    lateinit var workManager: WorkManager
+
+    @Inject
+    lateinit var syncManager: SyncManager
 
     private var isReady = mutableStateOf(false)
     private val initialRoute = mutableStateOf<Route?>(null)
@@ -76,6 +84,9 @@ class MainActivity : ComponentActivity() {
 
                         // 2. FCM 토큰 업데이트 (변경된 경우에만)
                         launch { handleFcmTokenUpdate() }
+
+                        // 3. 쿠폰 증분 업데이트
+                        launch { syncManager.enqueueCouponSync() }
 
                         // 최초 실행 시에만 초기 경로 설정
                         if (initialRoute.value == null) {

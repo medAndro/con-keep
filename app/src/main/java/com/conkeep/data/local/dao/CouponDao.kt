@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.conkeep.data.local.dto.CouponCountResult
 import com.conkeep.data.local.entity.CouponEntity
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
@@ -152,8 +153,20 @@ interface CouponDao {
     @Query("SELECT * FROM coupons WHERE id = :id")
     suspend fun getCouponById(id: String): CouponEntity?
 
+    @Query("UPDATE coupons SET local_image_path = :localPath WHERE id = :couponId")
+    suspend fun updateLocalImagePath(
+        couponId: String,
+        localPath: String,
+    )
+
+    @Query("SELECT local_image_path FROM coupons WHERE id = :couponId")
+    suspend fun getLocalImagePath(couponId: String): String?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(coupon: CouponEntity)
+
+    @Upsert
+    suspend fun upsert(coupon: CouponEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(coupons: List<CouponEntity>)

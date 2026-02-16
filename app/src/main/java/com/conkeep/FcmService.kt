@@ -1,8 +1,10 @@
 package com.conkeep
 
 import android.util.Log
+import androidx.work.WorkManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
+import com.conkeep.data.sync.SyncManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,6 +30,12 @@ class FcmService : FirebaseMessagingService() {
 
     @Inject
     lateinit var userPrefs: UserPreferencesRepository
+
+    @Inject
+    lateinit var workManager: WorkManager
+
+    @Inject
+    lateinit var syncManager: SyncManager
 
     /**
      * 2. 서비스 전용 코루틴 스코프
@@ -82,7 +90,7 @@ class FcmService : FirebaseMessagingService() {
      */
     private fun handleSyncTrigger(timestamp: String?) {
         Log.d(TAG, "동기화 트리거 작동 시점: $timestamp")
-        // TODO: 여기서 WorkManager를 실행하여 실제 데이터를 Supabase에서 가져오는 로직을 수행해야 합니다.
+        syncManager.enqueueCouponSync()
     }
 
     /**
