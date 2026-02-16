@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlinSerializaitons)
     alias(libs.plugins.room)
+    alias(libs.plugins.google.services)
 }
 room {
     schemaDirectory("$projectDir/schemas")
@@ -22,8 +23,8 @@ android {
         applicationId = "com.conkeep"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.0.1"
+        versionCode = 5
+        versionName = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -63,6 +64,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
     compileOptions {
@@ -88,6 +92,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.datastore.preferences)
 
     // Compose
     implementation(platform(libs.androidx.compose.bom))
@@ -140,6 +145,9 @@ dependencies {
 
     // Google
     implementation(libs.barcode.scanning)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
 
     // Kotlinx
     implementation(libs.kotlinx.serialization.json)
@@ -154,4 +162,14 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+tasks.register<Zip>("zipNativeDebugSymbols") {
+    from("build/intermediates/merged_native_libs/release/out/lib")
+    archiveFileName.set("native-debug-symbols.zip")
+    destinationDirectory.set(file("build/outputs/bundle/release"))
+}
+
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    finalizedBy("zipNativeDebugSymbols")
 }
