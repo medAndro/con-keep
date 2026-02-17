@@ -159,9 +159,11 @@ class MainActivity : ComponentActivity() {
             // 4. 비교: 값이 없거나 다르다면 서버 업데이트 진행
             if (currentToken != cachedToken) {
                 Log.d("MainActivity", "FCM 토큰 변경 감지: 업데이트를 시작합니다.")
+                // 기존 토큰 삭제
+                userRepository.removeDevice(userId, cachedToken)
 
-                // 서버 전송
-                userRepository.updateFcmToken(userId, currentToken)
+                // 새 토큰 서버 전송
+                userRepository.registerDevice(userId, currentToken)
 
                 // 성공적으로 전송 완료 후 로컬 캐시 갱신
                 userPrefs.updateFcmToken(currentToken)
