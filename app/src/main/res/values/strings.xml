@@ -10,6 +10,10 @@
     <string name="topbar_search_toggle_description">검색바 열기/닫기</string>
     <string name="topbar_add_coupon_description">쿠폰 추가</string>
 
+    <!--    BottomNav-->
+    <string name="bottom_nav_coupon_title">쿠폰</string>
+    <string name="bottom_nav_setting_title">설정</string>
+
     <!--     로그인 화면-->
     <string name="app_description">옥수수처럼 달콤한 쿠폰관리</string>
     <string name="btn_google_sign_up">Google 계정으로 시작하기</string>

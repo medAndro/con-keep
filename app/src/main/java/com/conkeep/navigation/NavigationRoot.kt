@@ -1,8 +1,14 @@
 package com.conkeep.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -13,14 +19,71 @@ import com.conkeep.ui.feature.coupon.detail.CouponDetailViewModel
 import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
 import com.conkeep.ui.feature.coupon.list.CouponScreen
+import com.conkeep.ui.feature.setting.SettingScreen
 
 @Composable
 fun NavigationRoot(initialRoute: Route) {
-    val backStack = rememberNavBackStack(initialRoute)
+    var isLoggedIn by rememberSaveable {
+        mutableStateOf(initialRoute != Route.LoginScreen)
+    }
+    when {
+        !isLoggedIn -> {
+            LoginScreen(
+                onLoginSuccess = {
+                    isLoggedIn = true
+                },
+            )
+        }
 
+        else -> {
+            MainNavigation()
+        }
+    }
+}
+
+@Composable
+private fun MainNavigation() {
+    val couponBackStack = rememberNavBackStack(Route.CouponScreen)
+    val settingBackStack = rememberNavBackStack(Route.SettingScreen)
+
+    var activeTab by rememberSaveable {
+        mutableStateOf(TabDestination.Coupon)
+    }
+
+    TabContainer(
+        currentTab = activeTab,
+        tabs = TabDestination.entries,
+    ) { tab ->
+        when (tab) {
+            TabDestination.Coupon -> {
+                CouponNavigation(
+                    couponBackStack = couponBackStack,
+                    onTabChange = { activeTab = it },
+                )
+            }
+
+            TabDestination.Setting -> {
+                SettingNavigation(
+                    settingBackStack = settingBackStack,
+                    onTabChange = { activeTab = it },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CouponNavigation(
+    couponBackStack: NavBackStack<NavKey>,
+    onTabChange: (TabDestination) -> Unit,
+) {
     NavDisplay(
-        backStack = backStack,
-        onBack = { backStack.removeLastOrNull() },
+        backStack = couponBackStack,
+        onBack = {
+            if (couponBackStack.size > 1) {
+                couponBackStack.removeLastOrNull()
+            }
+        },
         entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
@@ -28,12 +91,11 @@ fun NavigationRoot(initialRoute: Route) {
             ),
         entryProvider =
             entryProvider {
-                entry<Route.LoginScreen> {
-                    LoginScreen(backStack = backStack)
-                }
-
                 entry<Route.CouponScreen> {
-                    CouponScreen(backStack = backStack)
+                    CouponScreen(
+                        couponBackStack = couponBackStack,
+                        onTabChange = onTabChange,
+                    )
                 }
 
                 entry<Route.CouponDetailScreen> { key ->
@@ -41,10 +103,9 @@ fun NavigationRoot(initialRoute: Route) {
                         hiltViewModel<CouponDetailViewModel, CouponDetailViewModel.Factory> { factory ->
                             factory.create(key.id)
                         }
-
                     CouponDetailScreen(
                         id = key.id,
-                        backStack = backStack,
+                        backStack = couponBackStack,
                         viewModel = viewModel,
                     )
                 }
@@ -54,10 +115,38 @@ fun NavigationRoot(initialRoute: Route) {
                         hiltViewModel<CouponImageViewModel, CouponImageViewModel.Factory> { factory ->
                             factory.create(key.id)
                         }
-
                     CouponImageScreen(
-                        backStack = backStack,
+                        backStack = couponBackStack,
                         viewModel = viewModel,
+                    )
+                }
+            },
+    )
+}
+
+@Composable
+private fun SettingNavigation(
+    settingBackStack: NavBackStack<NavKey>,
+    onTabChange: (TabDestination) -> Unit,
+) {
+    NavDisplay(
+        backStack = settingBackStack,
+        onBack = {
+            if (settingBackStack.size > 1) {
+                settingBackStack.removeLastOrNull()
+            }
+        },
+        entryDecorators =
+            listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
+        entryProvider =
+            entryProvider {
+                entry<Route.SettingScreen> {
+                    SettingScreen(
+                        settingBackStack = settingBackStack,
+                        onTabChange = onTabChange,
                     )
                 }
             },
