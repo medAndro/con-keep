@@ -12,6 +12,9 @@ sealed interface Route : NavKey {
     data object CouponScreen : Route
 
     @Serializable
+    data object SettingScreen : Route
+
+    @Serializable
     data class CouponDetailScreen(
         val id: String,
     ) : Route

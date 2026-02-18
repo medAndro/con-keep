@@ -7,15 +7,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
-import com.conkeep.navigation.Route
 import com.conkeep.ui.feature.auth.component.LoginScreenContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    backStack: NavBackStack<NavKey>,
+    onLoginSuccess: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -27,9 +24,9 @@ fun LoginScreen(
 
     when (isLoggedIn) {
         true -> {
-            backStack.clear()
-            backStack.add(Route.CouponScreen)
+            onLoginSuccess()
         }
+
         false ->
             LoginScreenContent(
                 onGoogleSignInClick = { viewModel.signIn(activity) },

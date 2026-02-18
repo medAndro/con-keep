@@ -43,6 +43,8 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.navigation.Route
+import com.conkeep.navigation.TabDestination
+import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.TopBar
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
 import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
@@ -64,7 +66,8 @@ import kotlinx.datetime.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CouponScreen(
-    backStack: NavBackStack<NavKey>,
+    couponBackStack: NavBackStack<NavKey>,
+    onTabChange: (TabDestination) -> Unit,
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
@@ -151,7 +154,7 @@ fun CouponScreen(
             )
         },
         onCouponDetailClick = { couponId ->
-            backStack.add(Route.CouponDetailScreen(id = couponId))
+            couponBackStack.add(Route.CouponDetailScreen(id = couponId))
         },
         onCouponSortClick = viewModel::toggleCouponSortType,
         onFilterTypeClick = viewModel::changeCouponFilterType,
@@ -163,6 +166,7 @@ fun CouponScreen(
             typingQuery = ""
             viewModel.clearSearchKeyword()
         },
+        onTabChange = onTabChange,
     )
 }
 
@@ -185,6 +189,7 @@ fun CouponScreenContent(
     couponCountSummary: CouponCountSummary = CouponCountSummary(),
     selectedSortType: CouponSortType = CouponSortType.RECENT_ADD,
     onFilterTypeClick: (CouponFilterType) -> Unit,
+    onTabChange: (TabDestination) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     var isSearchBarShow by rememberSaveable { mutableStateOf(false) }
@@ -199,6 +204,13 @@ fun CouponScreenContent(
                     focusManager.clearFocus()
                     onCouponAddClick()
                 },
+            )
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                currentTab = TabDestination.Coupon,
+                onTabChange = onTabChange,
+                onTabReselect = {},
             )
         },
     ) { padding ->
@@ -368,6 +380,7 @@ private fun CouponScreenContentPreview() {
             onFilterChipExpandClick = {},
             onFilterTypeClick = {},
             onClearSearchQuery = {},
+            onTabChange = {},
         )
     }
 }
