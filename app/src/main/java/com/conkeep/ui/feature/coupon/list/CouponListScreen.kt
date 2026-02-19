@@ -11,9 +11,13 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -28,19 +32,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.navigation.Route
 import com.conkeep.navigation.TabDestination
@@ -57,6 +69,7 @@ import com.conkeep.ui.feature.coupon.model.CouponFilterType
 import com.conkeep.ui.feature.coupon.model.CouponSortType
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepTheme
+import com.conkeep.ui.theme.PretendardMedium16
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -71,6 +84,7 @@ fun CouponScreen(
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
+    val isRefreshing = coupons.loadState.refresh is LoadState.Loading
     val couponCountHeaderState by viewModel.couponCountHeaderState.collectAsStateWithLifecycle()
     val couponCountSummary by viewModel.couponCountSummary.collectAsStateWithLifecycle()
     val queryConfig by viewModel.queryConfig.collectAsStateWithLifecycle()
@@ -81,6 +95,8 @@ fun CouponScreen(
     var prevSort by rememberSaveable { mutableStateOf(queryConfig.sort) }
 
     val listState = rememberLazyListState()
+
+    val placeholderPainter = painterResource(R.drawable.img_conkeep_placeholder)
 
     // 새 쿠폰 추가 이벤트 수신시 스크롤 최근 등록순 전체로 필터를 변경 후, 쿠폰이 추가될 때까지 대기 한 뒤 최상단으로 이동
     LaunchedEffect(viewModel) {
@@ -138,6 +154,8 @@ fun CouponScreen(
 
     CouponScreenContent(
         coupons = coupons,
+        isRefreshing = isRefreshing,
+        placeholderPainter = placeholderPainter,
         typingQuery = typingQuery,
         onTypingQueryUpdate = { typingQuery = it },
         listState = listState,
@@ -174,6 +192,8 @@ fun CouponScreen(
 @Composable
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
+    isRefreshing: Boolean,
+    placeholderPainter: Painter,
     typingQuery: String,
     onTypingQueryUpdate: (String) -> Unit,
     listState: LazyListState,
@@ -276,25 +296,95 @@ fun CouponScreenContent(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
             }
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f),
-            ) {
-                items(
-                    count = coupons.itemCount,
-                    key = coupons.itemKey { it.id },
-                ) { index ->
-                    val coupon = coupons[index]
-                    if (coupon != null) {
-                        CouponCard(
-                            couponUiModel = coupon,
-                            onClick = { onCouponDetailClick(coupon.id) },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        )
-                    } else {
-                        Text("로딩중") // TODO: 로딩 스켈레톤 UI
+            when {
+                isRefreshing -> Text("로딩중") // TODO: 로딩 스켈레톤
+                else -> {
+                    when (coupons.itemCount) {
+                        0 -> CouponEmptyContent(placeholderPainter, couponFilterType)
+                        else -> {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                items(
+                                    count = coupons.itemCount,
+                                    key = coupons.itemKey { it.id },
+                                ) { index ->
+                                    val coupon = coupons[index]
+                                    if (coupon != null) {
+                                        CouponCard(
+                                            couponUiModel = coupon,
+                                            onClick = { onCouponDetailClick(coupon.id) },
+                                            modifier =
+                                                Modifier.padding(
+                                                    horizontal = 16.dp,
+                                                    vertical = 4.dp,
+                                                ),
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CouponEmptyContent(
+    placeholderPainter: Painter,
+    couponFilterType: CouponFilterType,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Image(
+                painter = placeholderPainter,
+                contentDescription = "쿠폰이 없습니다",
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.5f),
+                contentScale = ContentScale.FillWidth,
+            )
+            when (couponFilterType) {
+                CouponFilterType.ALL -> {
+                    Text(
+                        stringResource(R.string.coupon_list_screen_empty_all_placeholder_text),
+                        textAlign = TextAlign.Center,
+                        style = PretendardMedium16,
+                    )
+                }
+
+                CouponFilterType.AVAILABLE -> {
+                    Text(
+                        stringResource(R.string.coupon_list_screen_empty_available_placeholder_text),
+                        textAlign = TextAlign.Center,
+                        style = PretendardMedium16,
+                    )
+                }
+
+                CouponFilterType.USED -> {
+                    Text(
+                        stringResource(R.string.coupon_list_screen_empty_used_placeholder_text),
+                        textAlign = TextAlign.Center,
+                        style = PretendardMedium16,
+                    )
+                }
+
+                CouponFilterType.EXPIRED -> {
+                    Text(
+                        stringResource(R.string.coupon_list_screen_empty_expired_placeholder_text),
+                        textAlign = TextAlign.Center,
+                        style = PretendardMedium16,
+                    )
                 }
             }
         }
@@ -365,6 +455,38 @@ private fun CouponScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponScreenContent(
             coupons = dummyPagingItems,
+            isRefreshing = false,
+            placeholderPainter = painterResource(R.drawable.img_conkeep_placeholder),
+            typingQuery = "",
+            onTypingQueryUpdate = {},
+            listState = rememberLazyListState(),
+            couponCountHeaderState = CouponCountHeaderState(),
+            isFilterExpanded = true,
+            onCouponAddClick = {},
+            onCouponDetailClick = {},
+            onCouponSortClick = {},
+            onSearchTriggered = {},
+            couponFilterType = CouponFilterType.ALL,
+            selectedSortType = CouponSortType.RECENT_ADD,
+            couponCountSummary = couponCountSummaryFixture,
+            onFilterChipExpandClick = {},
+            onFilterTypeClick = {},
+            onClearSearchQuery = {},
+            onTabChange = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CouponScreenContentEmptyPreview() {
+    val pagingDataFlow = flowOf(PagingData.from(listOf<CouponUiModel>()))
+    val dummyPagingItems = pagingDataFlow.collectAsLazyPagingItems()
+    ConKeepTheme(darkTheme = false) {
+        CouponScreenContent(
+            coupons = dummyPagingItems,
+            isRefreshing = false,
+            placeholderPainter = painterResource(R.drawable.img_conkeep_placeholder),
             typingQuery = "",
             onTypingQueryUpdate = {},
             listState = rememberLazyListState(),
