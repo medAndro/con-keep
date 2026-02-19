@@ -16,7 +16,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
-import com.conkeep.ui.component.TopBar
+import com.conkeep.ui.component.MainTopBar
 import com.conkeep.ui.theme.ConKeepTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +36,7 @@ fun SettingScreen(
 fun SettingScreenContent(onTabChange: (TabDestination) -> Unit) {
     Scaffold(
         topBar = {
-            TopBar(
+            MainTopBar(
                 onClickSearchBarToggle = {
                 },
                 onClickAdd = {

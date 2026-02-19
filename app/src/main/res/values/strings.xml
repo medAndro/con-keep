@@ -58,6 +58,13 @@
     <string name="coupon_count">%1$s 쿠폰 %2$d개</string>
     <string name="coupon_search_result">%1$s 쿠폰에서 %2$d개 찾음</string>
 
+    <!--    쿠폰 상세 화면-->
+    <string name="coupon_detail_screen_title">쿠폰 상세</string>
+
+    <!--    쿠폰 정보 수정 화면-->
+    <string name="coupon_edit_screen_title">쿠폰 정보 수정</string>
+    <string name="coupon_edit_screen_save_icon_description">쿠폰 저장</string>
+
     <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
     <string name="coupon_image_share_title">쿠폰 이미지 공유</string>

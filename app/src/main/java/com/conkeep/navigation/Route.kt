@@ -20,6 +20,11 @@ sealed interface Route : NavKey {
     ) : Route
 
     @Serializable
+    data class CouponEditScreen(
+        val id: String,
+    ) : Route
+
+    @Serializable
     data class CouponImageScreen(
         val id: String,
     ) : Route

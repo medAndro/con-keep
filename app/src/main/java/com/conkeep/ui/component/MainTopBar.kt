@@ -2,7 +2,6 @@ package com.conkeep.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,14 +26,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.conkeep.R
 import com.conkeep.ui.theme.ConKeepColors.brandPrimary
-import com.conkeep.ui.theme.ConKeepColors.brandSecondary
-import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardBold24
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(
+fun MainTopBar(
     onClickSearchBarToggle: () -> Unit,
     onClickAdd: () -> Unit,
 ) {
@@ -79,40 +74,19 @@ fun TopBar(
 
                 Row {
                     // 오른쪽: 검색 토글 버튼
-                    Surface(
+                    TopBarButton(
+                        imageVector = searchImageVector,
+                        contentDescription = stringResource(R.string.topbar_search_toggle_description),
                         onClick = onClickSearchBarToggle,
-                        color = brandSecondary,
-                        shape = CircleShape,
-                        modifier = Modifier.size(45.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = searchImageVector,
-                                contentDescription = stringResource(R.string.topbar_search_toggle_description),
-                                tint = textPrimary,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
-
+                    )
                     Spacer(Modifier.padding(end = 12.dp))
 
                     // 오른쪽: 추가 버튼
-                    Surface(
+                    TopBarButton(
+                        imageVector = plusImageVector,
+                        contentDescription = stringResource(R.string.topbar_add_coupon_description),
                         onClick = onClickAdd,
-                        color = brandSecondary,
-                        shape = CircleShape,
-                        modifier = Modifier.size(45.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = plusImageVector,
-                                contentDescription = stringResource(R.string.topbar_add_coupon_description),
-                                tint = textPrimary,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
+                    )
                 }
             }
 
@@ -124,10 +98,10 @@ fun TopBar(
 
 @Preview(showBackground = true)
 @Composable
-fun TopBarPreview() {
+fun MainTopBarPreview() {
     ConKeepTheme {
         Surface {
-            TopBar(
+            MainTopBar(
                 onClickSearchBarToggle = {},
                 onClickAdd = {},
             )
