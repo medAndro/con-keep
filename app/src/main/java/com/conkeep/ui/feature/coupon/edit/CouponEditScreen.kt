@@ -1,14 +1,10 @@
 package com.conkeep.ui.feature.coupon.detail
 
-import android.util.Log
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,37 +20,32 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import coil3.compose.AsyncImage
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.navigation.Route
 import com.conkeep.ui.component.MiddleTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
+import com.conkeep.ui.feature.coupon.edit.CouponEditViewModel
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import kotlinx.datetime.LocalDate
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CouponDetailScreen(
+fun CouponEditScreen(
     id: String,
     backStack: NavBackStack<NavKey>,
-    viewModel: CouponDetailViewModel,
+    viewModel: CouponEditViewModel,
 ) {
     val coupon by viewModel.coupon.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    CouponDetailScreenContent(
+    CouponEditScreenContent(
         onBackClick = {
             if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                 backStack.removeLastOrNull()
             }
         },
-        onCouponEdit = {
-            coupon?.id?.takeIf { it.isNotEmpty() }?.let { couponId ->
-                backStack.add(Route.CouponEditScreen(id = couponId))
-            }
-        },
+        onCouponSave = {},
         onImageClick = {
             coupon?.id?.takeIf { it.isNotEmpty() }?.let { couponId ->
                 backStack.add(Route.CouponImageScreen(id = couponId))
@@ -68,9 +59,9 @@ fun CouponDetailScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CouponDetailScreenContent(
+private fun CouponEditScreenContent(
     onBackClick: () -> Unit,
-    onCouponEdit: () -> Unit,
+    onCouponSave: () -> Unit,
     onImageClick: () -> Unit,
     onUseCoupon: () -> Unit,
     coupon: CouponUiModel?,
@@ -79,7 +70,7 @@ private fun CouponDetailScreenContent(
     Scaffold(
         topBar = {
             MiddleTextTopBar(
-                middleText = stringResource(R.string.coupon_detail_screen_title),
+                middleText = stringResource(R.string.coupon_edit_screen_title),
                 leftButtonConfig =
                     TopBarButtonConfig(
                         iconResId = R.drawable.ic_back,
@@ -88,9 +79,9 @@ private fun CouponDetailScreenContent(
                     ),
                 rightButtonConfig =
                     TopBarButtonConfig(
-                        iconResId = R.drawable.ic_edit,
-                        contentDescription = stringResource(R.string.coupon_edit_screen_title),
-                        onClick = onCouponEdit,
+                        iconResId = R.drawable.ic_save,
+                        contentDescription = stringResource(R.string.coupon_edit_screen_save_icon_description),
+                        onClick = onCouponSave,
                     ),
             )
         },
@@ -102,42 +93,9 @@ private fun CouponDetailScreenContent(
                     .padding(padding)
                     .padding(16.dp),
         ) {
-            Log.d("CouponDetailScreen", "coupon: $coupon")
-
-            AsyncImage(
-                model = File(coupon?.localImagePath ?: ""),
-                contentDescription = "쿠폰 이미지",
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clickable(onClick = onImageClick),
-            )
-
-            Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
+            Text("Hello CouponEdit!")
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            coupon.let {
-                Text("번호: ${it?.number}")
-                Text("이름: ${it?.name}")
-                Text("유효기간: ${it?.expiryDate}")
-                Text("상태: ${it?.status?.name}")
-                Text("r2Url: ${it?.r2Url}")
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                if (it?.isUsed == false) {
-                    Button(
-                        onClick = onUseCoupon,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("쿠폰 사용하기")
-                    }
-                } else {
-                    Text("이미 사용된 쿠폰입니다.")
-                }
-            }
         }
     }
 }
@@ -156,11 +114,11 @@ private val fakeCoupon =
 
 @Preview(showBackground = true, name = "미사용 쿠폰")
 @Composable
-private fun CouponDetailScreenContentPreview() {
+private fun CouponEditScreenContentPreview() {
     MaterialTheme {
-        CouponDetailScreenContent(
+        CouponEditScreenContent(
             onBackClick = {},
-            onCouponEdit = {},
+            onCouponSave = {},
             onImageClick = {},
             onUseCoupon = {},
             coupon = fakeCoupon,
