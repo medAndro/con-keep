@@ -1,6 +1,10 @@
 package com.conkeep.ui.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -30,6 +34,7 @@ fun BottomNavigationBar(
     Column(modifier = modifier) {
         NavigationBar(
             containerColor = bgSurface,
+            windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         ) {
             TabDestination.items.forEach { tab ->
                 val isSelected = currentTab == tab
