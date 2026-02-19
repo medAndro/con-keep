@@ -45,7 +45,7 @@ import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.navigation.Route
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
-import com.conkeep.ui.component.TopBar
+import com.conkeep.ui.component.MainTopBar
 import com.conkeep.ui.feature.coupon.list.component.CouponCard
 import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
 import com.conkeep.ui.feature.coupon.list.component.CouponSortRow
@@ -196,7 +196,7 @@ fun CouponScreenContent(
 
     Scaffold(
         topBar = {
-            TopBar(
+            MainTopBar(
                 onClickSearchBarToggle = {
                     isSearchBarShow = !isSearchBarShow
                 },
