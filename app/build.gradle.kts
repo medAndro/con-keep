@@ -158,6 +158,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinx.datetime)
 
+    // Shimmer
+    implementation(libs.compose.shimmer)
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
