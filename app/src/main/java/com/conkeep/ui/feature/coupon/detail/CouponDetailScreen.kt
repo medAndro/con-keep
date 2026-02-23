@@ -1,8 +1,10 @@
 package com.conkeep.ui.feature.coupon.detail
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,10 +23,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -41,16 +46,23 @@ import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.navigation.Route
 import com.conkeep.ui.component.MiddleTextTopBar
+import com.conkeep.ui.component.RoundedDashedLine
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadge
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadgeStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
+import com.conkeep.ui.theme.ConKeepColors.borderSubtle
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
 import com.conkeep.ui.theme.PretendardMedium14
 import com.conkeep.ui.theme.PretendardSemibold16
 import com.conkeep.ui.theme.PretendardSemibold24
+import com.conkeep.ui.util.dpToPx
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.MultiFormatWriter
+import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.valentinilk.shimmer.shimmer
 import kotlinx.datetime.LocalDate
 import java.io.File
@@ -96,9 +108,38 @@ private fun CouponDetailScreenContent(
     onUseCoupon: () -> Unit,
     couponUiModel: CouponUiModel?,
     id: String,
-    isPreview: Boolean = LocalInspectionMode.current,
     modifier: Modifier = Modifier,
+    isPreview: Boolean = LocalInspectionMode.current,
 ) {
+    val context = LocalContext.current
+
+    val barcodeWidth = 220
+    val barcodeHeight = 54
+    val barcodeBitmap =
+        remember(couponUiModel?.number) {
+            try {
+                val widthPx = barcodeWidth.dpToPx(context) * 2
+                val heightPx = barcodeHeight.dpToPx(context) * 2
+                val hints =
+                    mutableMapOf<EncodeHintType, Any>().apply {
+                        put(EncodeHintType.MARGIN, 0) // 기본 여백 제거
+                        put(EncodeHintType.CHARACTER_SET, "UTF-8")
+                    }
+
+                val bitMatrix =
+                    MultiFormatWriter().encode(
+                        couponUiModel?.number,
+                        BarcodeFormat.CODE_128,
+                        widthPx,
+                        heightPx,
+                        hints,
+                    )
+
+                BarcodeEncoder().createBitmap(bitMatrix).asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
     Scaffold(
         topBar = {
             MiddleTextTopBar(
@@ -144,9 +185,6 @@ private fun CouponDetailScreenContent(
                 Text(
                     text = couponUiModel?.name ?: "",
                     style = PretendardSemibold16,
-                    modifier =
-                        Modifier
-                            .padding(end = 13.dp),
                     textAlign = TextAlign.Center,
                 )
                 when (couponUiModel) {
@@ -167,6 +205,7 @@ private fun CouponDetailScreenContent(
                                 Modifier
                                     .size(width = 179.dp, height = 185.dp)
                                     .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onImageClick() }
                                     .border(1.dp, borderDefault, RoundedCornerShape(8.dp)),
                         ) {
                             AsyncImage(
@@ -206,6 +245,24 @@ private fun CouponDetailScreenContent(
                                     shape = RoundedCornerShape(12.dp),
                                 )
                             }
+                        }
+
+                        RoundedDashedLine(
+                            color = borderSubtle,
+                            strokeWidth = 2.dp,
+                            dashLength = 6.dp,
+                            dashGap = 4.dp,
+                            modifier = Modifier.padding(vertical = 0.dp, horizontal = 10.dp), // 상하 여백 조절
+                        )
+                        if (barcodeBitmap != null) {
+                            Image(
+                                bitmap = barcodeBitmap,
+                                contentDescription = stringResource(R.string.coupon_detail_screen_barcode_image),
+                                modifier =
+                                    Modifier
+                                        .size(width = barcodeWidth.dp, height = barcodeHeight.dp),
+                                contentScale = ContentScale.FillWidth,
+                            )
                         }
                     }
                 }

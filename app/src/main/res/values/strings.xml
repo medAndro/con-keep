@@ -66,6 +66,7 @@
 
     <!--    쿠폰 상세 화면-->
     <string name="coupon_detail_screen_title">쿠폰 상세</string>
+    <string name="coupon_detail_screen_barcode_image">바코드 이미지</string>
 
     <!--    쿠폰 정보 수정 화면-->
     <string name="coupon_edit_screen_title">쿠폰 정보 수정</string>

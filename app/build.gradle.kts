@@ -161,6 +161,9 @@ dependencies {
     // Shimmer
     implementation(libs.compose.shimmer)
 
+    // Barcode
+    implementation(libs.zxing.android.embedded)
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
