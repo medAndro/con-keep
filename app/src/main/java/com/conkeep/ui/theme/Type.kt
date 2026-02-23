@@ -33,6 +33,7 @@ val PretendardSemibold =
 val PretendardSemibold13 = PretendardSemibold.copy(fontSize = 13.sp)
 val PretendardSemibold12 = PretendardSemibold.copy(fontSize = 12.sp)
 val PretendardSemibold16 = PretendardSemibold.copy(fontSize = 16.sp)
+val PretendardSemibold24 = PretendardSemibold.copy(fontSize = 24.sp)
 
 val PretendardBold =
     TextStyle(
