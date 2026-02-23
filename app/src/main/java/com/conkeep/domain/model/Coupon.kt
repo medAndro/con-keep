@@ -32,23 +32,11 @@ data class Coupon(
 )
 
 sealed class ExpiryDate {
-    data class Processing(
-        val value: LocalDate = PROCESSING_DATE,
-    ) : ExpiryDate() {
-        override fun toString(): String = value.toString()
-    }
+    data object Processing : ExpiryDate()
 
     data class Success(
         val value: LocalDate,
-    ) : ExpiryDate() {
-        override fun toString(): String = value.toString()
-    }
+    ) : ExpiryDate()
 
-    data object Empty : ExpiryDate() {
-        override fun toString(): String = ""
-    }
-
-    companion object {
-        val PROCESSING_DATE = LocalDate(1980, 1, 1)
-    }
+    data object Empty : ExpiryDate()
 }

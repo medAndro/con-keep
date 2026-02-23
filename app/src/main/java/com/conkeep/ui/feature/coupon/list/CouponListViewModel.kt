@@ -247,7 +247,7 @@ class CouponListViewModel
                     productName = null,
                     brand = null,
                     couponPin = couponPreProcessResult.barcode,
-                    expiryDate = ExpiryDate.Processing(),
+                    expiryDate = ExpiryDate.Processing,
                     isMonetary = false,
                     amount = null,
                     category = CouponCategory.ETC,

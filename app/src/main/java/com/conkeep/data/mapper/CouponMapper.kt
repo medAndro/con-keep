@@ -1,10 +1,10 @@
 package com.conkeep.data.mapper
 
 import com.conkeep.data.local.entity.CouponEntity
+import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.ExpiryDate
-import com.conkeep.domain.model.ExpiryDate.Companion.PROCESSING_DATE
 import kotlinx.datetime.LocalDate
 import java.time.OffsetDateTime
 import kotlin.time.Instant
@@ -21,9 +21,16 @@ fun CouponEntity.toDomain(): Coupon =
         expiryDate =
             runCatching {
                 val date = expiryDate?.let { LocalDate.parse(it) }
-                when (date) {
-                    null -> ExpiryDate.Empty
-                    PROCESSING_DATE -> ExpiryDate.Processing()
+                when {
+                    date == null -> {
+                        when (status) {
+                            CouponStatus.PENDING.name -> ExpiryDate.Processing
+                            CouponStatus.UPLOADING.name -> ExpiryDate.Processing
+                            CouponStatus.ANALYZING.name -> ExpiryDate.Processing
+                            else -> ExpiryDate.Empty
+                        }
+                    }
+
                     else -> ExpiryDate.Success(date)
                 }
             }.getOrElse {
@@ -61,7 +68,7 @@ fun Coupon.toEntity(): CouponEntity =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        expiryDate = expiryDate.toString(),
+        expiryDate = if (expiryDate is ExpiryDate.Success) expiryDate.value.toString() else null,
         isMonetary = isMonetary,
         amount = amount,
         category = category?.name,
