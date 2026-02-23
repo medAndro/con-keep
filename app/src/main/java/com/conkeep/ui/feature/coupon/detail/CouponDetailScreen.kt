@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -66,10 +65,10 @@ import com.conkeep.ui.theme.PretendardSemibold14
 import com.conkeep.ui.theme.PretendardSemibold16
 import com.conkeep.ui.theme.PretendardSemibold24
 import com.conkeep.ui.util.dpToPx
+import com.conkeep.ui.util.toImageBitmap
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
-import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.valentinilk.shimmer.shimmer
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
@@ -126,26 +125,29 @@ private fun CouponDetailScreenContent(
     val barcodeHeight = 54
     val barcodeBitmap =
         remember(couponUiModel?.number) {
+            if (couponUiModel?.number.isNullOrEmpty()) return@remember null
+
             try {
                 val widthPx = barcodeWidth.dpToPx(context) * 2
                 val heightPx = barcodeHeight.dpToPx(context) * 2
                 val hints =
                     mutableMapOf<EncodeHintType, Any>().apply {
-                        put(EncodeHintType.MARGIN, 0) // 기본 여백 제거
+                        put(EncodeHintType.MARGIN, 0)
                         put(EncodeHintType.CHARACTER_SET, "UTF-8")
                     }
 
                 val bitMatrix =
                     MultiFormatWriter().encode(
-                        couponUiModel?.number,
+                        couponUiModel.number,
                         BarcodeFormat.CODE_128,
                         widthPx,
                         heightPx,
                         hints,
                     )
 
-                BarcodeEncoder().createBitmap(bitMatrix).asImageBitmap()
+                bitMatrix.toImageBitmap()
             } catch (e: Exception) {
+                Log.e("CouponDetailScreen", "바코드 생성 실패", e)
                 null
             }
         }
