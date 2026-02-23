@@ -93,6 +93,9 @@ object ConKeepColors {
     val badgeCommonBg: Color
         get() = ColorPalette.GrayLight
 
+    val shimmerColor: Color
+        get() = ColorPalette.YellowLightDarker
+
     // ========== Interactive ==========
     val buttonNegativeBg: Color
         get() = ColorPalette.OrangeDark

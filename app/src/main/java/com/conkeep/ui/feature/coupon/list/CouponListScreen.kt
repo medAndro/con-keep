@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -62,6 +63,7 @@ import com.conkeep.ui.feature.coupon.list.component.CouponCard
 import com.conkeep.ui.feature.coupon.list.component.CouponFilterChipRow
 import com.conkeep.ui.feature.coupon.list.component.CouponSortRow
 import com.conkeep.ui.feature.coupon.list.component.SearchBar
+import com.conkeep.ui.feature.coupon.list.component.ShimmerCouponCard
 import com.conkeep.ui.feature.coupon.list.component.couponCountSummaryFixture
 import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
@@ -84,7 +86,17 @@ fun CouponScreen(
     viewModel: CouponListViewModel = hiltViewModel(),
 ) {
     val coupons: LazyPagingItems<CouponUiModel> = viewModel.coupons.collectAsLazyPagingItems()
-    val isRefreshing = coupons.loadState.refresh is LoadState.Loading
+    var hasLoadedOnce by remember { mutableStateOf(false) }
+    LaunchedEffect(coupons.loadState.source.refresh) {
+        if (coupons.loadState.source.refresh is LoadState.NotLoading) {
+            hasLoadedOnce = true
+        }
+    }
+    val showInitialShimmer =
+        coupons.loadState.source.refresh is LoadState.Loading &&
+            !hasLoadedOnce
+    val isRefreshing = coupons.loadState.source.refresh is LoadState.Loading
+
     val couponCountHeaderState by viewModel.couponCountHeaderState.collectAsStateWithLifecycle()
     val couponCountSummary by viewModel.couponCountSummary.collectAsStateWithLifecycle()
     val queryConfig by viewModel.queryConfig.collectAsStateWithLifecycle()
@@ -154,6 +166,7 @@ fun CouponScreen(
 
     CouponScreenContent(
         coupons = coupons,
+        showInitialShimmer = showInitialShimmer,
         isRefreshing = isRefreshing,
         placeholderPainter = placeholderPainter,
         typingQuery = typingQuery,
@@ -192,6 +205,7 @@ fun CouponScreen(
 @Composable
 fun CouponScreenContent(
     coupons: LazyPagingItems<CouponUiModel>,
+    showInitialShimmer: Boolean,
     isRefreshing: Boolean,
     placeholderPainter: Painter,
     typingQuery: String,
@@ -297,31 +311,62 @@ fun CouponScreenContent(
                 )
             }
             when {
-                isRefreshing -> Text("로딩중") // TODO: 로딩 스켈레톤
+                // 최초 로딩 시에만 전체 shimmer 표시
+                showInitialShimmer -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        items(count = 10) {
+                            ShimmerCouponCard(
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 16.dp,
+                                        vertical = 4.dp,
+                                    ),
+                            )
+                        }
+                    }
+                }
+
+                // 로딩 완료 후 아이템 없음 = 진짜 빈 상태
+                // isRefreshing 중에는 표시하지 않아 빈 화면 깜빡임 방지
+                coupons.itemCount == 0 && !isRefreshing -> {
+                    CouponEmptyContent(placeholderPainter, couponFilterType)
+                }
+
                 else -> {
-                    when (coupons.itemCount) {
-                        0 -> CouponEmptyContent(placeholderPainter, couponFilterType)
-                        else -> {
-                            LazyColumn(
-                                state = listState,
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                items(
-                                    count = coupons.itemCount,
-                                    key = coupons.itemKey { it.id },
-                                ) { index ->
-                                    val coupon = coupons[index]
-                                    if (coupon != null) {
-                                        CouponCard(
-                                            couponUiModel = coupon,
-                                            onClick = { onCouponDetailClick(coupon.id) },
-                                            modifier =
-                                                Modifier.padding(
-                                                    horizontal = 16.dp,
-                                                    vertical = 4.dp,
-                                                ),
-                                        )
-                                    }
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        items(
+                            count = coupons.itemCount,
+                            key = coupons.itemKey { it.id },
+                        ) { index ->
+                            val coupon = coupons[index]
+                            when {
+                                coupon != null -> {
+                                    CouponCard(
+                                        couponUiModel = coupon,
+                                        onClick = { onCouponDetailClick(coupon.id) },
+                                        modifier =
+                                            Modifier.padding(
+                                                horizontal = 16.dp,
+                                                vertical = 4.dp,
+                                            ),
+                                    )
+                                }
+
+                                else -> {
+                                    // append 페이징 중 null 플레이스홀더에 개별 shimmer
+                                    ShimmerCouponCard(
+                                        modifier =
+                                            Modifier.padding(
+                                                horizontal = 16.dp,
+                                                vertical = 4.dp,
+                                            ),
+                                    )
                                 }
                             }
                         }
@@ -455,6 +500,7 @@ private fun CouponScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponScreenContent(
             coupons = dummyPagingItems,
+            showInitialShimmer = false,
             isRefreshing = false,
             placeholderPainter = painterResource(R.drawable.img_conkeep_placeholder),
             typingQuery = "",
@@ -485,7 +531,39 @@ private fun CouponScreenContentEmptyPreview() {
     ConKeepTheme(darkTheme = false) {
         CouponScreenContent(
             coupons = dummyPagingItems,
+            showInitialShimmer = false,
             isRefreshing = false,
+            placeholderPainter = painterResource(R.drawable.img_conkeep_placeholder),
+            typingQuery = "",
+            onTypingQueryUpdate = {},
+            listState = rememberLazyListState(),
+            couponCountHeaderState = CouponCountHeaderState(),
+            isFilterExpanded = true,
+            onCouponAddClick = {},
+            onCouponDetailClick = {},
+            onCouponSortClick = {},
+            onSearchTriggered = {},
+            couponFilterType = CouponFilterType.ALL,
+            selectedSortType = CouponSortType.RECENT_ADD,
+            couponCountSummary = couponCountSummaryFixture,
+            onFilterChipExpandClick = {},
+            onFilterTypeClick = {},
+            onClearSearchQuery = {},
+            onTabChange = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CouponScreenContentShimmerPreview() {
+    val pagingDataFlow = flowOf(PagingData.from(listOf<CouponUiModel>()))
+    val dummyPagingItems = pagingDataFlow.collectAsLazyPagingItems()
+    ConKeepTheme(darkTheme = false) {
+        CouponScreenContent(
+            coupons = dummyPagingItems,
+            showInitialShimmer = true,
+            isRefreshing = true,
             placeholderPainter = painterResource(R.drawable.img_conkeep_placeholder),
             typingQuery = "",
             onTypingQueryUpdate = {},

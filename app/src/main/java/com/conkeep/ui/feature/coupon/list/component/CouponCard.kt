@@ -3,6 +3,7 @@ package com.conkeep.ui.feature.coupon.list.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,12 +37,14 @@ import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.feature.coupon.model.badgeStatus
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
+import com.conkeep.ui.theme.ConKeepColors.shimmerColor
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
 import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium12
 import com.conkeep.ui.theme.PretendardSemibold13
 import com.conkeep.ui.theme.PretendardSemibold16
+import com.valentinilk.shimmer.shimmer
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
 import java.io.File
@@ -232,6 +235,109 @@ fun CouponCard(
     }
 }
 
+@Composable
+fun ShimmerCouponCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier =
+            modifier
+                .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = bgSurface,
+            ),
+    ) {
+        val roundShape = RoundedCornerShape(8.dp)
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .padding(13.dp)
+                    .shimmer(),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = 84.dp, height = 87.dp)
+                        .clip(roundShape)
+                        .background(shimmerColor)
+                        .border(1.dp, borderDefault, roundShape),
+            )
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = 15.dp,
+                        end = 3.dp,
+                        top = 3.dp,
+                        bottom = 3.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Row(
+                    modifier = Modifier.height(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(80.dp, 12.dp)
+                                .clip(roundShape)
+                                .background(shimmerColor),
+                    )
+                }
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .size(0.dp, 16.dp)
+                                .clip(roundShape)
+                                .background(shimmerColor),
+                    )
+                }
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .size(0.dp, 16.dp)
+                                .clip(roundShape)
+                                .background(shimmerColor),
+                    )
+                }
+                Row(
+                    modifier =
+                        Modifier
+                            .height(21.dp)
+                            .padding(bottom = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(120.dp, 12.dp)
+                                .clip(roundShape)
+                                .background(shimmerColor),
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Preview
 @Composable
 fun CouponCardMonetaryPreview() {
@@ -307,5 +413,13 @@ fun CouponCardUsedPreview() {
                 ),
             onClick = {},
         )
+    }
+}
+
+@Preview
+@Composable
+fun CouponCardShimmerPreview() {
+    ConKeepTheme {
+        ShimmerCouponCard()
     }
 }
