@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -44,18 +46,23 @@ import androidx.navigation3.runtime.NavKey
 import coil3.compose.AsyncImage
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.navigation.Route
+import com.conkeep.ui.component.CenterRoundShimmer
+import com.conkeep.ui.component.CenterRoundTextShimmer
 import com.conkeep.ui.component.MiddleTextTopBar
 import com.conkeep.ui.component.RoundedDashedLine
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadge
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadgeStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.feature.coupon.model.badgeStatus
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
 import com.conkeep.ui.theme.PretendardMedium14
+import com.conkeep.ui.theme.PretendardSemibold14
 import com.conkeep.ui.theme.PretendardSemibold16
 import com.conkeep.ui.theme.PretendardSemibold24
 import com.conkeep.ui.util.dpToPx
@@ -65,6 +72,7 @@ import com.google.zxing.MultiFormatWriter
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.valentinilk.shimmer.shimmer
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +82,7 @@ fun CouponDetailScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: CouponDetailViewModel,
 ) {
-    val coupon by viewModel.coupon.collectAsStateWithLifecycle()
+    val coupon by viewModel.couponUiModel.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     CouponDetailScreenContent(
@@ -112,6 +120,7 @@ private fun CouponDetailScreenContent(
     isPreview: Boolean = LocalInspectionMode.current,
 ) {
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
     val barcodeWidth = 220
     val barcodeHeight = 54
@@ -140,6 +149,15 @@ private fun CouponDetailScreenContent(
                 null
             }
         }
+    val dDayText =
+        remember(couponUiModel?.dDay) {
+            when {
+                couponUiModel?.dDay == null -> ""
+                couponUiModel.dDay == 0 -> "D-0"
+                couponUiModel.dDay > 0 -> "D+${couponUiModel.dDay}"
+                else -> "D${couponUiModel.dDay}"
+            }
+        }
     Scaffold(
         topBar = {
             MiddleTextTopBar(
@@ -164,7 +182,8 @@ private fun CouponDetailScreenContent(
                 modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp),
+                    .verticalScroll(scrollState)
+                    .padding(20.dp),
         ) {
             Log.d("CouponDetailScreen", "coupon: $couponUiModel")
 
@@ -177,16 +196,57 @@ private fun CouponDetailScreenContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                Text(
-                    couponUiModel?.brand ?: "",
-                    style = PretendardMedium14,
-                    color = textBrandGray,
-                )
-                Text(
-                    text = couponUiModel?.name ?: "",
-                    style = PretendardSemibold16,
-                    textAlign = TextAlign.Center,
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    when {
+                        couponUiModel?.brand == null -> {
+                            CenterRoundTextShimmer(
+                                width = 90.dp,
+                                context = context,
+                                textSizeSp = 14f,
+                            )
+                        }
+
+                        couponUiModel.brand == "" -> {}
+                        else -> {
+                            Text(
+                                couponUiModel.brand,
+                                style = PretendardMedium14,
+                                color = textBrandGray,
+                            )
+                        }
+                    }
+
+                    when {
+                        couponUiModel?.name == null -> {
+                            CenterRoundTextShimmer(
+                                width = 210.dp,
+                                context = context,
+                                textSizeSp = 16f,
+                            )
+                        }
+
+                        couponUiModel.name == "" -> {}
+                        else -> {
+                            Text(
+                                text = couponUiModel.name,
+                                style = PretendardSemibold16,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+
+                    if (couponUiModel?.brand == "" && couponUiModel.name == "") {
+                        ExpirationBadge(
+                            status = ExpirationBadgeStatus.Common,
+                            text = "정보 없음",
+                            textStyle = PretendardSemibold14,
+                        )
+                    }
+                }
+
                 when (couponUiModel) {
                     null -> {
                         Box(
@@ -252,17 +312,84 @@ private fun CouponDetailScreenContent(
                             strokeWidth = 2.dp,
                             dashLength = 6.dp,
                             dashGap = 4.dp,
-                            modifier = Modifier.padding(vertical = 0.dp, horizontal = 10.dp), // 상하 여백 조절
+                            modifier =
+                                Modifier.padding(
+                                    vertical = 0.dp,
+                                    horizontal = 10.dp,
+                                ),
+                            // 상하 여백 조절
                         )
-                        if (barcodeBitmap != null) {
-                            Image(
-                                bitmap = barcodeBitmap,
-                                contentDescription = stringResource(R.string.coupon_detail_screen_barcode_image),
-                                modifier =
-                                    Modifier
-                                        .size(width = barcodeWidth.dp, height = barcodeHeight.dp),
-                                contentScale = ContentScale.FillWidth,
-                            )
+                        when {
+                            couponUiModel.number == "" -> {
+                                ExpirationBadge(
+                                    status = ExpirationBadgeStatus.Common,
+                                    text = "쿠폰번호 없음",
+                                    textStyle = PretendardSemibold14,
+                                )
+                            }
+
+                            couponUiModel.number != null -> {
+                                if (barcodeBitmap != null) {
+                                    Image(
+                                        bitmap = barcodeBitmap,
+                                        contentDescription = stringResource(R.string.coupon_detail_screen_barcode_image),
+                                        modifier =
+                                            Modifier
+                                                .size(
+                                                    width = barcodeWidth.dp,
+                                                    height = barcodeHeight.dp,
+                                                ),
+                                        contentScale = ContentScale.FillWidth,
+                                    )
+                                } else {
+                                    CenterRoundShimmer(
+                                        width = barcodeWidth.dp,
+                                        height = barcodeHeight.dp,
+                                    )
+                                }
+
+                                Text(
+                                    text = couponUiModel.number.chunked(4).joinToString(" "),
+                                    style = PretendardSemibold16,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+
+                            else -> {
+                            }
+                        }
+
+                        when (couponUiModel.expiryDate) {
+                            ExpiryDate.Empty -> {
+                                ExpirationBadge(
+                                    status = ExpirationBadgeStatus.Common,
+                                    text = stringResource(R.string.coupon_detail_screen_empty_expiry_date),
+                                    textStyle = PretendardSemibold14,
+                                )
+                            }
+
+                            is ExpiryDate.Processing ->
+                                CenterRoundTextShimmer(
+                                    width = 190.dp,
+                                    context = context,
+                                    textSizeSp = 14f,
+                                    verticalPaddingDp = 8.dp,
+                                )
+
+                            is ExpiryDate.Success -> {
+                                ExpirationBadge(
+                                    status = couponUiModel.badgeStatus,
+                                    text =
+                                        stringResource(
+                                            R.string.coupon_detail_screen_expiry_date_with_d_day_format,
+                                            couponUiModel.expiryDate.value.year,
+                                            couponUiModel.expiryDate.value.month.number,
+                                            couponUiModel.expiryDate.value.day,
+                                            dDayText,
+                                        ),
+                                    textStyle = PretendardSemibold14,
+                                )
+                            }
                         }
                     }
                 }
@@ -302,9 +429,10 @@ private val fakeCoupon =
         number = "1234-5678-9012",
         name = "부드러운 디저트 [카페 아메리카노 T 2잔 + 부드러운 생크림 카스텔라",
         brand = "스타벅스",
-        expiryDate = LocalDate.parse("2025-12-31"),
+        expiryDate = ExpiryDate.Success(LocalDate.parse("2026-02-27")),
         isUsed = false,
         isExpired = false,
+        dDay = -3,
         status = CouponStatus.SUCCESS,
     )
 
@@ -333,6 +461,34 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             couponUiModel = fakeCoupon.copy(isExpired = true),
+            id = "0",
+        )
+    }
+}
+
+private val loadingCoupon =
+    CouponUiModel(
+        id = "0",
+        number = null,
+        name = null,
+        brand = null,
+        expiryDate = ExpiryDate.Processing(),
+        isUsed = false,
+        isExpired = false,
+        dDay = -3,
+        status = CouponStatus.SUCCESS,
+    )
+
+@Preview(showBackground = true, name = "인식중 쿠폰")
+@Composable
+private fun CouponDetailScreenLoadingContentPreview() {
+    MaterialTheme {
+        CouponDetailScreenContent(
+            onBackClick = {},
+            onCouponEdit = {},
+            onImageClick = {},
+            onUseCoupon = {},
+            couponUiModel = loadingCoupon,
             id = "0",
         )
     }

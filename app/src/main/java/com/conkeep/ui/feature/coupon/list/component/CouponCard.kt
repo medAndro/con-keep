@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.feature.coupon.model.badgeStatus
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
@@ -165,7 +166,7 @@ fun CouponCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            couponUiModel.brand,
+                            couponUiModel.brand ?: "",
                             style = PretendardMedium12,
                             color = textBrandGray,
                         )
@@ -174,7 +175,7 @@ fun CouponCard(
                         text =
                             when (couponUiModel.status) {
                                 CouponStatus.ANALYZING -> "AI 인식중..."
-                                CouponStatus.SUCCESS -> couponUiModel.name
+                                CouponStatus.SUCCESS -> couponUiModel.name ?: ""
                                 CouponStatus.AI_FAILED -> "AI 인식 실패..."
                                 CouponStatus.PENDING -> "분석 대기중..."
                                 CouponStatus.UPLOADING -> "이미지 업로드 중..."
@@ -182,7 +183,6 @@ fun CouponCard(
                                 CouponStatus.LOCAL_IMAGE_MISSING -> "서버에서 이미지 로딩중..."
                                 CouponStatus.SERVER_IMAGE_MISSING -> "이미지를 찾을 수 없습니다"
                                 CouponStatus.PERMANENT_FAILED -> "알 수 없는 문제로 업로드에 실패했습니다"
-                                null -> ""
                             },
                         style = PretendardSemibold16,
                         minLines = 2,
@@ -201,18 +201,25 @@ fun CouponCard(
                                 .padding(top = 1.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (couponUiModel.expiryDate != null) {
-                            Text(
-                                text =
-                                    stringResource(
-                                        R.string.coupon_card_expiry_date_format,
-                                        couponUiModel.expiryDate.year,
-                                        couponUiModel.expiryDate.month.number,
-                                        couponUiModel.expiryDate.day,
-                                    ),
-                                style = PretendardMedium12,
-                                color = textBrandGray,
-                            )
+                        when (couponUiModel.expiryDate) {
+                            ExpiryDate.Empty -> {
+                            }
+
+                            is ExpiryDate.Processing -> {
+                            }
+
+                            is ExpiryDate.Success ->
+                                Text(
+                                    text =
+                                        stringResource(
+                                            R.string.coupon_card_expiry_date_format,
+                                            couponUiModel.expiryDate.value.year,
+                                            couponUiModel.expiryDate.value.month.number,
+                                            couponUiModel.expiryDate.value.day,
+                                        ),
+                                    style = PretendardMedium12,
+                                    color = textBrandGray,
+                                )
                         }
 
                         Spacer(modifier = Modifier.weight(1f))
@@ -349,7 +356,7 @@ fun CouponCardMonetaryPreview() {
                     number = "1234567890",
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     brand = "스타벅스",
-                    expiryDate = LocalDate.parse("2026-12-31"),
+                    expiryDate = ExpiryDate.Empty,
                     dDay = 0,
                     isUsed = false,
                     isExpired = false,
@@ -375,7 +382,7 @@ fun CouponCardNormalPreview() {
                     number = "1234567890",
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     brand = "스타벅스",
-                    expiryDate = LocalDate.parse("2026-12-31"),
+                    expiryDate = ExpiryDate.Success(LocalDate.parse("2016-12-31")),
                     dDay = -10,
                     isUsed = false,
                     isExpired = false,
@@ -401,7 +408,7 @@ fun CouponCardUsedPreview() {
                     number = "1234567890",
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글+탕종 파마산 치즈 베이글+",
                     brand = "스타벅스",
-                    expiryDate = LocalDate.parse("2026-12-31"),
+                    expiryDate = ExpiryDate.Success(LocalDate.parse("2016-12-31")),
                     dDay = -123,
                     isUsed = true,
                     isExpired = false,

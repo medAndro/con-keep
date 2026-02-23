@@ -60,7 +60,7 @@ data class CouponEntity(
     val isSynced: Boolean = false,
     // 로컬 UI 상태
     @ColumnInfo(name = "status")
-    val status: String? = CouponStatus.PENDING.name,
+    val status: String = CouponStatus.PENDING.name,
     @ColumnInfo(name = "is_dirty")
     val isDirty: Boolean = false,
     @ColumnInfo(name = "is_deleted")

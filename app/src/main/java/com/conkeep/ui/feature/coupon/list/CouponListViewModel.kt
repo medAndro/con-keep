@@ -21,6 +21,7 @@ import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.data.worker.CouponImageUploadWorker
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
@@ -246,11 +247,11 @@ class CouponListViewModel
                     productName = null,
                     brand = null,
                     couponPin = couponPreProcessResult.barcode,
-                    expiryDate = null,
+                    expiryDate = ExpiryDate.Processing(),
                     isMonetary = false,
                     amount = null,
                     category = CouponCategory.ETC,
-                    userMemo = null,
+                    userMemo = "",
                     isUsed = false,
                     usedAt = null,
                     createdAt = nowInstant,

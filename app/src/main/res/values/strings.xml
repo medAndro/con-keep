@@ -67,6 +67,8 @@
     <!--    쿠폰 상세 화면-->
     <string name="coupon_detail_screen_title">쿠폰 상세</string>
     <string name="coupon_detail_screen_barcode_image">바코드 이미지</string>
+    <string name="coupon_detail_screen_expiry_date_with_d_day_format">~ %1$d년 %2$d월 %3$02d일 까지 (%4$s)</string>
+    <string name="coupon_detail_screen_empty_expiry_date">만료일 없음</string>
 
     <!--    쿠폰 정보 수정 화면-->
     <string name="coupon_edit_screen_title">쿠폰 정보 수정</string>

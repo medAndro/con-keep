@@ -55,6 +55,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.navigation.Route
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
@@ -443,7 +444,7 @@ private val dummyCoupons =
             number = "1234-5678-9012",
             name = "스타벅스 아이스 아메리카노 T",
             brand = "스타벅스",
-            expiryDate = LocalDate.parse("2025-12-31"),
+            expiryDate = ExpiryDate.Success(LocalDate.parse("2025-12-31")),
             isUsed = false,
             isExpired = false,
             status = CouponStatus.SUCCESS,
@@ -453,7 +454,7 @@ private val dummyCoupons =
             number = "1234-5678-3333",
             name = "스타벅스 아이스 콜드부루 T",
             brand = "스타벅스",
-            expiryDate = LocalDate.parse("2000-12-31"),
+            expiryDate = ExpiryDate.Success(LocalDate.parse("2000-12-31")),
             isUsed = false,
             isExpired = true,
             status = CouponStatus.SUCCESS,
@@ -463,7 +464,7 @@ private val dummyCoupons =
             number = "9876-5432-1098",
             name = "배스킨라빈스 싱글레귤러",
             brand = "배스킨라빈스",
-            expiryDate = LocalDate.parse("2025-12-15"),
+            expiryDate = ExpiryDate.Success(LocalDate.parse("2025-12-15")),
             isUsed = false,
             isExpired = false,
             status = CouponStatus.ANALYZING,
@@ -473,7 +474,7 @@ private val dummyCoupons =
             number = "1111-2222-3333",
             name = "네이버페이 1만원권",
             brand = "네이버페이",
-            expiryDate = LocalDate.parse("2026-01-20"),
+            expiryDate = ExpiryDate.Success(LocalDate.parse("2016-01-20")),
             isUsed = true,
             isExpired = false,
             isMonetary = true,
@@ -485,7 +486,7 @@ private val dummyCoupons =
             number = "5555-6666-7777",
             name = "교촌치킨 허니콤보 웨지감자 세트",
             brand = "교촌치킨",
-            expiryDate = LocalDate.parse("2026-02-10"),
+            expiryDate = ExpiryDate.Success(LocalDate.parse("2016-02-10")),
             isUsed = false,
             isExpired = false,
             status = CouponStatus.PENDING,

@@ -22,6 +22,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.navigation.Route
 import com.conkeep.ui.component.MiddleTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
@@ -106,7 +107,7 @@ private val fakeCoupon =
         number = "1234-5678-9012",
         name = "스타벅스 아이스 아메리카노 T",
         brand = "스타벅스",
-        expiryDate = LocalDate.parse("2025-12-31"),
+        expiryDate = ExpiryDate.Success(LocalDate.parse("2025-12-31")),
         isUsed = false,
         isExpired = false,
         status = CouponStatus.SUCCESS,

@@ -31,7 +31,7 @@ class CouponDetailViewModel
             fun create(couponId: String): CouponDetailViewModel
         }
 
-        val coupon: StateFlow<CouponUiModel?> =
+        val couponUiModel: StateFlow<CouponUiModel?> =
             couponRepository
                 .getCoupon(couponId)
                 .map { domainCoupon ->
