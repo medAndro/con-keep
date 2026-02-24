@@ -39,9 +39,9 @@ fun MemoInputField(
     var isFocused by remember { mutableStateOf(false) }
     val currentMemo by rememberUpdatedState(memo)
 
-    // 로직 1: 입력이 멈춘 후 1초 뒤에 자동 저장 (Debounce)
+    // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
     LaunchedEffect(memo) {
-        if (memo.isBlank()) return@LaunchedEffect
+        if (!isFocused || memo.isBlank()) return@LaunchedEffect
         delay(1000L) // 1초 대기
         onSave(memo)
     }
@@ -53,7 +53,7 @@ fun MemoInputField(
             modifier
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
-                    // 로직 2: 포커스가 있다가 사라지는 순간 저장
+                    // 포커스가 있다가 사라지는 순간 저장
                     if (isFocused && !focusState.isFocused) {
                         onSave(currentMemo)
                     }
@@ -66,7 +66,7 @@ fun MemoInputField(
             )
         },
         textStyle = PretendardMedium14,
-        shape = RoundedCornerShape(10.dp), // 1. 곡률 조정 (12.dp -> 20.dp로 변경 시 더 둥글어짐)
+        shape = RoundedCornerShape(10.dp),
         colors =
             OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = borderFocused, // 포커스 되었을 때 선 색상

@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.coupon.detail
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
@@ -12,8 +13,10 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -44,6 +47,9 @@ class CouponDetailViewModel
                     initialValue = null,
                 )
 
+        private val _errorEvent = MutableSharedFlow<CouponDetailError>()
+        val errorEvent = _errorEvent.asSharedFlow()
+
         fun useCoupon() {
             viewModelScope.launch {
                 couponRepository.markAsUsed(
@@ -73,4 +79,24 @@ class CouponDetailViewModel
                 onResult(result)
             }
         }
+
+        fun saveCouponMemo(newMemo: String) {
+            if (newMemo == couponUiModel.value?.memo) return
+
+            viewModelScope.launch {
+                try {
+                    couponRepository.memoSave(
+                        id = couponId,
+                        memo = newMemo,
+                    )
+                } catch (e: Exception) {
+                    _errorEvent.emit(CouponDetailError.MemoSaveFailed)
+                    Log.e("ViewModel", "메모 저장 중 오류 발생", e)
+                }
+            }
+        }
     }
+
+sealed interface CouponDetailError {
+    data object MemoSaveFailed : CouponDetailError
+}
