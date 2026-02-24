@@ -115,6 +115,7 @@ fun CouponDetailScreen(
         },
         onUseCoupon = { viewModel.useCoupon() },
         onCouponImageSave = actionHandler.saveImage,
+        onCouponNumberCopy = actionHandler.copyToClipboard,
         couponUiModel = coupon,
         id = id,
     )
@@ -128,6 +129,7 @@ private fun CouponDetailScreenContent(
     onImageClick: () -> Unit,
     onUseCoupon: () -> Unit,
     onCouponImageSave: () -> Unit,
+    onCouponNumberCopy: (String) -> Unit,
     couponUiModel: CouponUiModel?,
     id: String,
     modifier: Modifier = Modifier,
@@ -392,12 +394,7 @@ private fun CouponDetailScreenContent(
                                     // 우측 복사 버튼
                                     Surface(
                                         onClick = {
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    "클립보드에 복사 되었습니다",
-                                                    Toast.LENGTH_SHORT,
-                                                ).show()
+                                            onCouponNumberCopy(couponUiModel.number)
                                         },
                                         color = Color.Transparent,
                                         shape = CircleShape,
@@ -503,6 +500,7 @@ private fun CouponDetailScreenContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             onCouponImageSave = {},
+            onCouponNumberCopy = {},
             couponUiModel = fakeCoupon,
             id = "0",
         )
@@ -519,6 +517,7 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             onCouponImageSave = {},
+            onCouponNumberCopy = {},
             couponUiModel = fakeCoupon.copy(isExpired = true),
             id = "0",
         )
@@ -535,6 +534,7 @@ private fun CouponDetailScreenNullContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             onCouponImageSave = {},
+            onCouponNumberCopy = {},
             couponUiModel = null,
             id = "0",
         )
@@ -564,6 +564,7 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             onCouponImageSave = {},
+            onCouponNumberCopy = {},
             couponUiModel = loadingCoupon,
             id = "0",
         )

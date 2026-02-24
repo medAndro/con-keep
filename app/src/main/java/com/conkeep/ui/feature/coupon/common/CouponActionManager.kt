@@ -2,6 +2,7 @@ package com.conkeep.ui.feature.coupon.common
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -28,6 +29,11 @@ fun rememberCouponActionHandler(
     val shareFailMsg = stringResource(R.string.coupon_image_processing_failed)
     val filePermissionMsg = stringResource(R.string.coupon_image_save_permission_not_grant)
     val shareTitle = stringResource(R.string.coupon_image_share_title)
+    val copySuccessMsg = stringResource(R.string.coupon_code_copy)
+
+    val clipboardManager = remember {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    }
 
     // 저장 로직 실행
     val executeSave = {
@@ -103,6 +109,14 @@ fun rememberCouponActionHandler(
                     }
                 }
             },
+            copyToClipboard = { text ->
+                if (text.isNullOrBlank()) return@CouponActionManager
+
+                val clip = android.content.ClipData.newPlainText("coupon_number", text)
+                clipboardManager.setPrimaryClip(clip)
+
+                Toast.makeText(context, copySuccessMsg, Toast.LENGTH_SHORT).show()
+            }
         )
     }
 }
@@ -110,4 +124,5 @@ fun rememberCouponActionHandler(
 class CouponActionManager(
     val saveImage: () -> Unit,
     val shareImage: () -> Unit,
+    val copyToClipboard: (String?) -> Unit,
 )
