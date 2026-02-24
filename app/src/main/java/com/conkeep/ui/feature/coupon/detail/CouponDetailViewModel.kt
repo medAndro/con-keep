@@ -53,6 +53,14 @@ class CouponDetailViewModel
             }
         }
 
+        fun unUseCoupon() {
+            viewModelScope.launch {
+                couponRepository.unUsedMark(
+                    id = couponId,
+                )
+            }
+        }
+
         fun saveCouponImage(onResult: (Boolean?) -> Unit) {
             val currentCoupon = couponUiModel.value ?: return
             viewModelScope.launch {

@@ -42,4 +42,5 @@ val PretendardBold =
         fontFamily = PretendardFontFamily,
         fontWeight = FontWeight.Bold,
     )
+val PretendardBold18 = PretendardBold.copy(fontSize = 18.sp)
 val PretendardBold24 = PretendardBold.copy(fontSize = 24.sp)

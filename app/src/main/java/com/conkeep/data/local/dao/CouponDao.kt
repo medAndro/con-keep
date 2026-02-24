@@ -186,11 +186,14 @@ interface CouponDao {
         couponStatus: String,
     )
 
-    @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt WHERE id = :id")
+    @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt, is_dirty = 1 WHERE id = :id")
     suspend fun markAsUsed(
         id: String,
         usedAt: Long,
     )
+
+    @Query("UPDATE coupons SET is_used = 0 , used_at = NULL, is_dirty = 1 WHERE id = :id")
+    suspend fun unUsedMark(id: String)
 
     @Delete
     suspend fun delete(coupon: CouponEntity)

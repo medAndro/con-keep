@@ -373,6 +373,10 @@ class CouponRepository
             couponDao.markAsUsed(id, timestamp)
         }
 
+        suspend fun unUsedMark(id: String) {
+            couponDao.unUsedMark(id)
+        }
+
         // 백그라운드에서 Supabase → Room 동기화
         suspend fun syncFromSupabase(): Result<Unit> =
             withContext(Dispatchers.IO) {

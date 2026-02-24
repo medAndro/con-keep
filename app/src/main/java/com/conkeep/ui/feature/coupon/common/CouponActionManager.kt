@@ -31,9 +31,10 @@ fun rememberCouponActionHandler(
     val shareTitle = stringResource(R.string.coupon_image_share_title)
     val copySuccessMsg = stringResource(R.string.coupon_code_copy)
 
-    val clipboardManager = remember {
-        context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-    }
+    val clipboardManager =
+        remember {
+            context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        }
 
     // 저장 로직 실행
     val executeSave = {
@@ -116,7 +117,7 @@ fun rememberCouponActionHandler(
                 clipboardManager.setPrimaryClip(clip)
 
                 Toast.makeText(context, copySuccessMsg, Toast.LENGTH_SHORT).show()
-            }
+            },
         )
     }
 }

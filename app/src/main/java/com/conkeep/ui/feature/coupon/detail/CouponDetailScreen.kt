@@ -1,7 +1,6 @@
 package com.conkeep.ui.feature.coupon.detail
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -68,8 +68,12 @@ import com.conkeep.ui.feature.coupon.model.badgeStatus
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
+import com.conkeep.ui.theme.ConKeepColors.buttonNegativeBg
+import com.conkeep.ui.theme.ConKeepColors.buttonPositiveBg
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
 import com.conkeep.ui.theme.ConKeepColors.textPrimary
+import com.conkeep.ui.theme.ConKeepColors.textWhite
+import com.conkeep.ui.theme.PretendardBold18
 import com.conkeep.ui.theme.PretendardMedium14
 import com.conkeep.ui.theme.PretendardSemibold14
 import com.conkeep.ui.theme.PretendardSemibold16
@@ -114,6 +118,7 @@ fun CouponDetailScreen(
             }
         },
         onUseCoupon = { viewModel.useCoupon() },
+        onUnUseCoupon = { viewModel.unUseCoupon() },
         onCouponImageSave = actionHandler.saveImage,
         onCouponNumberCopy = actionHandler.copyToClipboard,
         couponUiModel = coupon,
@@ -128,6 +133,7 @@ private fun CouponDetailScreenContent(
     onCouponEdit: () -> Unit,
     onImageClick: () -> Unit,
     onUseCoupon: () -> Unit,
+    onUnUseCoupon: () -> Unit,
     onCouponImageSave: () -> Unit,
     onCouponNumberCopy: (String) -> Unit,
     couponUiModel: CouponUiModel?,
@@ -206,6 +212,7 @@ private fun CouponDetailScreenContent(
                     .padding(padding)
                     .verticalScroll(scrollState)
                     .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Log.d("CouponDetailScreen", "coupon: $couponUiModel")
 
@@ -448,6 +455,51 @@ private fun CouponDetailScreenContent(
                     }
                 }
             }
+            if (couponUiModel != null) {
+                when {
+                    !couponUiModel.isUsed -> {
+                        Button(
+                            onClick = onUseCoupon,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = buttonPositiveBg,
+                                    contentColor = textWhite,
+                                ),
+                        ) {
+                            Text(
+                                text = "사용 완료 처리",
+                                style = PretendardBold18,
+                            )
+                        }
+                    }
+
+                    couponUiModel.isUsed -> {
+                        Button(
+                            onClick = onUnUseCoupon,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = buttonNegativeBg,
+                                    contentColor = textWhite,
+                                ),
+                        ) {
+                            Text(
+                                text = "사용 완료 취소",
+                                style = PretendardBold18,
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
@@ -499,6 +551,7 @@ private fun CouponDetailScreenContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onUnUseCoupon = {},
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             couponUiModel = fakeCoupon,
@@ -516,6 +569,7 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onUnUseCoupon = {},
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             couponUiModel = fakeCoupon.copy(isExpired = true),
@@ -533,6 +587,7 @@ private fun CouponDetailScreenNullContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onUnUseCoupon = {},
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             couponUiModel = null,
@@ -563,6 +618,7 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onUnUseCoupon = {},
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             couponUiModel = loadingCoupon,
