@@ -32,6 +32,7 @@ fun Coupon.toUiModel(today: LocalDate): CouponUiModel {
         isMonetary = isMonetary,
         amount = amount,
         status = status,
+        memo = userMemo ?: "",
     )
 }
 

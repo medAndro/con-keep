@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,15 +30,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -61,6 +68,7 @@ import com.conkeep.ui.component.MiddleTextTopBar
 import com.conkeep.ui.component.RoundedDashedLine
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.common.rememberCouponActionHandler
+import com.conkeep.ui.feature.coupon.component.MemoInputField
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadge
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadgeStatus
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
@@ -72,9 +80,11 @@ import com.conkeep.ui.theme.ConKeepColors.buttonNegativeBg
 import com.conkeep.ui.theme.ConKeepColors.buttonPositiveBg
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
 import com.conkeep.ui.theme.ConKeepColors.textPrimary
+import com.conkeep.ui.theme.ConKeepColors.textSecondary
 import com.conkeep.ui.theme.ConKeepColors.textWhite
 import com.conkeep.ui.theme.PretendardBold18
 import com.conkeep.ui.theme.PretendardMedium14
+import com.conkeep.ui.theme.PretendardMedium16
 import com.conkeep.ui.theme.PretendardSemibold14
 import com.conkeep.ui.theme.PretendardSemibold16
 import com.conkeep.ui.theme.PretendardSemibold24
@@ -143,6 +153,7 @@ private fun CouponDetailScreenContent(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
 
     val downloadImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_download)
     val copyImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_copy)
@@ -211,7 +222,12 @@ private fun CouponDetailScreenContent(
                     .fillMaxSize()
                     .padding(padding)
                     .verticalScroll(scrollState)
-                    .padding(20.dp),
+                    .padding(20.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            focusManager.clearFocus()
+                        })
+                    },
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Log.d("CouponDetailScreen", "coupon: $couponUiModel")
@@ -500,6 +516,29 @@ private fun CouponDetailScreenContent(
                     }
                 }
             }
+
+            Column(
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    "메모",
+                    style = PretendardMedium16,
+                    color = textSecondary,
+                )
+
+                var typedMemo by rememberSaveable { mutableStateOf("") }
+                LaunchedEffect(couponUiModel?.memo) {
+                    if (couponUiModel?.memo != null && typedMemo.isEmpty()) {
+                        typedMemo = couponUiModel.memo
+                    }
+                }
+                MemoInputField(
+                    memo = typedMemo,
+                    onMemoChange = { typedMemo = it },
+                    onSave = { Log.d("detail", "저장실행됨 $typedMemo") },
+                )
+            }
         }
 
         Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
@@ -540,6 +579,7 @@ private val fakeCoupon =
         isExpired = false,
         dDay = -3,
         status = CouponStatus.SUCCESS,
+        memo = "생일 선물로 받은 쿠폰",
     )
 
 @Preview(showBackground = true, name = "미사용 쿠폰")

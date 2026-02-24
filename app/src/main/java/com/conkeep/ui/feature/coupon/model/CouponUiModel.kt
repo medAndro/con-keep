@@ -18,6 +18,7 @@ data class CouponUiModel(
     val isMonetary: Boolean = false,
     val amount: Int? = null,
     val status: CouponStatus,
+    val memo: String = "",
 )
 
 val CouponUiModel.badgeStatus: ExpirationBadgeStatus
