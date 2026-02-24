@@ -53,11 +53,15 @@ class CouponDetailViewModel
             }
         }
 
-        fun onSaveButtonClick(onResult: (Boolean?) -> Unit) {
+        fun saveCouponImage(onResult: (Boolean?) -> Unit) {
             val currentCoupon = couponUiModel.value ?: return
-
             viewModelScope.launch {
-                val result = saveCouponUseCase(currentCoupon.localImagePath, currentCoupon.name, currentCoupon.number)
+                val result =
+                    saveCouponUseCase(
+                        currentCoupon.localImagePath,
+                        currentCoupon.name,
+                        currentCoupon.number,
+                    )
                 onResult(result)
             }
         }

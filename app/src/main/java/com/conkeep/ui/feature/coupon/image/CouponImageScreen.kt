@@ -1,13 +1,6 @@
 package com.conkeep.ui.feature.coupon.image
 
-import android.Manifest
 import android.app.Activity
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -35,8 +28,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -48,6 +39,7 @@ import androidx.navigation3.runtime.NavKey
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.conkeep.R
+import com.conkeep.ui.feature.coupon.common.rememberCouponActionHandler
 import com.conkeep.ui.theme.ConKeepColors.bgFullscreen
 import com.conkeep.ui.theme.ConKeepColors.bgFullscreenTransparency
 import com.conkeep.ui.theme.ConKeepColors.textWhite
@@ -66,63 +58,11 @@ fun CouponImageScreen(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val window = remember(context) { (context as? Activity)?.window }
-    val shareTitle = stringResource(R.string.coupon_image_share_title)
-    val saveSuccessMsg = stringResource(R.string.coupon_image_saved)
-    val saveFailMsg = stringResource(R.string.coupon_image_save_failed)
-    val shareFailMsg = stringResource(R.string.coupon_image_processing_failed)
-    val filePermissionMsg = stringResource(R.string.coupon_image_save_permission_not_grant)
-
-    fun executeSave() {
-        viewModel.saveCoupon { success ->
-            Toast
-                .makeText(
-                    context,
-                    if (success == true) saveSuccessMsg else saveFailMsg,
-                    Toast.LENGTH_SHORT,
-                ).show()
-        }
-    }
-
-    fun checkPermission(): Boolean =
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-        ) { isGranted ->
-            when (isGranted) {
-                true -> {
-                    executeSave()
-                }
-
-                false -> {
-                    val activity = context as? Activity
-                    if (activity != null) {
-                        val shouldShowRationale =
-                            ActivityCompat.shouldShowRequestPermissionRationale(
-                                activity,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            )
-                        if (!shouldShowRationale) {
-                            // Todo: 영구 거부 - 설정으로 이동 스낵바 버튼 추가
-                            Toast
-                                .makeText(
-                                    context,
-                                    filePermissionMsg,
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                        }
-                    }
-                }
-            }
-        }
+    val actionHandler =
+        rememberCouponActionHandler(
+            onSaveRequested = { callback -> viewModel.saveCouponImage(callback) },
+            onShareRequested = { callback -> viewModel.shareCoupon(callback) },
+        )
 
     if (window != null) {
         val controller =
@@ -149,32 +89,8 @@ fun CouponImageScreen(
                 backStack.removeLastOrNull()
             }
         },
-        onSaveClick = {
-            when (checkPermission()) {
-                true -> executeSave()
-                false -> permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        },
-        onShareClick = {
-            viewModel.shareCoupon { shareUri ->
-                if (shareUri != null) {
-                    val intent =
-                        Intent(Intent.ACTION_SEND).apply {
-                            type = "image/*"
-                            putExtra(Intent.EXTRA_STREAM, shareUri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                    context.startActivity(Intent.createChooser(intent, shareTitle))
-                } else {
-                    Toast
-                        .makeText(
-                            context,
-                            shareFailMsg,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                }
-            }
-        },
+        onSaveClick = actionHandler.saveImage,
+        onShareClick = actionHandler.shareImage,
     )
 }
 

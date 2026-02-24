@@ -58,7 +58,7 @@ class CouponImageViewModel
             }
         }
 
-        fun saveCoupon(onResult: (Boolean?) -> Unit) {
+        fun saveCouponImage(onResult: (Boolean?) -> Unit) {
             val currentCoupon = coupon.value ?: return
             viewModelScope.launch {
                 val result =

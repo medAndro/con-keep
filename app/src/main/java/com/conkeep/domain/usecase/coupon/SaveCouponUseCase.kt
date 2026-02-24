@@ -1,6 +1,8 @@
 package com.conkeep.domain.usecase.coupon
 
 import com.conkeep.data.local.file.LocalFileManager
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 class SaveCouponUseCase
@@ -17,13 +19,24 @@ class SaveCouponUseCase
             name: String?,
             number: String?,
         ): Boolean {
-            // 1. 데이터 검증 (로직 중복 방지)
+            // 데이터 검증 (로직 중복 방지)
             if (localPath.isNullOrBlank()) return false
 
-            // 2. 파일명 규칙 정의 (중요: 여기서 규칙을 정의하면 모든 화면에서 동일한 파일명 사용 가능!)
-            val fileName = "${name.orEmpty().replace(" ", "_")}_${number.orEmpty()}"
+            val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
 
-            // 3. 파일 매니저 실행
+            // 파일명 조합
+            val combinedInfo =
+                when {
+                    !name.isNullOrBlank() && !number.isNullOrBlank() -> "${name}_$number"
+                    !name.isNullOrBlank() -> name
+                    !number.isNullOrBlank() -> number
+                    else -> "Unknown" // 둘 다 없을 경우
+                }
+
+            // 공백 제거 및 파일명 생성 (타임스탬프를 앞에 붙여 중복 방지)
+            val sanitizedInfo = combinedInfo.replace("\\s".toRegex(), "_")
+            val fileName = "ConKeep_${timestamp}_$sanitizedInfo"
+
             return fileManager.exportImageToPublic(localPath, fileName)
         }
     }
