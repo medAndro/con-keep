@@ -1,6 +1,7 @@
 package com.conkeep.ui.feature.coupon.detail
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,12 +18,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,11 +34,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,6 +68,7 @@ import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
+import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.PretendardMedium14
 import com.conkeep.ui.theme.PretendardSemibold14
 import com.conkeep.ui.theme.PretendardSemibold16
@@ -69,7 +78,6 @@ import com.conkeep.ui.util.toImageBitmap
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
-import com.valentinilk.shimmer.shimmer
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
 import java.io.File
@@ -120,6 +128,9 @@ private fun CouponDetailScreenContent(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    val downloadImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_download)
+    val copyImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_copy)
 
     val barcodeWidth = 220
     val barcodeHeight = 54
@@ -249,19 +260,11 @@ private fun CouponDetailScreenContent(
                     }
                 }
 
-                when (couponUiModel) {
-                    null -> {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(width = 179.dp, height = 185.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .border(1.dp, borderDefault, RoundedCornerShape(8.dp))
-                                    .shimmer(),
-                        )
-                    }
-
-                    else -> {
+                if (couponUiModel != null) {
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Spacer(modifier = Modifier.width(44.dp))
                         Box(
                             modifier =
                                 Modifier
@@ -275,11 +278,7 @@ private fun CouponDetailScreenContent(
                                     if (isPreview) {
                                         R.drawable.ic_corn_ms_emoji
                                     } else {
-                                        couponUiModel.localImagePath?.let {
-                                            File(
-                                                it,
-                                            )
-                                        }
+                                        couponUiModel.localImagePath?.let { File(it) }
                                     },
                                 contentDescription = stringResource(R.string.coupon_card_image_description),
                                 placeholder = painterResource(R.drawable.ic_corn_ms_emoji),
@@ -308,29 +307,54 @@ private fun CouponDetailScreenContent(
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.width(8.dp))
 
-                        RoundedDashedLine(
-                            color = borderSubtle,
-                            strokeWidth = 2.dp,
-                            dashLength = 6.dp,
-                            dashGap = 4.dp,
-                            modifier =
-                                Modifier.padding(
-                                    vertical = 0.dp,
-                                    horizontal = 10.dp,
-                                ),
-                            // 상하 여백 조절
-                        )
-                        when {
-                            couponUiModel.number == "" -> {
-                                ExpirationBadge(
-                                    status = ExpirationBadgeStatus.Common,
-                                    text = "쿠폰번호 없음",
-                                    textStyle = PretendardSemibold14,
+                        // 우측 다운로드 버튼
+                        Surface(
+                            onClick = {
+                                Toast.makeText(context, "갤러리에 저장 되었습니다", Toast.LENGTH_SHORT).show()
+                            },
+                            color = Color.Transparent,
+                            shape = CircleShape,
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = downloadImageVector,
+                                    contentDescription = "이미지 다운로드",
+                                    tint = textPrimary,
+                                    modifier = Modifier.size(24.dp),
                                 )
                             }
+                        }
+                    }
 
-                            couponUiModel.number != null -> {
+                    RoundedDashedLine(
+                        color = borderSubtle,
+                        strokeWidth = 2.dp,
+                        dashLength = 6.dp,
+                        dashGap = 4.dp,
+                        modifier =
+                            Modifier.padding(
+                                vertical = 0.dp,
+                                horizontal = 10.dp,
+                            ),
+                        // 상하 여백 조절
+                    )
+                    when {
+                        couponUiModel.number == "" -> {
+                            ExpirationBadge(
+                                status = ExpirationBadgeStatus.Common,
+                                text = "쿠폰번호 없음",
+                                textStyle = PretendardSemibold14,
+                            )
+                        }
+
+                        couponUiModel.number != null -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
                                 if (barcodeBitmap != null) {
                                     Image(
                                         bitmap = barcodeBitmap,
@@ -350,76 +374,102 @@ private fun CouponDetailScreenContent(
                                     )
                                 }
 
-                                Text(
-                                    text = couponUiModel.number.chunked(4).joinToString(" "),
-                                    style = PretendardSemibold16,
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-
-                            else -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Spacer(Modifier.width(44.dp))
+                                    Text(
+                                        text = couponUiModel.number.chunked(4).joinToString(" "),
+                                        style = PretendardSemibold16,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    // 우측 복사 버튼
+                                    Surface(
+                                        onClick = {
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "클립보드에 복사 되었습니다",
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
+                                        },
+                                        color = Color.Transparent,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(36.dp),
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = copyImageVector,
+                                                contentDescription = "바코드 복사",
+                                                tint = textPrimary,
+                                                modifier = Modifier.size(24.dp),
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
+                    }
 
-                        when (couponUiModel.expiryDate) {
-                            ExpiryDate.Empty -> {
-                                ExpirationBadge(
-                                    status = ExpirationBadgeStatus.Common,
-                                    text = stringResource(R.string.coupon_detail_screen_empty_expiry_date),
-                                    textStyle = PretendardSemibold14,
-                                )
-                            }
+                    when (couponUiModel.expiryDate) {
+                        ExpiryDate.Empty -> {
+                            ExpirationBadge(
+                                status = ExpirationBadgeStatus.Common,
+                                text = stringResource(R.string.coupon_detail_screen_empty_expiry_date),
+                                textStyle = PretendardSemibold14,
+                            )
+                        }
 
-                            is ExpiryDate.Processing ->
-                                CenterRoundTextShimmer(
-                                    width = 190.dp,
-                                    context = context,
-                                    textSizeSp = 14f,
-                                    verticalPaddingDp = 8.dp,
-                                )
+                        is ExpiryDate.Processing ->
+                            CenterRoundTextShimmer(
+                                width = 190.dp,
+                                context = context,
+                                textSizeSp = 14f,
+                                verticalPaddingDp = 8.dp,
+                            )
 
-                            is ExpiryDate.Success -> {
-                                ExpirationBadge(
-                                    status = couponUiModel.badgeStatus,
-                                    text =
-                                        stringResource(
-                                            R.string.coupon_detail_screen_expiry_date_with_d_day_format,
-                                            couponUiModel.expiryDate.value.year,
-                                            couponUiModel.expiryDate.value.month.number,
-                                            couponUiModel.expiryDate.value.day,
-                                            dDayText,
-                                        ),
-                                    textStyle = PretendardSemibold14,
-                                )
-                            }
+                        is ExpiryDate.Success -> {
+                            ExpirationBadge(
+                                status = couponUiModel.badgeStatus,
+                                text =
+                                    stringResource(
+                                        R.string.coupon_detail_screen_expiry_date_with_d_day_format,
+                                        couponUiModel.expiryDate.value.year,
+                                        couponUiModel.expiryDate.value.month.number,
+                                        couponUiModel.expiryDate.value.day,
+                                        dDayText,
+                                    ),
+                                textStyle = PretendardSemibold14,
+                            )
                         }
                     }
                 }
             }
+        }
 
-            Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
+        Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            couponUiModel.let {
-                Text("번호: ${it?.number}")
-                Text("이름: ${it?.name}")
-                Text("유효기간: ${it?.expiryDate}")
-                Text("상태: ${it?.status?.name}")
-                Text("r2Url: ${it?.r2Url}")
+        couponUiModel.let {
+            Text("번호: ${it?.number}")
+            Text("이름: ${it?.name}")
+            Text("유효기간: ${it?.expiryDate}")
+            Text("상태: ${it?.status?.name}")
+            Text("r2Url: ${it?.r2Url}")
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                if (it?.isUsed == false) {
-                    Button(
-                        onClick = onUseCoupon,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("쿠폰 사용하기")
-                    }
-                } else {
-                    Text("이미 사용된 쿠폰입니다.")
+            if (it?.isUsed == false) {
+                Button(
+                    onClick = onUseCoupon,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("쿠폰 사용하기")
                 }
+            } else {
+                Text("이미 사용된 쿠폰입니다.")
             }
         }
     }
@@ -463,6 +513,21 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             couponUiModel = fakeCoupon.copy(isExpired = true),
+            id = "0",
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "쿠폰없음")
+@Composable
+private fun CouponDetailScreenNullContentPreview() {
+    MaterialTheme {
+        CouponDetailScreenContent(
+            onBackClick = {},
+            onCouponEdit = {},
+            onImageClick = {},
+            onUseCoupon = {},
+            couponUiModel = null,
             id = "0",
         )
     }
