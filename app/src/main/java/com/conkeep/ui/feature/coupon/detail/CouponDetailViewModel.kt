@@ -3,6 +3,7 @@ package com.conkeep.ui.feature.coupon.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.domain.usecase.coupon.SaveCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import com.conkeep.util.TimeProvider
@@ -25,6 +26,7 @@ class CouponDetailViewModel
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
+        private val saveCouponUseCase: SaveCouponUseCase,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -48,6 +50,15 @@ class CouponDetailViewModel
                     id = couponId,
                     timestamp = System.currentTimeMillis(),
                 )
+            }
+        }
+
+        fun onSaveButtonClick(onResult: (Boolean?) -> Unit) {
+            val currentCoupon = couponUiModel.value ?: return
+
+            viewModelScope.launch {
+                val result = saveCouponUseCase(currentCoupon.localImagePath, currentCoupon.name, currentCoupon.number)
+                onResult(result)
             }
         }
     }

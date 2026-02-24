@@ -1,7 +1,13 @@
 package com.conkeep.ui.feature.coupon.detail
 
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +51,8 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -91,6 +99,61 @@ fun CouponDetailScreen(
 ) {
     val coupon by viewModel.couponUiModel.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
+    val saveSuccessMsg = stringResource(R.string.coupon_image_saved)
+    val saveFailMsg = stringResource(R.string.coupon_image_save_failed)
+    val filePermissionMsg = stringResource(R.string.coupon_image_save_permission_not_grant)
+
+    fun executeSave() {
+        viewModel.onSaveButtonClick { success ->
+            Toast
+                .makeText(
+                    context,
+                    if (success == true) saveSuccessMsg else saveFailMsg,
+                    Toast.LENGTH_SHORT,
+                ).show()
+        }
+    }
+
+    fun checkPermission(): Boolean =
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            when (isGranted) {
+                true -> {
+                    executeSave()
+                }
+
+                false -> {
+                    val activity = context as? Activity
+                    if (activity != null) {
+                        val shouldShowRationale =
+                            ActivityCompat.shouldShowRequestPermissionRationale(
+                                activity,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            )
+                        if (!shouldShowRationale) {
+                            // Todo: 영구 거부 - 설정으로 이동 스낵바 버튼 추가
+                            Toast
+                                .makeText(
+                                    context,
+                                    filePermissionMsg,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                        }
+                    }
+                }
+            }
+        }
 
     CouponDetailScreenContent(
         onBackClick = {
@@ -109,6 +172,12 @@ fun CouponDetailScreen(
             }
         },
         onUseCoupon = { viewModel.useCoupon() },
+        onCouponImageSave = {
+            when (checkPermission()) {
+                true -> executeSave()
+                false -> permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        },
         couponUiModel = coupon,
         id = id,
     )
@@ -121,6 +190,7 @@ private fun CouponDetailScreenContent(
     onCouponEdit: () -> Unit,
     onImageClick: () -> Unit,
     onUseCoupon: () -> Unit,
+    onCouponImageSave: () -> Unit,
     couponUiModel: CouponUiModel?,
     id: String,
     modifier: Modifier = Modifier,
@@ -311,9 +381,7 @@ private fun CouponDetailScreenContent(
 
                         // 우측 다운로드 버튼
                         Surface(
-                            onClick = {
-                                Toast.makeText(context, "갤러리에 저장 되었습니다", Toast.LENGTH_SHORT).show()
-                            },
+                            onClick = onCouponImageSave,
                             color = Color.Transparent,
                             shape = CircleShape,
                             modifier = Modifier.size(36.dp),
@@ -497,6 +565,7 @@ private fun CouponDetailScreenContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onCouponImageSave = {},
             couponUiModel = fakeCoupon,
             id = "0",
         )
@@ -512,6 +581,7 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onCouponImageSave = {},
             couponUiModel = fakeCoupon.copy(isExpired = true),
             id = "0",
         )
@@ -527,6 +597,7 @@ private fun CouponDetailScreenNullContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onCouponImageSave = {},
             couponUiModel = null,
             id = "0",
         )
@@ -555,6 +626,7 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onCouponEdit = {},
             onImageClick = {},
             onUseCoupon = {},
+            onCouponImageSave = {},
             couponUiModel = loadingCoupon,
             id = "0",
         )
