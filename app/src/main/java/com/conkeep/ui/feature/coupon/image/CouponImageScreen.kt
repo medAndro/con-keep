@@ -8,6 +8,11 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,7 +22,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -179,6 +187,7 @@ fun CouponImageContents(
     onShareClick: () -> Unit = {},
 ) {
     val isPreview = LocalInspectionMode.current
+    var isToolBarShow by rememberSaveable { mutableStateOf(true) }
 
     Box(
         modifier =
@@ -207,21 +216,29 @@ fun CouponImageContents(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.FillWidth,
                     alignment = Alignment.Center,
+                    onClick = {
+                        isToolBarShow = !isToolBarShow
+                    },
                 )
             }
         }
-
-        Toolbar(
-            onBackClick = onBackClick,
-            onSaveClick = onSaveClick,
-            onShareClick = onShareClick,
-            iconTint = textWhite,
-            backgroundColor = bgFullscreenTransparency,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter),
-        )
+        AnimatedVisibility(
+            visible = isToolBarShow,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Toolbar(
+                onBackClick = onBackClick,
+                onSaveClick = onSaveClick,
+                onShareClick = onShareClick,
+                iconTint = textWhite,
+                backgroundColor = bgFullscreenTransparency,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter),
+            )
+        }
     }
 }
 
