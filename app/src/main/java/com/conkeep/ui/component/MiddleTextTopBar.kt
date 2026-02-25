@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -48,14 +46,12 @@ fun MiddleTextTopBar(
                 Modifier
                     .statusBarsPadding()
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
-                    .padding(horizontal = 24.dp, vertical = 0.dp),
+                    .padding(24.dp),
         ) {
             Row(
                 modifier =
                     Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                        .height(64.dp),
+                        .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -85,9 +81,6 @@ fun MiddleTextTopBar(
                     }
                 }
             }
-
-            // 하단 추가 여백
-            Spacer(modifier = Modifier.height(14.dp))
         }
     }
 }
