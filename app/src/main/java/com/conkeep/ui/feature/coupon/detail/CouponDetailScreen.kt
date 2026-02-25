@@ -115,6 +115,7 @@ fun CouponDetailScreen(
     val context = LocalContext.current
     val memoSaveFailedMessage = stringResource(R.string.coupon_detail_screen_memo_save_failed)
     val amountSaveFailedMessage = stringResource(R.string.coupon_detail_screen_amount_save_failed)
+    val softDeleteFailedMessage = stringResource(R.string.coupon_detail_screen_soft_delete_failed)
     val actionHandler =
         rememberCouponActionHandler(
             onSaveRequested = { callback -> viewModel.saveCouponImage(callback) },
@@ -128,6 +129,10 @@ fun CouponDetailScreen(
 
                 CouponDetailError.AmountSaveFailed -> {
                     Toast.makeText(context, amountSaveFailedMessage, Toast.LENGTH_SHORT).show()
+                }
+
+                CouponDetailError.SoftDeleteFailed -> {
+                    Toast.makeText(context, softDeleteFailedMessage, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -155,7 +160,12 @@ fun CouponDetailScreen(
         onCouponNumberCopy = actionHandler.copyToClipboard,
         onCouponMemoSave = viewModel::saveCouponMemo,
         onCouponAmountSave = viewModel::saveCouponAmount,
-        onDeleteCoupon = viewModel::deleteCoupon,
+        onDeleteCoupon = {
+            viewModel.deleteCoupon({
+                Toast.makeText(context, "쿠폰이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                backStack.removeLastOrNull()
+            })
+        },
         couponUiModel = coupon,
         id = id,
     )

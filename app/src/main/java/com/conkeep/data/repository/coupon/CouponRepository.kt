@@ -391,6 +391,15 @@ class CouponRepository
             couponDao.amountSave(id, amount.toLong())
         }
 
+        suspend fun softDelete(id: String): Result<Unit> {
+            try {
+                couponDao.softDelete(id)
+                return Result.success(Unit)
+            } catch (e: Exception) {
+                return Result.failure(e)
+            }
+        }
+
         // 백그라운드에서 Supabase → Room 동기화
         suspend fun syncFromSupabase(): Result<Unit> =
             withContext(Dispatchers.IO) {

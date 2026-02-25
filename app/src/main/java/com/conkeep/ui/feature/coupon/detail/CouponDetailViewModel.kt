@@ -112,9 +112,21 @@ class CouponDetailViewModel
             }
         }
 
-        fun deleteCoupon() {
+        fun deleteCoupon(onSuccess: () -> Unit) {
             viewModelScope.launch {
-                // todo
+                try {
+                    couponRepository
+                        .softDelete(
+                            id = couponId,
+                        ).onSuccess {
+                            onSuccess()
+                        }.onFailure {
+                            _errorEvent.emit(CouponDetailError.SoftDeleteFailed)
+                        }
+                } catch (e: Exception) {
+                    _errorEvent.emit(CouponDetailError.SoftDeleteFailed)
+                    Log.e("ViewModel", "쿠폰 삭제 중 오류 발생", e)
+                }
             }
         }
     }
@@ -123,4 +135,6 @@ sealed interface CouponDetailError {
     data object MemoSaveFailed : CouponDetailError
 
     data object AmountSaveFailed : CouponDetailError
+
+    data object SoftDeleteFailed : CouponDetailError
 }
