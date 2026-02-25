@@ -25,7 +25,7 @@ import com.conkeep.ui.theme.ConKeepColors.borderFocused
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
 import com.conkeep.ui.theme.ConKeepColors.textHint
 import com.conkeep.ui.theme.ConKeepTheme
-import com.conkeep.ui.theme.PretendardMedium14
+import com.conkeep.ui.theme.PretendardMedium16
 import kotlinx.coroutines.delay
 
 @Composable
@@ -62,10 +62,10 @@ fun MemoInputField(
         placeholder = {
             Text(
                 text = placeholder,
-                style = PretendardMedium14,
+                style = PretendardMedium16,
             )
         },
-        textStyle = PretendardMedium14,
+        textStyle = PretendardMedium16,
         shape = RoundedCornerShape(10.dp),
         colors =
             OutlinedTextFieldDefaults.colors(
