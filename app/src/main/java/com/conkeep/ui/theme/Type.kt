@@ -24,6 +24,7 @@ val PretendardMedium =
 val PretendardMedium12 = PretendardMedium.copy(fontSize = 12.sp)
 val PretendardMedium14 = PretendardMedium.copy(fontSize = 14.sp)
 val PretendardMedium16 = PretendardMedium.copy(fontSize = 16.sp)
+val PretendardMedium20 = PretendardMedium.copy(fontSize = 20.sp)
 
 val PretendardSemibold =
     TextStyle(

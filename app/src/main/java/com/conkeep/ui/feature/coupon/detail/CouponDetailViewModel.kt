@@ -95,8 +95,26 @@ class CouponDetailViewModel
                 }
             }
         }
+
+        fun saveCouponAmount(newAmount: Int) {
+            if (newAmount == couponUiModel.value?.amount) return
+
+            viewModelScope.launch {
+                try {
+                    couponRepository.amountSave(
+                        id = couponId,
+                        amount = newAmount,
+                    )
+                } catch (e: Exception) {
+                    _errorEvent.emit(CouponDetailError.AmountSaveFailed)
+                    Log.e("ViewModel", "금액 저장 중 오류 발생", e)
+                }
+            }
+        }
     }
 
 sealed interface CouponDetailError {
     data object MemoSaveFailed : CouponDetailError
+
+    data object AmountSaveFailed : CouponDetailError
 }

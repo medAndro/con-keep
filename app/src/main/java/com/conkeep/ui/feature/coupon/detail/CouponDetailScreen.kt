@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -72,6 +73,7 @@ import com.conkeep.ui.component.MiddleTextTopBar
 import com.conkeep.ui.component.RoundedDashedLine
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.common.rememberCouponActionHandler
+import com.conkeep.ui.feature.coupon.component.AmountInputField
 import com.conkeep.ui.feature.coupon.component.MemoInputField
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadge
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadgeStatus
@@ -112,6 +114,7 @@ fun CouponDetailScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val memoSaveFailedMessage = stringResource(R.string.coupon_detail_screen_memo_save_failed)
+    val amountSaveFailedMessage = stringResource(R.string.coupon_detail_screen_amount_save_failed)
     val actionHandler =
         rememberCouponActionHandler(
             onSaveRequested = { callback -> viewModel.saveCouponImage(callback) },
@@ -121,6 +124,10 @@ fun CouponDetailScreen(
             when (couponDetailError) {
                 CouponDetailError.MemoSaveFailed -> {
                     Toast.makeText(context, memoSaveFailedMessage, Toast.LENGTH_SHORT).show()
+                }
+
+                CouponDetailError.AmountSaveFailed -> {
+                    Toast.makeText(context, amountSaveFailedMessage, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -147,6 +154,7 @@ fun CouponDetailScreen(
         onCouponImageSave = actionHandler.saveImage,
         onCouponNumberCopy = actionHandler.copyToClipboard,
         onCouponMemoSave = viewModel::saveCouponMemo,
+        onCouponAmountSave = viewModel::saveCouponAmount,
         couponUiModel = coupon,
         id = id,
     )
@@ -163,6 +171,7 @@ private fun CouponDetailScreenContent(
     onCouponImageSave: () -> Unit,
     onCouponNumberCopy: (String) -> Unit,
     onCouponMemoSave: (String) -> Unit,
+    onCouponAmountSave: (Int) -> Unit,
     couponUiModel: CouponUiModel?,
     id: String,
     modifier: Modifier = Modifier,
@@ -535,6 +544,50 @@ private fun CouponDetailScreenContent(
                 }
             }
 
+            if (couponUiModel?.isMonetary ?: false && couponUiModel.amount != null) {
+                Column(
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        "잔액 관리 (금액권 수정)",
+                        style = PretendardMedium16,
+                        color = textSecondary,
+                    )
+
+                    // 메모 섹션
+                    val currentCouponId = couponUiModel.id
+                    val initialAmount = couponUiModel.amount
+
+                    // ID가 바뀔 때만 typedAmount 초기화 (좀비 금액 방지)
+                    var typedAmount by rememberSaveable(currentCouponId) {
+                        mutableIntStateOf(
+                            initialAmount,
+                        )
+                    }
+
+                    //  Safety Net: 화면을 나갈 때 최종 상태를 저장
+                    val latestCouponAmount by rememberUpdatedState(couponUiModel.amount)
+                    val latestAmountForExit by rememberUpdatedState(typedAmount)
+                    DisposableEffect(Unit) {
+                        onDispose {
+                            if (latestCouponAmount != latestAmountForExit) {
+                                Log.d("detail", "종료전 변경감지 저장실행됨 $latestAmountForExit")
+                                onCouponAmountSave(latestAmountForExit)
+                            }
+                        }
+                    }
+                    AmountInputField(
+                        amount = typedAmount,
+                        onAmountChange = { typedAmount = it },
+                        onSave = {
+                            onCouponAmountSave(typedAmount)
+                            Log.d("detail", "저장실행됨 $typedAmount")
+                        },
+                    )
+                }
+            }
+
             Column(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -628,6 +681,7 @@ private fun CouponDetailScreenContentPreview() {
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
+            onCouponAmountSave = {},
             couponUiModel = fakeCoupon,
             id = "0",
         )
@@ -647,7 +701,14 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
-            couponUiModel = fakeCoupon.copy(isExpired = true),
+            onCouponAmountSave = {},
+            couponUiModel =
+                fakeCoupon.copy(
+                    isExpired = true,
+                    isUsed = true,
+                    isMonetary = true,
+                    amount = 3000,
+                ),
             id = "0",
         )
     }
@@ -666,6 +727,7 @@ private fun CouponDetailScreenNullContentPreview() {
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
+            onCouponAmountSave = {},
             couponUiModel = null,
             id = "0",
         )
@@ -698,6 +760,7 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onCouponImageSave = {},
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
+            onCouponAmountSave = {},
             couponUiModel = loadingCoupon,
             id = "0",
         )

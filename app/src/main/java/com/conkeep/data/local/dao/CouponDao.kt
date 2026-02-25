@@ -201,6 +201,12 @@ interface CouponDao {
         memo: String,
     )
 
+    @Query("UPDATE coupons SET amount = :amount, is_dirty = 1 WHERE id = :id")
+    suspend fun amountSave(
+        id: String,
+        amount: Long,
+    )
+
     @Delete
     suspend fun delete(coupon: CouponEntity)
 
