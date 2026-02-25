@@ -23,8 +23,8 @@ android {
         applicationId = "com.conkeep"
         minSdk = 28
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.0.8"
+        versionCode = 11
+        versionName = "0.0.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
