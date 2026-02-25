@@ -72,7 +72,7 @@ fun ConKeepConfirmDialog(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_close),
-                        contentDescription = stringResource(R.string.dialog_cancel_description),
+                        contentDescription = stringResource(R.string.common_dialog_cancel_title),
                         tint = textSecondary,
                         modifier = Modifier.size(20.dp),
                     )

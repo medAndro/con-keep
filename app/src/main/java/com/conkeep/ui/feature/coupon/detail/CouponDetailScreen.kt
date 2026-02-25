@@ -116,6 +116,7 @@ fun CouponDetailScreen(
     val memoSaveFailedMessage = stringResource(R.string.coupon_detail_screen_memo_save_failed)
     val amountSaveFailedMessage = stringResource(R.string.coupon_detail_screen_amount_save_failed)
     val softDeleteFailedMessage = stringResource(R.string.coupon_detail_screen_soft_delete_failed)
+    val softDeleteMessage = stringResource(R.string.coupon_detail_screen_delete_message)
     val actionHandler =
         rememberCouponActionHandler(
             onSaveRequested = { callback -> viewModel.saveCouponImage(callback) },
@@ -162,7 +163,7 @@ fun CouponDetailScreen(
         onCouponAmountSave = viewModel::saveCouponAmount,
         onDeleteCoupon = {
             viewModel.deleteCoupon({
-                Toast.makeText(context, "쿠폰이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, softDeleteMessage, Toast.LENGTH_SHORT).show()
                 backStack.removeLastOrNull()
             })
         },
@@ -337,7 +338,7 @@ private fun CouponDetailScreenContent(
                     if (couponUiModel?.brand == "" && couponUiModel.name == "") {
                         ExpirationBadge(
                             status = ExpirationBadgeStatus.Common,
-                            text = "정보 없음",
+                            text = stringResource(R.string.coupon_detail_screen_no_info_badge_text),
                             textStyle = PretendardSemibold14,
                         )
                     }
@@ -402,7 +403,7 @@ private fun CouponDetailScreenContent(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = downloadImageVector,
-                                    contentDescription = "이미지 다운로드",
+                                    contentDescription = stringResource(R.string.coupon_detail_screen_image_download_icon_description),
                                     tint = textPrimary,
                                     modifier = Modifier.size(24.dp),
                                 )
@@ -426,7 +427,7 @@ private fun CouponDetailScreenContent(
                         couponUiModel.number == "" -> {
                             ExpirationBadge(
                                 status = ExpirationBadgeStatus.Common,
-                                text = "쿠폰번호 없음",
+                                text = stringResource(R.string.coupon_detail_screen_null_coupon_number_badge_text),
                                 textStyle = PretendardSemibold14,
                             )
                         }
@@ -477,7 +478,10 @@ private fun CouponDetailScreenContent(
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
                                                 imageVector = copyImageVector,
-                                                contentDescription = "바코드 복사",
+                                                contentDescription =
+                                                    stringResource(
+                                                        R.string.coupon_detail_screen_barcode_num_copy_icon_description,
+                                                    ),
                                                 tint = textPrimary,
                                                 modifier = Modifier.size(24.dp),
                                             )
@@ -539,7 +543,7 @@ private fun CouponDetailScreenContent(
                                 ),
                         ) {
                             Text(
-                                text = "사용 완료 처리",
+                                text = stringResource(R.string.coupon_detail_screen_use_button_text),
                                 style = PretendardBold18,
                             )
                         }
@@ -560,7 +564,7 @@ private fun CouponDetailScreenContent(
                                 ),
                         ) {
                             Text(
-                                text = "사용 완료 취소",
+                                text = stringResource(R.string.coupon_detail_screen_un_use_button_text),
                                 style = PretendardBold18,
                             )
                         }
@@ -574,7 +578,7 @@ private fun CouponDetailScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        "잔액 관리 (금액권 수정)",
+                        stringResource(R.string.coupon_detail_screen_edit_amount_title),
                         style = PretendardMedium16,
                         color = textSecondary,
                     )
@@ -624,7 +628,7 @@ private fun CouponDetailScreenContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    "메모",
+                    stringResource(R.string.coupon_detail_screen_memo_title),
                     style = PretendardMedium16,
                     color = textSecondary,
                 )
@@ -658,10 +662,10 @@ private fun CouponDetailScreenContent(
             }
             if (showDeleteDialog) {
                 ConKeepConfirmDialog(
-                    title = "쿠폰 삭제",
-                    description = "정말로 이 쿠폰을 삭제하시겠습니까?\n삭제된 쿠폰은 복구할 수 없습니다.",
-                    confirmText = "삭제하기",
-                    cancelText = "취소",
+                    title = stringResource(R.string.coupon_detail_screen_delete_dialog_title),
+                    description = stringResource(R.string.coupon_detail_screen_delete_dialog_message),
+                    confirmText = stringResource(R.string.coupon_detail_screen_delete_dialog_confirm_text),
+                    cancelText = stringResource(R.string.common_dialog_cancel_title),
                     onConfirm = {
                         // 삭제 로직 실행
                         onDeleteCoupon()
