@@ -237,6 +237,13 @@ private fun CouponDetailScreenContent(
                 rightButtonConfigs =
                     listOf(
                         TopBarButtonConfig(
+                            iconResId = R.drawable.ic_trash,
+                            contentDescription = stringResource(R.string.coupon_detail_screen_delete_top_bar_description),
+                            onClick = {
+                                Toast.makeText(context, "삭제 플레이스홀더", Toast.LENGTH_SHORT).show()
+                            },
+                        ),
+                        TopBarButtonConfig(
                             iconResId = R.drawable.ic_edit,
                             contentDescription = stringResource(R.string.coupon_edit_screen_title),
                             onClick = onCouponEdit,
