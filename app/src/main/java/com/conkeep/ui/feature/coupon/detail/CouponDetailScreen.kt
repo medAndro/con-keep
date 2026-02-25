@@ -68,6 +68,7 @@ import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.navigation.Route
 import com.conkeep.ui.component.CenterRoundShimmer
 import com.conkeep.ui.component.CenterRoundTextShimmer
+import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.RoundedDashedLine
 import com.conkeep.ui.component.TopBarButtonConfig
@@ -154,6 +155,7 @@ fun CouponDetailScreen(
         onCouponNumberCopy = actionHandler.copyToClipboard,
         onCouponMemoSave = viewModel::saveCouponMemo,
         onCouponAmountSave = viewModel::saveCouponAmount,
+        onDeleteCoupon = viewModel::deleteCoupon,
         couponUiModel = coupon,
         id = id,
     )
@@ -171,12 +173,14 @@ private fun CouponDetailScreenContent(
     onCouponNumberCopy: (String) -> Unit,
     onCouponMemoSave: (String) -> Unit,
     onCouponAmountSave: (Int) -> Unit,
+    onDeleteCoupon: () -> Unit,
     couponUiModel: CouponUiModel?,
     id: String,
     modifier: Modifier = Modifier,
     isPreview: Boolean = LocalInspectionMode.current,
 ) {
     val context = LocalContext.current
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
 
@@ -240,7 +244,7 @@ private fun CouponDetailScreenContent(
                             iconResId = R.drawable.ic_trash,
                             contentDescription = stringResource(R.string.coupon_detail_screen_delete_top_bar_description),
                             onClick = {
-                                Toast.makeText(context, "삭제 플레이스홀더", Toast.LENGTH_SHORT).show()
+                                showDeleteDialog = true
                             },
                         ),
                         TopBarButtonConfig(
@@ -642,6 +646,19 @@ private fun CouponDetailScreenContent(
                     },
                 )
             }
+            if (showDeleteDialog) {
+                ConKeepConfirmDialog(
+                    title = "쿠폰 삭제",
+                    description = "정말로 이 쿠폰을 삭제하시겠습니까?\n삭제된 쿠폰은 복구할 수 없습니다.",
+                    confirmText = "삭제하기",
+                    cancelText = "취소",
+                    onConfirm = {
+                        // 삭제 로직 실행
+                        onDeleteCoupon()
+                    },
+                    onDismiss = { showDeleteDialog = false },
+                )
+            }
         }
     }
 }
@@ -674,6 +691,7 @@ private fun CouponDetailScreenContentPreview() {
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
             onCouponAmountSave = {},
+            onDeleteCoupon = {},
             couponUiModel = fakeCoupon,
             id = "0",
         )
@@ -694,6 +712,7 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
             onCouponAmountSave = {},
+            onDeleteCoupon = {},
             couponUiModel =
                 fakeCoupon.copy(
                     isExpired = true,
@@ -720,6 +739,7 @@ private fun CouponDetailScreenNullContentPreview() {
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
             onCouponAmountSave = {},
+            onDeleteCoupon = {},
             couponUiModel = null,
             id = "0",
         )
@@ -753,6 +773,7 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onCouponNumberCopy = {},
             onCouponMemoSave = {},
             onCouponAmountSave = {},
+            onDeleteCoupon = {},
             couponUiModel = loadingCoupon,
             id = "0",
         )

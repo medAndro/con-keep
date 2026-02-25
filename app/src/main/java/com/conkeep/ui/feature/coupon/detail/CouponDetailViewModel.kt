@@ -111,6 +111,12 @@ class CouponDetailViewModel
                 }
             }
         }
+
+        fun deleteCoupon() {
+            viewModelScope.launch {
+                // todo
+            }
+        }
     }
 
 sealed interface CouponDetailError {

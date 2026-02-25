@@ -88,5 +88,8 @@
     <string name="coupon_image_save_permission_not_grant">이미지 저장을 위해 앱 설정에서 파일 권한을 허용해주세요.</string>
     <string name="coupon_code_copy">클립보드에 복사되었습니다</string>
 
+    <!--    다이얼로그-->
+    <string name="dialog_cancel_description">닫기</string>
+
 
 </resources>
