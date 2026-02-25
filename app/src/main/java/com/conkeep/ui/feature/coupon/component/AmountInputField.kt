@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -45,37 +44,34 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun AmountInputField(
-    amount: Int,
-    onAmountChange: (Int) -> Unit,
+    amountText: String,
+    onAmountChange: (String) -> Unit,
     onSave: (Int) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "현재 잔액을 입력하세요",
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val currentAmount by rememberUpdatedState(amount)
+    val currentAmount by rememberUpdatedState(amountText)
     val focusManager = LocalFocusManager.current
 
-    // 상태는 숫자로 관리하지만, 텍스트 필드 입력을 위해 String으로 변환
-    val amountString = if (amount == 0) "" else amount.toString()
-
     // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
-    LaunchedEffect(amount) {
+    LaunchedEffect(amountText) {
         if (!isFocused) return@LaunchedEffect
         delay(1000L) // 1초 대기
-        onSave(amount)
+        onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
     }
 
     OutlinedTextField(
-        value = amountString,
+        value = amountText,
         onValueChange = { input ->
             // 숫자만 남기고 필터링
             val cleanedInput = input.filter { it.isDigit() }
             if (cleanedInput.isEmpty()) {
-                onAmountChange(0)
+                onAmountChange("")
             } else {
                 val parsed = cleanedInput.toLongOrNull() ?: 0L
                 if (parsed <= Int.MAX_VALUE) {
-                    onAmountChange(parsed.toInt())
+                    onAmountChange(cleanedInput)
                 }
             }
         },
@@ -91,7 +87,7 @@ fun AmountInputField(
                 .onFocusChanged { focusState ->
                     // 포커스가 있다가 사라지는 순간 저장
                     if (isFocused && !focusState.isFocused) {
-                        onSave(currentAmount)
+                        onSave(currentAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)
                     }
                     isFocused = focusState.isFocused
                 },
@@ -111,7 +107,7 @@ fun AmountInputField(
                 onDone = {
                     // '완료' 버튼을 눌렀을 때 포커스 해제 및 저장 트리거
                     focusManager.clearFocus()
-                    onSave(currentAmount)
+                    onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
                 },
             ),
         // 아이콘 설정
@@ -123,14 +119,12 @@ fun AmountInputField(
             )
         },
         trailingIcon = {
-            if (amount > 0) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_write), // 수정 아이콘 등
-                    contentDescription = "수정 중",
-                    tint = textHint,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+            Icon(
+                imageVector = ImageVector.vectorResource(id = R.drawable.ic_write), // 수정 아이콘 등
+                contentDescription = "수정 중",
+                tint = textHint,
+                modifier = Modifier.size(20.dp),
+            )
         },
         textStyle = PretendardMedium20,
         shape = RoundedCornerShape(10.dp),
@@ -156,7 +150,7 @@ private fun AmountInputInputFieldPlaceholderPreview() {
             color = Color.White,
         ) {
             AmountInputField(
-                amount = 0,
+                amountText = "",
                 onAmountChange = {},
                 onSave = {},
             )
@@ -173,7 +167,7 @@ private fun AmountInputInputFieldContentPreview() {
             color = Color.White,
         ) {
             AmountInputField(
-                amount = 10000,
+                amountText = "10000",
                 onAmountChange = {},
                 onSave = {},
             )
@@ -185,7 +179,7 @@ private fun AmountInputInputFieldContentPreview() {
 @Composable
 private fun AmountInputInputFieldInteractivePreview() {
     // 실제 타이핑을 테스트해볼 수 있는 프리뷰
-    var amount by remember { mutableIntStateOf(50000) }
+    var amount by remember { mutableStateOf("50000") }
 
     ConKeepTheme {
         Surface(
@@ -193,9 +187,9 @@ private fun AmountInputInputFieldInteractivePreview() {
             color = Color.White,
         ) {
             AmountInputField(
-                amount = amount,
+                amountText = "amount",
                 onAmountChange = { amount = it },
-                onSave = { Log.d("Preview", "저장 로직 실행: $it") },
+                onSave = { Log.d("Preview", "저장 로직 실행: $amount") },
             )
         }
     }

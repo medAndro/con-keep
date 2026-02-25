@@ -35,7 +35,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -555,34 +554,41 @@ private fun CouponDetailScreenContent(
                         color = textSecondary,
                     )
 
-                    // 메모 섹션
+                    // 잔액 관리 섹션
                     val currentCouponId = couponUiModel.id
-                    val initialAmount = couponUiModel.amount
+                    val initialAmountText =
+                        if (couponUiModel.amount == 0) "" else couponUiModel.amount.toString()
 
                     // ID가 바뀔 때만 typedAmount 초기화 (좀비 금액 방지)
-                    var typedAmount by rememberSaveable(currentCouponId) {
-                        mutableIntStateOf(
-                            initialAmount,
+                    var typedAmountText by rememberSaveable(currentCouponId) {
+                        mutableStateOf(
+                            initialAmountText,
                         )
                     }
 
                     //  Safety Net: 화면을 나갈 때 최종 상태를 저장
-                    val latestCouponAmount by rememberUpdatedState(couponUiModel.amount)
-                    val latestAmountForExit by rememberUpdatedState(typedAmount)
+                    val latestCouponAmount by rememberUpdatedState(couponUiModel.amount.toString())
+                    val latestAmountForExit by rememberUpdatedState(typedAmountText)
                     DisposableEffect(Unit) {
                         onDispose {
-                            if (latestCouponAmount != latestAmountForExit) {
+                            if ((latestCouponAmount.toIntOrNull() ?: 0)
+                                != (latestAmountForExit.toIntOrNull() ?: 0)
+                            ) {
                                 Log.d("detail", "종료전 변경감지 저장실행됨 $latestAmountForExit")
-                                onCouponAmountSave(latestAmountForExit)
+                                onCouponAmountSave(
+                                    latestAmountForExit
+                                        .filter { it.isDigit() }
+                                        .toIntOrNull() ?: 0,
+                                )
                             }
                         }
                     }
                     AmountInputField(
-                        amount = typedAmount,
-                        onAmountChange = { typedAmount = it },
-                        onSave = {
-                            onCouponAmountSave(typedAmount)
-                            Log.d("detail", "저장실행됨 $typedAmount")
+                        amountText = typedAmountText,
+                        onAmountChange = { typedAmountText = it },
+                        onSave = { amount ->
+                            onCouponAmountSave(amount)
+                            Log.d("detail", "저장실행됨 $amount")
                         },
                     )
                 }
