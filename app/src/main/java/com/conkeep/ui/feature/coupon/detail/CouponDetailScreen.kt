@@ -632,31 +632,6 @@ private fun CouponDetailScreenContent(
                 )
             }
         }
-
-        Text("쿠폰 ID: $id", style = MaterialTheme.typography.titleLarge)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        couponUiModel.let {
-            Text("번호: ${it?.number}")
-            Text("이름: ${it?.name}")
-            Text("유효기간: ${it?.expiryDate}")
-            Text("상태: ${it?.status?.name}")
-            Text("r2Url: ${it?.r2Url}")
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            if (it?.isUsed == false) {
-                Button(
-                    onClick = onUseCoupon,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("쿠폰 사용하기")
-                }
-            } else {
-                Text("이미 사용된 쿠폰입니다.")
-            }
-        }
     }
 }
 
