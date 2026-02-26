@@ -10,7 +10,7 @@ import com.conkeep.data.remote.dto.CouponTypeConverters
 @TypeConverters(CouponTypeConverters::class)
 @Database(
     entities = [CouponEntity::class],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class CouponDatabase : RoomDatabase() {

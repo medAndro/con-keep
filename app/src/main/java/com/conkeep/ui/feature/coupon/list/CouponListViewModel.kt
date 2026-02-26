@@ -243,7 +243,6 @@ class CouponListViewModel
                     id = localId,
                     userId = "", // supabase user_id
                     imageUrl = null,
-                    localImagePath = couponPreProcessResult.localPath,
                     productName = null,
                     brand = null,
                     couponPin = couponPreProcessResult.barcode,

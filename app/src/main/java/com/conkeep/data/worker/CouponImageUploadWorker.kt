@@ -50,6 +50,7 @@ class CouponImageUploadWorker
                         mimeType,
                     ).getOrThrow()
 
+                couponRepository.updateR2Info(couponId, urlResponse.imageUrl)
                 Log.d("CouponImageUploadWorker", "업로드 성공, 분석 시작")
 
                 // 3. AI 분석 요청

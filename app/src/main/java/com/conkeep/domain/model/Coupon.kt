@@ -8,7 +8,6 @@ data class Coupon(
     val userId: String,
     // 이미지
     val imageUrl: String?,
-    val localImagePath: String?,
     // 쿠폰 정보
     val productName: String?,
     val brand: String?,
