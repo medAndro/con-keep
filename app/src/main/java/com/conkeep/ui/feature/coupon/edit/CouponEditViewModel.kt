@@ -58,6 +58,10 @@ class CouponEditViewModel
             _selectedImageUri.value = uri
         }
 
+        fun setNewBrandName(string: String) {
+            _coupon.value = coupon.value?.copy(brand = string)
+        }
+
         fun useCoupon() {
             viewModelScope.launch {
                 couponRepository.markAsUsed(

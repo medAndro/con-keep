@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -54,9 +55,12 @@ import com.conkeep.navigation.Route
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.edit.CouponEditViewModel
+import com.conkeep.ui.feature.coupon.edit.TextInputField
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
+import com.conkeep.ui.theme.ConKeepColors.textSecondary
+import com.conkeep.ui.theme.PretendardMedium16
 import kotlinx.datetime.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,7 +102,8 @@ fun CouponEditScreen(
                 ),
             )
         },
-        coupon = coupon,
+        setNewBrandName = { viewModel.setNewBrandName(it) },
+        couponUiModel = coupon,
         selectedImageUri = selectedImageUri,
         id = id,
         modifier = Modifier,
@@ -113,7 +118,8 @@ private fun CouponEditScreenContent(
     onImageClick: () -> Unit,
     onUseCoupon: () -> Unit,
     onImagePickClick: () -> Unit,
-    coupon: CouponUiModel?,
+    setNewBrandName: (String) -> Unit,
+    couponUiModel: CouponUiModel?,
     selectedImageUri: Uri?,
     id: String,
     modifier: Modifier = Modifier,
@@ -185,7 +191,7 @@ private fun CouponEditScreenContent(
                             model =
                                 ImageRequest
                                     .Builder(LocalContext.current)
-                                    .data(selectedImageUri ?: coupon?.r2Url)
+                                    .data(selectedImageUri ?: couponUiModel?.r2Url)
                                     .crossfade(true)
                                     .build(),
                             contentDescription = stringResource(R.string.coupon_card_image_description),
@@ -196,8 +202,41 @@ private fun CouponEditScreenContent(
                         )
                     }
                 }
+                if (couponUiModel != null) {
+                    InputText(
+                        stringResource(R.string.coupon_edit_screen_input_title_brand),
+                        couponUiModel.brand ?: "",
+                        setNewBrandName,
+                        stringResource(R.string.coupon_edit_screen_input_brand_placeholder),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun InputText(
+    titleText: String,
+    text: String,
+    updatedText: (String) -> Unit,
+    placeholderText: String,
+) {
+    Column(
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(11.dp),
+    ) {
+        Text(
+            titleText,
+            style = PretendardMedium16,
+            color = textSecondary,
+        )
+
+        TextInputField(
+            text = text,
+            onTextChange = { updatedText(it) },
+            placeholder = placeholderText,
+        )
     }
 }
 
@@ -223,7 +262,8 @@ private fun CouponEditScreenContentPreview() {
             onImageClick = {},
             onUseCoupon = {},
             onImagePickClick = {},
-            coupon = fakeCoupon,
+            setNewBrandName = {},
+            couponUiModel = fakeCoupon,
             selectedImageUri = null,
             id = "0",
         )
