@@ -1,5 +1,10 @@
 package com.conkeep.ui.feature.coupon.detail
 
+import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -63,7 +67,16 @@ fun CouponEditScreen(
     viewModel: CouponEditViewModel,
 ) {
     val coupon by viewModel.coupon.collectAsStateWithLifecycle()
+    val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val pickMedia: ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?> =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            uri?.let {
+                viewModel.pickCouponImage(uri)
+            }
+        }
 
     CouponEditScreenContent(
         onBackClick = {
@@ -78,7 +91,15 @@ fun CouponEditScreen(
             }
         },
         onUseCoupon = { viewModel.useCoupon() },
+        onImagePickClick = {
+            pickMedia.launch(
+                PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly,
+                ),
+            )
+        },
         coupon = coupon,
+        selectedImageUri = selectedImageUri,
         id = id,
         modifier = Modifier,
     )
@@ -91,7 +112,9 @@ private fun CouponEditScreenContent(
     onCouponSave: () -> Unit,
     onImageClick: () -> Unit,
     onUseCoupon: () -> Unit,
+    onImagePickClick: () -> Unit,
     coupon: CouponUiModel?,
+    selectedImageUri: Uri?,
     id: String,
     modifier: Modifier = Modifier,
 ) {
@@ -155,14 +178,14 @@ private fun CouponEditScreenContent(
                             Modifier
                                 .size(width = 179.dp, height = 185.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onImageClick() }
+                                .clickable { onImagePickClick() }
                                 .border(1.dp, borderDefault, RoundedCornerShape(8.dp)),
                     ) {
                         AsyncImage(
                             model =
                                 ImageRequest
                                     .Builder(LocalContext.current)
-                                    .data(coupon?.r2Url)
+                                    .data(selectedImageUri ?: coupon?.r2Url)
                                     .crossfade(true)
                                     .build(),
                             contentDescription = stringResource(R.string.coupon_card_image_description),
@@ -199,7 +222,9 @@ private fun CouponEditScreenContentPreview() {
             onCouponSave = {},
             onImageClick = {},
             onUseCoupon = {},
+            onImagePickClick = {},
             coupon = fakeCoupon,
+            selectedImageUri = null,
             id = "0",
         )
     }

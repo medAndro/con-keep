@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.coupon.edit
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
@@ -11,10 +12,8 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,16 +30,33 @@ class CouponEditViewModel
             fun create(couponId: String): CouponEditViewModel
         }
 
-        val coupon: StateFlow<CouponUiModel?> =
-            couponRepository
-                .getCoupon(couponId)
-                .map { domainCoupon ->
-                    domainCoupon?.toUiModel(timeProvider.getToday())
-                }.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5000),
-                    initialValue = null,
-                )
+        private var initialCoupon: CouponUiModel? = null
+        private val _coupon = MutableStateFlow<CouponUiModel?>(null)
+        val coupon = _coupon.asStateFlow()
+
+        private val _selectedImageUri = MutableStateFlow<Uri?>(null)
+        val selectedImageUri = _selectedImageUri.asStateFlow()
+
+        init {
+            viewModelScope.launch {
+                val domainCoupon = couponRepository.getCouponOnce(couponId)
+                val uiModel = domainCoupon?.toUiModel(timeProvider.getToday())
+
+                initialCoupon = uiModel
+                _coupon.value = uiModel
+            }
+        }
+
+        fun isCouponChanged(): Boolean =
+            when {
+                initialCoupon == null -> false
+                selectedImageUri == null -> false
+                else -> coupon.value != initialCoupon
+            }
+
+        fun pickCouponImage(uri: Uri) {
+            _selectedImageUri.value = uri
+        }
 
         fun useCoupon() {
             viewModelScope.launch {

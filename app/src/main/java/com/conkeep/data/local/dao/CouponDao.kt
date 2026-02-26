@@ -21,6 +21,9 @@ interface CouponDao {
     @Query("SELECT * FROM coupons WHERE id = :id")
     fun getCouponFlow(id: String): Flow<CouponEntity?>
 
+    @Query("SELECT * FROM coupons WHERE id = :id")
+    suspend fun getCouponOnce(id: String): CouponEntity?
+
     /**
      * [통합 검색/필터/정렬 쿼리]
      * @param userId: 사용자 ID

@@ -121,6 +121,11 @@ class CouponRepository
                 .getCouponFlow(id)
                 .map { entity -> entity?.toDomain() }
 
+        suspend fun getCouponOnce(id: String): Coupon? =
+            couponDao
+                .getCouponOnce(id)
+                .let { entity -> entity?.toDomain() }
+
         suspend fun addCoupon(coupon: Coupon): String {
             // currentUserIdFlow의 가장 최신 유효 값을 가져옴
             val userId = authManager.currentUserIdFlow.filterNotNull().first()
