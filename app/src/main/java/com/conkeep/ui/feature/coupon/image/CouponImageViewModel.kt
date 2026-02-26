@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.local.file.LocalFileManager
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.domain.usecase.coupon.SaveCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import com.conkeep.util.TimeProvider
@@ -28,6 +29,7 @@ class CouponImageViewModel
         private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
         private val fileManager: LocalFileManager,
+        private val saveCouponUseCase: SaveCouponUseCase,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -56,14 +58,16 @@ class CouponImageViewModel
             }
         }
 
-        fun saveCoupon(onResult: (Boolean?) -> Unit) {
+        fun saveCouponImage(onResult: (Boolean?) -> Unit) {
             val currentCoupon = coupon.value ?: return
-            val path = currentCoupon.localImagePath ?: return
-            val name = "${coupon.value?.name}_${coupon.value?.number}"
-
             viewModelScope.launch {
-                val saveResult = fileManager.exportImageToPublic(path, name)
-                onResult(saveResult)
+                val result =
+                    saveCouponUseCase(
+                        currentCoupon.localImagePath,
+                        currentCoupon.name,
+                        currentCoupon.number,
+                    )
+                onResult(result)
             }
         }
     }

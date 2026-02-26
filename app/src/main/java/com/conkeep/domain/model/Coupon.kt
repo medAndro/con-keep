@@ -13,7 +13,7 @@ data class Coupon(
     val productName: String?,
     val brand: String?,
     val couponPin: String?,
-    val expiryDate: LocalDate?,
+    val expiryDate: ExpiryDate,
     // 금액 정보
     val isMonetary: Boolean,
     val amount: Int?,
@@ -28,5 +28,15 @@ data class Coupon(
     val updatedAt: Instant,
     val isSynced: Boolean,
     // 쿠폰 저장 상태
-    val status: String?,
+    val status: String,
 )
+
+sealed class ExpiryDate {
+    data object Processing : ExpiryDate()
+
+    data class Success(
+        val value: LocalDate,
+    ) : ExpiryDate()
+
+    data object Empty : ExpiryDate()
+}

@@ -23,8 +23,8 @@ android {
         applicationId = "com.conkeep"
         minSdk = 28
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.0.6"
+        versionCode = 13
+        versionName = "0.0.11"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -160,6 +160,9 @@ dependencies {
 
     // Shimmer
     implementation(libs.compose.shimmer)
+
+    // Barcode
+    implementation(libs.zxing.core)
 
     // Test
     testImplementation(libs.junit)

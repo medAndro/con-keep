@@ -68,6 +68,9 @@ object ConKeepColors {
     val borderSubtle: Color
         get() = ColorPalette.GrayLight
 
+    val borderFocused: Color
+        get() = ColorPalette.GrayOrangeGray
+
     // ========== Badge ==========
     val badgeSafe: Color
         get() = ColorPalette.GreenBase
@@ -102,4 +105,17 @@ object ConKeepColors {
 
     val buttonPositiveBg: Color
         get() = ColorPalette.NavyDark
+
+    // ========== dialog ==========
+    val dialogWarnText: Color
+        get() = ColorPalette.OrangeDark
+
+    val dialogWarnBg: Color
+        get() = ColorPalette.OrangePale
+
+    val dialogNormalText: Color
+        get() = ColorPalette.GrayDark
+
+    val dialogNormalBg: Color
+        get() = ColorPalette.GrayLighter
 }

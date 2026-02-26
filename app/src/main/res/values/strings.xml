@@ -66,6 +66,25 @@
 
     <!--    쿠폰 상세 화면-->
     <string name="coupon_detail_screen_title">쿠폰 상세</string>
+    <string name="coupon_detail_screen_delete_top_bar_description">쿠폰 삭제</string>
+    <string name="coupon_detail_screen_barcode_image">바코드 이미지</string>
+    <string name="coupon_detail_screen_expiry_date_with_d_day_format">~ %1$d년 %2$d월 %3$02d일 까지 (%4$s)</string>
+    <string name="coupon_detail_screen_empty_expiry_date">만료일 없음</string>
+    <string name="coupon_detail_screen_memo_save_failed">메모 저장에 실패했습니다</string>
+    <string name="coupon_detail_screen_amount_save_failed">금액 저장에 실패했습니다</string>
+    <string name="coupon_detail_screen_soft_delete_failed">쿠폰 삭제에 실패했습니다</string>
+    <string name="coupon_detail_screen_delete_message">쿠폰이 삭제되었습니다.</string>
+    <string name="coupon_detail_screen_no_info_badge_text">정보 없음</string>
+    <string name="coupon_detail_screen_image_download_icon_description">이미지 다운로드</string>
+    <string name="coupon_detail_screen_null_coupon_number_badge_text">쿠폰번호 없음</string>
+    <string name="coupon_detail_screen_barcode_num_copy_icon_description">바코드 복사</string>
+    <string name="coupon_detail_screen_use_button_text">사용 완료 처리</string>
+    <string name="coupon_detail_screen_un_use_button_text">사용 완료 취소</string>
+    <string name="coupon_detail_screen_edit_amount_title">잔액 관리 (금액권 수정)</string>
+    <string name="coupon_detail_screen_memo_title">메모</string>
+    <string name="coupon_detail_screen_delete_dialog_title">쿠폰 삭제</string>
+    <string name="coupon_detail_screen_delete_dialog_message">정말로 이 쿠폰을 삭제하시겠습니까?\n삭제된 쿠폰은 복구할 수 없습니다.</string>
+    <string name="coupon_detail_screen_delete_dialog_confirm_text">삭제하기</string>
 
     <!--    쿠폰 정보 수정 화면-->
     <string name="coupon_edit_screen_title">쿠폰 정보 수정</string>
@@ -73,11 +92,17 @@
 
     <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
+
+    <!--    쿠폰 액션 매니저-->
     <string name="coupon_image_share_title">쿠폰 이미지 공유</string>
     <string name="coupon_image_saved">갤러리에 쿠폰 이미지를 저장하였습니다.</string>
     <string name="coupon_image_save_failed">쿠폰 이미지 저장에 실패하였습니다.</string>
     <string name="coupon_image_processing_failed">이미지 파일 처리에 실패하였습니다.</string>
     <string name="coupon_image_save_permission_not_grant">이미지 저장을 위해 앱 설정에서 파일 권한을 허용해주세요.</string>
+    <string name="coupon_code_copy">클립보드에 복사되었습니다</string>
+
+    <!--    다이얼로그-->
+    <string name="common_dialog_cancel_title">취소</string>
 
 
 </resources>

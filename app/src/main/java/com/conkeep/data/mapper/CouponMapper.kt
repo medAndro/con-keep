@@ -1,8 +1,10 @@
 package com.conkeep.data.mapper
 
 import com.conkeep.data.local.entity.CouponEntity
+import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.domain.model.Coupon
+import com.conkeep.domain.model.ExpiryDate
 import kotlinx.datetime.LocalDate
 import java.time.OffsetDateTime
 import kotlin.time.Instant
@@ -16,7 +18,24 @@ fun CouponEntity.toDomain(): Coupon =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        expiryDate = expiryDate?.let { LocalDate.parse(it) },
+        expiryDate =
+            runCatching {
+                val date = expiryDate?.let { LocalDate.parse(it) }
+                when {
+                    date == null -> {
+                        when (status) {
+                            CouponStatus.PENDING.name -> ExpiryDate.Processing
+                            CouponStatus.UPLOADING.name -> ExpiryDate.Processing
+                            CouponStatus.ANALYZING.name -> ExpiryDate.Processing
+                            else -> ExpiryDate.Empty
+                        }
+                    }
+
+                    else -> ExpiryDate.Success(date)
+                }
+            }.getOrElse {
+                ExpiryDate.Empty
+            },
         isMonetary = isMonetary,
         amount = amount,
         category = category?.toCouponCategory(),
@@ -49,7 +68,7 @@ fun Coupon.toEntity(): CouponEntity =
         productName = productName,
         brand = brand,
         couponPin = couponPin,
-        expiryDate = expiryDate?.toString(),
+        expiryDate = if (expiryDate is ExpiryDate.Success) expiryDate.value.toString() else null,
         isMonetary = isMonetary,
         amount = amount,
         category = category?.name,
@@ -79,14 +98,14 @@ fun CouponDto.toEntity(existingLocalPath: String? = null): CouponEntity {
         userId = this.userId,
         imageUrl = this.imageUrl,
         localImagePath = existingLocalPath, // 로컬 경로는 보존해야 함
-        productName = this.productName,
-        brand = this.brand,
-        couponPin = this.couponPin,
+        productName = this.productName ?: "",
+        brand = this.brand ?: "",
+        couponPin = this.couponPin ?: "",
         expiryDate = this.expiryDate,
         isMonetary = this.isMonetary,
         amount = this.amount,
         category = this.category,
-        userMemo = this.userMemo,
+        userMemo = this.userMemo ?: "",
         isUsed = this.isUsed,
         usedAt = this.usedAt.toEpochMilli().takeIf { it > 0 },
         createdAt = this.createdAt.toEpochMilli(),

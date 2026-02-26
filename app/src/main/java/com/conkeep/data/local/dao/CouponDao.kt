@@ -33,6 +33,7 @@ interface CouponDao {
         """
         SELECT * FROM coupons 
         WHERE user_id = :userId 
+        AND is_deleted = 0
         AND (
             :searchQuery = '' OR 
             product_name LIKE '%' || :searchQuery || '%' OR 
@@ -89,7 +90,8 @@ interface CouponDao {
     @Query(
         """
         SELECT COUNT(*) FROM coupons 
-        WHERE user_id = :userId 
+        WHERE user_id = :userId
+        AND is_deleted = 0
         AND (
             :searchQuery = '' OR 
             product_name LIKE '%' || :searchQuery || '%' OR 
@@ -118,13 +120,17 @@ interface CouponDao {
      */
     @Query(
         """
-        SELECT 0 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId
-        UNION ALL
-        SELECT 1 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId AND is_used = 0 AND expiry_date >= :today
-        UNION ALL
-        SELECT 2 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId AND is_used = 1
-        UNION ALL
-        SELECT 3 as filterValue, COUNT(*) as count FROM coupons WHERE user_id = :userId AND is_used = 0 AND expiry_date < :today
+    SELECT 
+        filterValue,
+        CASE 
+            WHEN filterValue = 0 THEN COUNT(*)
+            WHEN filterValue = 1 THEN SUM(CASE WHEN is_used = 0 AND expiry_date >= :today THEN 1 ELSE 0 END)
+            WHEN filterValue = 2 THEN SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END)
+            WHEN filterValue = 3 THEN SUM(CASE WHEN is_used = 0 AND expiry_date < :today THEN 1 ELSE 0 END)
+        END as count
+    FROM coupons, (SELECT 0 as filterValue UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3)
+    WHERE user_id = :userId AND is_deleted = 0
+    GROUP BY filterValue
     """,
     )
     fun getRawCounts(
@@ -147,7 +153,7 @@ interface CouponDao {
             CouponCountSummary(countMap)
         }
 
-    @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_used = 0 ORDER BY expiry_date ASC")
+    @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_deleted = 0 AND is_used = 0 ORDER BY expiry_date ASC")
     fun getActiveCoupons(userId: String): Flow<List<CouponEntity>>
 
     @Query("SELECT * FROM coupons WHERE id = :id")
@@ -186,11 +192,29 @@ interface CouponDao {
         couponStatus: String,
     )
 
-    @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt WHERE id = :id")
+    @Query("UPDATE coupons SET is_used = 1, used_at = :usedAt, is_dirty = 1 WHERE id = :id")
     suspend fun markAsUsed(
         id: String,
         usedAt: Long,
     )
+
+    @Query("UPDATE coupons SET is_used = 0 , used_at = NULL, is_dirty = 1 WHERE id = :id")
+    suspend fun unUsedMark(id: String)
+
+    @Query("UPDATE coupons SET user_memo = :memo, is_dirty = 1 WHERE id = :id")
+    suspend fun memoSave(
+        id: String,
+        memo: String,
+    )
+
+    @Query("UPDATE coupons SET amount = :amount, is_dirty = 1 WHERE id = :id")
+    suspend fun amountSave(
+        id: String,
+        amount: Long,
+    )
+
+    @Query("UPDATE coupons SET is_deleted=1, is_dirty = 1 WHERE id = :id")
+    suspend fun softDelete(id: String)
 
     @Delete
     suspend fun delete(coupon: CouponEntity)

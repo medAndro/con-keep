@@ -21,6 +21,7 @@ import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.data.worker.CouponImageUploadWorker
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
@@ -223,7 +224,7 @@ class CouponListViewModel
 
                     workManager.enqueueUniqueWork(
                         "upload_coupon_$couponId",
-                        ExistingWorkPolicy.KEEP, // 같은 이름의 워커가 이미 있으면 등록 안함
+                        ExistingWorkPolicy.REPLACE, // 기존에 돌고 있던 워커를 강제로 종료하고 새 워커를 즉시 실행
                         uploadRequest,
                     )
                 } catch (e: Exception) {
@@ -246,11 +247,11 @@ class CouponListViewModel
                     productName = null,
                     brand = null,
                     couponPin = couponPreProcessResult.barcode,
-                    expiryDate = null,
+                    expiryDate = ExpiryDate.Processing,
                     isMonetary = false,
                     amount = null,
                     category = CouponCategory.ETC,
-                    userMemo = null,
+                    userMemo = "",
                     isUsed = false,
                     usedAt = null,
                     createdAt = nowInstant,

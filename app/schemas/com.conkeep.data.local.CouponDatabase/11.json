@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 9,
-    "identityHash": "f5217f3dd33e500cde92fb4ea7981482",
+    "version": 11,
+    "identityHash": "fa48ffd9667d8a62976d45b2576fb883",
     "entities": [
       {
         "tableName": "coupons",
@@ -127,55 +127,59 @@
         },
         "indices": [
           {
-            "name": "index_coupons_user_id_is_used_created_at",
+            "name": "index_coupons_user_id_is_deleted_is_used_created_at",
             "unique": false,
             "columnNames": [
               "user_id",
+              "is_deleted",
               "is_used",
               "created_at"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_used_created_at` ON `${TABLE_NAME}` (`user_id`, `is_used`, `created_at`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_deleted_is_used_created_at` ON `${TABLE_NAME}` (`user_id`, `is_deleted`, `is_used`, `created_at`)"
           },
           {
-            "name": "index_coupons_user_id_is_used_expiry_date",
+            "name": "index_coupons_user_id_is_deleted_is_used_expiry_date",
             "unique": false,
             "columnNames": [
               "user_id",
+              "is_deleted",
               "is_used",
               "expiry_date"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_used_expiry_date` ON `${TABLE_NAME}` (`user_id`, `is_used`, `expiry_date`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_deleted_is_used_expiry_date` ON `${TABLE_NAME}` (`user_id`, `is_deleted`, `is_used`, `expiry_date`)"
           },
           {
-            "name": "index_coupons_user_id_expiry_date_is_used",
+            "name": "index_coupons_user_id_is_deleted_expiry_date_is_used",
             "unique": false,
             "columnNames": [
               "user_id",
+              "is_deleted",
               "expiry_date",
               "is_used"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_expiry_date_is_used` ON `${TABLE_NAME}` (`user_id`, `expiry_date`, `is_used`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_deleted_expiry_date_is_used` ON `${TABLE_NAME}` (`user_id`, `is_deleted`, `expiry_date`, `is_used`)"
           },
           {
-            "name": "index_coupons_user_id_is_used_used_at",
+            "name": "index_coupons_user_id_is_deleted_is_used_used_at",
             "unique": false,
             "columnNames": [
               "user_id",
+              "is_deleted",
               "is_used",
               "used_at"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_used_used_at` ON `${TABLE_NAME}` (`user_id`, `is_used`, `used_at`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_deleted_is_used_used_at` ON `${TABLE_NAME}` (`user_id`, `is_deleted`, `is_used`, `used_at`)"
           }
         ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f5217f3dd33e500cde92fb4ea7981482')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fa48ffd9667d8a62976d45b2576fb883')"
     ]
   }
 }
