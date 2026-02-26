@@ -63,7 +63,7 @@ class CouponImageViewModel
             viewModelScope.launch {
                 val result =
                     saveCouponUseCase(
-                        currentCoupon.localImagePath,
+                        currentCoupon.r2Url,
                         currentCoupon.name,
                         currentCoupon.number,
                     )
