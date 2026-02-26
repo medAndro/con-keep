@@ -62,6 +62,14 @@ class CouponEditViewModel
             _coupon.value = coupon.value?.copy(brand = string)
         }
 
+        fun setNewProductName(string: String) {
+            _coupon.value = coupon.value?.copy(name = string)
+        }
+
+        fun setNewPinNumber(string: String) {
+            _coupon.value = coupon.value?.copy(number = string)
+        }
+
         fun useCoupon() {
             viewModelScope.launch {
                 couponRepository.markAsUsed(

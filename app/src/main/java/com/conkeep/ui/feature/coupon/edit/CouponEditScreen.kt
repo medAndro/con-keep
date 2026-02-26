@@ -110,6 +110,8 @@ fun CouponEditScreen(
             )
         },
         setNewBrandName = { viewModel.setNewBrandName(it) },
+        setNewProductName = { viewModel.setNewProductName(it) },
+        setNewPinNumber = { viewModel.setNewPinNumber(it) },
         couponUiModel = coupon,
         selectedImageUri = selectedImageUri,
         id = id,
@@ -127,6 +129,8 @@ private fun CouponEditScreenContent(
     onUseCoupon: () -> Unit,
     onImagePickClick: () -> Unit,
     setNewBrandName: (String) -> Unit,
+    setNewProductName: (String) -> Unit,
+    setNewPinNumber: (String) -> Unit,
     couponUiModel: CouponUiModel?,
     selectedImageUri: Uri?,
     id: String,
@@ -232,6 +236,18 @@ private fun CouponEditScreenContent(
                         setNewBrandName,
                         stringResource(R.string.coupon_edit_screen_input_brand_placeholder),
                     )
+                    InputText(
+                        stringResource(R.string.coupon_edit_screen_input_title_product_name),
+                        couponUiModel.name ?: "",
+                        setNewProductName,
+                        stringResource(R.string.coupon_edit_screen_input_product_name_placeholder),
+                    )
+                    InputText(
+                        stringResource(R.string.coupon_edit_screen_input_title_pin_number),
+                        couponUiModel.number ?: "",
+                        setNewPinNumber,
+                        stringResource(R.string.coupon_edit_screen_input_pin_number_placeholder),
+                    )
                 }
             }
         }
@@ -244,7 +260,7 @@ private fun CouponEditScreenContent(
                 cancelText = stringResource(R.string.coupon_detail_screen_modified_dialog_cancel_text),
                 onConfirm = {
                     // todo: 저장 로직 실행
-                    Toast.makeText(context, "저장하고 돌아갑니다", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "저장하고 돌아갑니다(구라임)", Toast.LENGTH_SHORT).show()
                     showModifiedDialog = false
                 },
                 onDismiss = {
@@ -309,6 +325,8 @@ private fun CouponEditScreenContentPreview() {
             onUseCoupon = {},
             onImagePickClick = {},
             setNewBrandName = {},
+            setNewProductName = {},
+            setNewPinNumber = {},
             couponUiModel = fakeCoupon,
             selectedImageUri = null,
             id = "0",
