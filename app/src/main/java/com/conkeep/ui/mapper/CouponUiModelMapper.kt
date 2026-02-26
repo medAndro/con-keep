@@ -27,7 +27,6 @@ fun Coupon.toUiModel(today: LocalDate): CouponUiModel {
         dDay = dDayValue,
         isUsed = isUsed,
         isExpired = expiryLocalDate?.let { it < today } ?: true,
-        localImagePath = localImagePath,
         r2Url = imageUrl,
         isMonetary = isMonetary,
         amount = amount,

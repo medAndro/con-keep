@@ -32,7 +32,6 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         id = id,
         userId = userId,
         imageUrl = imageUrl,
-        localImagePath = null,
         productName = productName,
         brand = brand,
         couponPin = couponPin,
