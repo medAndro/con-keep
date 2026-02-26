@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -31,6 +32,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.domain.model.ExpiryDate
@@ -48,7 +51,6 @@ import com.conkeep.ui.theme.PretendardSemibold16
 import com.valentinilk.shimmer.shimmer
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
-import java.io.File
 
 @Composable
 fun CouponCard(
@@ -98,15 +100,11 @@ fun CouponCard(
                 ) {
                     AsyncImage(
                         model =
-                            if (isPreview) {
-                                R.drawable.ic_corn_ms_emoji
-                            } else {
-                                couponUiModel.localImagePath?.let {
-                                    File(
-                                        it,
-                                    )
-                                }
-                            },
+                            ImageRequest
+                                .Builder(LocalContext.current)
+                                .data(couponUiModel.r2Url)
+                                .crossfade(true)
+                                .build(),
                         contentDescription = stringResource(R.string.coupon_card_image_description),
                         placeholder = painterResource(R.drawable.ic_corn_ms_emoji),
                         error = painterResource(R.drawable.ic_corn_ms_emoji),

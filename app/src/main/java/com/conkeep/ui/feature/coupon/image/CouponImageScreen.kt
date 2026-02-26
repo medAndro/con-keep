@@ -83,7 +83,7 @@ fun CouponImageScreen(
         }
     }
     CouponImageContents(
-        imageUri = coupon?.localImagePath ?: "",
+        imageUri = coupon?.r2Url ?: "",
         onBackClick = {
             if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                 backStack.removeLastOrNull()

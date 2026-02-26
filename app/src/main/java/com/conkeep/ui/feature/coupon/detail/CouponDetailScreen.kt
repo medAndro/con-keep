@@ -62,6 +62,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.domain.model.ExpiryDate
@@ -101,7 +103,6 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -359,11 +360,11 @@ private fun CouponDetailScreenContent(
                         ) {
                             AsyncImage(
                                 model =
-                                    if (isPreview) {
-                                        R.drawable.ic_corn_ms_emoji
-                                    } else {
-                                        couponUiModel.localImagePath?.let { File(it) }
-                                    },
+                                    ImageRequest
+                                        .Builder(LocalContext.current)
+                                        .data(couponUiModel.r2Url)
+                                        .crossfade(true)
+                                        .build(),
                                 contentDescription = stringResource(R.string.coupon_card_image_description),
                                 placeholder = painterResource(R.drawable.ic_corn_ms_emoji),
                                 error = painterResource(R.drawable.ic_corn_ms_emoji),
