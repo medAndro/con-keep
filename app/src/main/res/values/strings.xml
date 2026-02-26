@@ -92,6 +92,12 @@
     <string name="coupon_edit_screen_input_title_brand">교환처 (브랜드)</string>
     <string name="coupon_edit_screen_input_brand_placeholder">변경할 교환처 (브랜드)를 입력하세요</string>
 
+    <string name="coupon_detail_screen_modified_dialog_title">쿠폰 수정됨</string>
+    <string name="coupon_detail_screen_modified_dialog_message">저장하지 않은 변경사항이 있습니다\n변경된 내용을 저장할까요?</string>
+    <string name="coupon_detail_screen_modified_dialog_confirm_text">저장하기</string>
+    <string name="coupon_detail_screen_modified_dialog_cancel_text">그냥 나가기</string>
+
+
     <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
 

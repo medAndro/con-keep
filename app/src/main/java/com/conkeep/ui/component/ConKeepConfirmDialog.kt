@@ -51,6 +51,7 @@ fun ConKeepConfirmDialog(
     cancelBackGroundColor: Color = dialogNormalBg,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    onCancel: () -> Unit = onDismiss,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -102,7 +103,7 @@ fun ConKeepConfirmDialog(
                     ) {
                         // 취소 버튼
                         Button(
-                            onClick = onDismiss,
+                            onClick = onCancel,
                             modifier =
                                 Modifier
                                     .weight(1f)
@@ -116,7 +117,7 @@ fun ConKeepConfirmDialog(
                         Button(
                             onClick = {
                                 onConfirm()
-                                onDismiss()
+                                onCancel()
                             },
                             modifier =
                                 Modifier

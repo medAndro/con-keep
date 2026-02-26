@@ -47,10 +47,10 @@ class CouponEditViewModel
             }
         }
 
-        fun isCouponChanged(): Boolean =
+        fun isCouponModifiedChecker(): Boolean =
             when {
                 initialCoupon == null -> false
-                selectedImageUri == null -> false
+                selectedImageUri.value != null -> true
                 else -> coupon.value != initialCoupon
             }
 

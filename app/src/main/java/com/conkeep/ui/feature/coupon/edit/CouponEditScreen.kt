@@ -1,6 +1,8 @@
 package com.conkeep.ui.feature.coupon.detail
 
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -27,6 +29,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +57,7 @@ import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.navigation.Route
+import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.edit.CouponEditViewModel
@@ -83,6 +89,7 @@ fun CouponEditScreen(
         }
 
     CouponEditScreenContent(
+        isCouponModifiedChecker = viewModel::isCouponModifiedChecker,
         onBackClick = {
             if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                 backStack.removeLastOrNull()
@@ -113,6 +120,7 @@ fun CouponEditScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CouponEditScreenContent(
+    isCouponModifiedChecker: () -> Boolean,
     onBackClick: () -> Unit,
     onCouponSave: () -> Unit,
     onImageClick: () -> Unit,
@@ -126,8 +134,17 @@ private fun CouponEditScreenContent(
 ) {
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
-
+    var showModifiedDialog by rememberSaveable { mutableStateOf(false) }
     val removeIcon: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_close)
+    val context = LocalContext.current
+
+    BackHandler(enabled = true) {
+        if (isCouponModifiedChecker()) {
+            showModifiedDialog = true // 변경사항이 있으면 다이얼로그 노출
+        } else {
+            onBackClick() // 변경사항 없으면 바로 뒤로가기
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -138,7 +155,13 @@ private fun CouponEditScreenContent(
                         TopBarButtonConfig(
                             iconResId = R.drawable.ic_back,
                             contentDescription = stringResource(R.string.topbar_back_description),
-                            onClick = onBackClick,
+                            onClick = {
+                                if (isCouponModifiedChecker()) {
+                                    showModifiedDialog = true
+                                } else {
+                                    onBackClick()
+                                }
+                            },
                         ),
                     ),
                 rightButtonConfigs =
@@ -212,6 +235,28 @@ private fun CouponEditScreenContent(
                 }
             }
         }
+
+        if (showModifiedDialog) {
+            ConKeepConfirmDialog(
+                title = stringResource(R.string.coupon_detail_screen_modified_dialog_title),
+                description = stringResource(R.string.coupon_detail_screen_modified_dialog_message),
+                confirmText = stringResource(R.string.coupon_detail_screen_modified_dialog_confirm_text),
+                cancelText = stringResource(R.string.coupon_detail_screen_modified_dialog_cancel_text),
+                onConfirm = {
+                    // todo: 저장 로직 실행
+                    Toast.makeText(context, "저장하고 돌아갑니다", Toast.LENGTH_SHORT).show()
+                    showModifiedDialog = false
+                },
+                onDismiss = {
+                    showModifiedDialog = false
+                },
+                onCancel = {
+                    showModifiedDialog = false
+                    Toast.makeText(context, "그냥 돌아갑니다", Toast.LENGTH_SHORT).show()
+                    onBackClick()
+                },
+            )
+        }
     }
 }
 
@@ -257,6 +302,7 @@ private val fakeCoupon =
 private fun CouponEditScreenContentPreview() {
     MaterialTheme {
         CouponEditScreenContent(
+            isCouponModifiedChecker = { false },
             onBackClick = {},
             onCouponSave = {},
             onImageClick = {},
