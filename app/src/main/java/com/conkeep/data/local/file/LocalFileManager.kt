@@ -167,6 +167,24 @@ class LocalFileManager
             }
 
         /**
+         * 압축이 완료된 파일을 캐시 폴더로 이동시키고 경로를 반환합니다.
+         */
+        fun saveToCache(compressedFile: File): String? =
+            try {
+                val imageDir = tempImageDir.apply { if (!exists()) mkdirs() }
+                val fileName = "coupon_cache_${System.currentTimeMillis()}.webp"
+                val destinationFile = File(imageDir, fileName)
+
+                compressedFile.copyTo(destinationFile, overwrite = true)
+                destinationFile.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            } finally {
+                compressedFile.delete()
+            }
+
+        /**
          * 특정 파일명으로 복사본을 만들어 공유용 URI 발행
          * @param absolutePath 원본 파일 경로
          * @param newFileName 보여주고 싶은 파일명 (확장자 제외)

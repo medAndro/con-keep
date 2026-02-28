@@ -30,8 +30,8 @@ class CouponProcessor
                     val finalFile = fileManager.optimizeImage(tempFile)
                     val barcode = scanBarcodeFromFile(finalFile)
                     val finalPath =
-                        fileManager.saveProcessedFile(finalFile)
-                            ?: throw Exception("최종 파일 저장 실패")
+                        fileManager.saveToCache(finalFile)
+                            ?: throw Exception("로컬 이미지 캐시 저장 실패")
 
                     CouponPreProcessResult(
                         localPath = finalPath,

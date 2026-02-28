@@ -116,7 +116,6 @@ fun CouponEditScreen(
     val couponDataIsSameMessage =
         stringResource(R.string.coupon_edit_screen_coupon_data_is_same_alert)
 
-
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collect { toastMessage ->
             when (toastMessage) {
@@ -535,8 +534,7 @@ private fun InputDate(
                             width = if (isInteracting) 2.dp else 1.dp,
                             color = if (isInteracting) borderFocused else borderSubtle,
                             shape = RoundedCornerShape(10.dp),
-                        )
-                        .pointerInput(Unit) {
+                        ).pointerInput(Unit) {
                             awaitPointerEventScope {
                                 while (true) {
                                     val event = awaitPointerEvent()
