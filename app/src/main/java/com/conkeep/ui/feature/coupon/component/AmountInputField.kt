@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,7 +52,7 @@ fun AmountInputField(
     showLeadingIcon: Boolean = true,
     showTrailingIcon: Boolean = true,
     autoSave: Boolean = true,
-    placeholder: String = "현재 잔액을 입력하세요",
+    placeholder: String? = null,
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val currentAmount by rememberUpdatedState(amountText)
@@ -98,7 +99,7 @@ fun AmountInputField(
                 },
         placeholder = {
             Text(
-                text = placeholder,
+                text = placeholder ?: stringResource(R.string.amount_input_placeholder),
                 style = PretendardMedium16,
             )
         },

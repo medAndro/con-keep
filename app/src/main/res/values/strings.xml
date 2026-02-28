@@ -124,6 +124,7 @@
 
     <!--    다이얼로그-->
     <string name="common_dialog_cancel_title">취소</string>
+    <string name="amount_input_placeholder">현재 잔액을 입력하세요</string>
 
 
 </resources>

@@ -585,12 +585,10 @@ private fun CouponDetailScreenContent(
                     )
 
                     // 잔액 관리 섹션
-                    val currentCouponId = couponUiModel.id
                     val initialAmountText =
                         if (couponUiModel.amount == 0) "" else couponUiModel.amount.toString()
 
-                    // ID가 바뀔 때만 typedAmount 초기화 (좀비 금액 방지)
-                    var typedAmountText by rememberSaveable(currentCouponId) {
+                    var typedAmountText by rememberSaveable(couponUiModel) {
                         mutableStateOf(
                             initialAmountText,
                         )
@@ -635,11 +633,9 @@ private fun CouponDetailScreenContent(
                 )
 
                 // 메모 섹션
-                val currentCouponId = couponUiModel?.id ?: ""
                 val initialMemo = couponUiModel?.memo ?: ""
 
-                // ID가 바뀔 때만 typedMemo를 초기화 (좀비 메모 방지)
-                var typedMemo by rememberSaveable(currentCouponId) { mutableStateOf(initialMemo) }
+                var typedMemo by rememberSaveable(couponUiModel) { mutableStateOf(initialMemo) }
 
                 // Safety Net: 화면을 나갈 때 최종 상태를 저장
                 val latestCouponMemo by rememberUpdatedState(couponUiModel?.memo)

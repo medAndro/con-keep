@@ -290,6 +290,18 @@ class CouponRepository
             couponDao.amountSave(id, amount.toLong())
         }
 
+        suspend fun update(coupon: Coupon): Result<Unit> =
+            runCatching {
+                val affectedRows = couponDao.update(coupon.toEntity())
+                if (affectedRows > 0) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("수정할 쿠폰을 찾을 수 없습니다."))
+                }
+            }.getOrElse {
+                Result.failure(it) // DB 에러 발생 시
+            }
+
         suspend fun softDelete(id: String): Result<Unit> {
             try {
                 couponDao.softDelete(id)

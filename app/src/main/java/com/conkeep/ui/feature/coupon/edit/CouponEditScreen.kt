@@ -32,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,7 +95,7 @@ fun CouponEditScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: CouponEditViewModel,
 ) {
-    val coupon by viewModel.coupon.collectAsStateWithLifecycle()
+    val coupon by viewModel.couponUiModel.collectAsStateWithLifecycle()
     val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val pickMedia: ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?> =
@@ -105,15 +106,30 @@ fun CouponEditScreen(
                 viewModel.pickCouponImage(uri)
             }
         }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.toastEvent.collect { toastMessage ->
+            when (toastMessage) {
+                CouponEditEvent.CouponEdited -> {
+                    Toast.makeText(context, "쿠폰이 저장 되었습니다.", Toast.LENGTH_SHORT).show()
+                }
+
+                CouponEditEvent.CouponDataIsSame -> {
+                    Toast.makeText(context, "변경된 내용이 없습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     CouponEditScreenContent(
-        isCouponModifiedChecker = viewModel::isCouponModifiedChecker,
+        isCouponModifiedChecker = viewModel::isCouponModified,
         onBackClick = {
             if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                 backStack.removeLastOrNull()
             }
         },
-        onCouponSave = {},
+        onCouponSave = { viewModel.saveCouponInfo() },
         onImagePickClick = {
             pickMedia.launch(
                 PickVisualMediaRequest(
@@ -186,7 +202,9 @@ private fun CouponEditScreenContent(
                         TopBarButtonConfig(
                             iconResId = R.drawable.ic_save,
                             contentDescription = stringResource(R.string.coupon_edit_screen_save_icon_description),
-                            onClick = onCouponSave,
+                            onClick = {
+                                onCouponSave()
+                            },
                         ),
                     ),
             )
@@ -270,7 +288,6 @@ private fun CouponEditScreenContent(
                     InputAmount(
                         couponUiModel.amount,
                         setNewAmount,
-                        stringResource(R.string.coupon_edit_screen_input_pin_number_placeholder),
                     )
                 }
                 InputMemo(
@@ -287,16 +304,16 @@ private fun CouponEditScreenContent(
                 confirmText = stringResource(R.string.coupon_detail_screen_modified_dialog_confirm_text),
                 cancelText = stringResource(R.string.coupon_detail_screen_modified_dialog_cancel_text),
                 onConfirm = {
-                    // todo: 저장 로직 실행
-                    Toast.makeText(context, "저장하고 돌아갑니다(구라임)", Toast.LENGTH_SHORT).show()
+                    onCouponSave()
                     showModifiedDialog = false
+                    onBackClick()
                 },
                 onDismiss = {
                     showModifiedDialog = false
                 },
                 onCancel = {
                     showModifiedDialog = false
-                    Toast.makeText(context, "그냥 돌아갑니다", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "변경사항을 취소하고 돌아갑니다", Toast.LENGTH_SHORT).show()
                     onBackClick()
                 },
             )
@@ -333,9 +350,9 @@ private fun InputText(
 private fun InputAmount(
     amount: Int?,
     updatedText: (Int?) -> Unit,
-    placeholderText: String,
+    placeholderText: String? = null,
 ) {
-    val previousAmount = rememberSaveable { mutableStateOf(amount?.toString()) }
+    val previousAmount = rememberSaveable { mutableStateOf(amount?.toString() ?: "") }
     Column(
         horizontalAlignment = Alignment.Start,
     ) {
@@ -345,8 +362,8 @@ private fun InputAmount(
                     null ->
                         updatedText(
                             previousAmount.value
-                                ?.filter { it.isDigit() }
-                                ?.toIntOrNull(),
+                                .filter { it.isDigit() }
+                                .toIntOrNull() ?: 0,
                         )
 
                     else -> {
@@ -370,7 +387,6 @@ private fun InputAmount(
                 showLeadingIcon = true,
                 showTrailingIcon = false,
                 autoSave = false,
-                placeholder = placeholderText,
             )
         }
     }
@@ -386,7 +402,7 @@ private fun InputMemo(
         verticalArrangement = Arrangement.spacedBy(11.dp),
     ) {
         Text(
-            "메모",
+            stringResource(R.string.coupon_detail_screen_memo_title),
             style = PretendardMedium16,
             color = textSecondary,
         )

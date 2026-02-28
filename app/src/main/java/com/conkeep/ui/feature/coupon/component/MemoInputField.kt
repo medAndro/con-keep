@@ -45,7 +45,7 @@ fun MemoInputField(
     // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
     if (autosave) {
         LaunchedEffect(memo) {
-            if (!isFocused || memo.isBlank()) return@LaunchedEffect
+            if (!isFocused) return@LaunchedEffect
             delay(1000L) // 1초 대기
             onSave(memo)
         }

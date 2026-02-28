@@ -1,9 +1,11 @@
 package com.conkeep.ui.feature.coupon.edit
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
@@ -13,7 +15,9 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -31,9 +35,14 @@ class CouponEditViewModel
             fun create(couponId: String): CouponEditViewModel
         }
 
-        private var initialCoupon: CouponUiModel? = null
-        private val _coupon = MutableStateFlow<CouponUiModel?>(null)
-        val coupon = _coupon.asStateFlow()
+        private var originalCouponUiModel: CouponUiModel? = null
+        private var originalDomainCoupon: Coupon? = null
+
+        private val _couponUiModel = MutableStateFlow<CouponUiModel?>(null)
+        val couponUiModel = _couponUiModel.asStateFlow()
+
+        private val _toastEvent = MutableSharedFlow<CouponEditEvent>()
+        val toastEvent = _toastEvent.asSharedFlow()
 
         private val _selectedImageUri = MutableStateFlow<Uri?>(null)
         val selectedImageUri = _selectedImageUri.asStateFlow()
@@ -41,18 +50,19 @@ class CouponEditViewModel
         init {
             viewModelScope.launch {
                 val domainCoupon = couponRepository.getCouponOnce(couponId)
+                originalDomainCoupon = domainCoupon
                 val uiModel = domainCoupon?.toUiModel(timeProvider.getToday())
 
-                initialCoupon = uiModel
-                _coupon.value = uiModel
+                originalCouponUiModel = uiModel
+                _couponUiModel.value = uiModel
             }
         }
 
-        fun isCouponModifiedChecker(): Boolean =
+        fun isCouponModified(): Boolean =
             when {
-                initialCoupon == null -> false
+                originalCouponUiModel == null -> false
                 selectedImageUri.value != null -> true
-                else -> coupon.value != initialCoupon
+                else -> couponUiModel.value != originalCouponUiModel
             }
 
         fun pickCouponImage(uri: Uri) {
@@ -60,35 +70,70 @@ class CouponEditViewModel
         }
 
         fun setNewBrandName(string: String) {
-            _coupon.value = coupon.value?.copy(brand = string)
+            _couponUiModel.value = couponUiModel.value?.copy(brand = string)
         }
 
         fun setNewProductName(string: String) {
-            _coupon.value = coupon.value?.copy(name = string)
+            _couponUiModel.value = couponUiModel.value?.copy(name = string)
         }
 
         fun setNewPinNumber(string: String) {
-            _coupon.value = coupon.value?.copy(number = string)
+            _couponUiModel.value = couponUiModel.value?.copy(number = string)
         }
 
         fun setNewExpiryDate(expiryDate: ExpiryDate) {
-            _coupon.value = coupon.value?.copy(expiryDate = expiryDate)
+            _couponUiModel.value = couponUiModel.value?.copy(expiryDate = expiryDate)
         }
 
         fun setNewAmount(amount: Int?) {
-            _coupon.value = coupon.value?.copy(amount = amount)
+            _couponUiModel.value = couponUiModel.value?.copy(amount = amount)
         }
 
         fun setNewMemo(string: String) {
-            _coupon.value = coupon.value?.copy(memo = string)
+            _couponUiModel.value = couponUiModel.value?.copy(memo = string)
         }
 
-        fun useCoupon() {
+        fun saveCouponInfo() {
+            if (!isCouponModified()) {
+                viewModelScope.launch {
+                    _toastEvent.emit(CouponEditEvent.CouponDataIsSame)
+                }
+                return
+            }
+
             viewModelScope.launch {
-                couponRepository.markAsUsed(
-                    id = couponId,
-                    timestamp = System.currentTimeMillis(),
-                )
+                try {
+                    originalDomainCoupon?.let {
+                        val updatedCoupon =
+                            it.copy(
+                                brand = couponUiModel.value?.brand,
+                                productName = couponUiModel.value?.name,
+                                couponPin = couponUiModel.value?.number,
+                                expiryDate = couponUiModel.value?.expiryDate ?: ExpiryDate.Empty(),
+                                amount = couponUiModel.value?.amount,
+                                userMemo = couponUiModel.value?.memo,
+                            )
+                        Log.d("CouponEditViewModel", "saveCouponInfo: $updatedCoupon")
+                        couponRepository
+                            .update(
+                                coupon = updatedCoupon,
+                            ).onSuccess {
+                                Log.d("CouponEditViewModel", "saveCouponInfo: success")
+                                originalDomainCoupon = updatedCoupon
+                                originalCouponUiModel = couponUiModel.value?.copy()
+                                _toastEvent.emit(CouponEditEvent.CouponEdited)
+                            }.onFailure {
+                                Log.d("CouponEditViewModel", "saveCouponInfo: fail")
+                            }
+                    }
+                } catch (e: Exception) {
+                }
             }
         }
     }
+
+sealed class CouponEditEvent {
+    data object CouponEdited : CouponEditEvent()
+
+    data object CouponDataIsSame : CouponEditEvent()
+}
