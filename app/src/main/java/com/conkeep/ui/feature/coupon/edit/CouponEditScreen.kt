@@ -68,6 +68,7 @@ import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.component.AmountInputField
+import com.conkeep.ui.feature.coupon.component.MemoInputField
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepColors.bgInput
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
@@ -125,6 +126,7 @@ fun CouponEditScreen(
         setNewPinNumber = { viewModel.setNewPinNumber(it) },
         setNewExpiryDate = { viewModel.setNewExpiryDate(it) },
         setNewAmount = { viewModel.setNewAmount(it) },
+        setNewMemo = { viewModel.setNewMemo(it) },
         couponUiModel = coupon,
         selectedImageUri = selectedImageUri,
         modifier = Modifier,
@@ -143,6 +145,7 @@ private fun CouponEditScreenContent(
     setNewPinNumber: (String) -> Unit,
     setNewExpiryDate: (ExpiryDate) -> Unit,
     setNewAmount: (Int?) -> Unit,
+    setNewMemo: (String) -> Unit,
     couponUiModel: CouponUiModel?,
     selectedImageUri: Uri?,
     modifier: Modifier = Modifier,
@@ -270,6 +273,10 @@ private fun CouponEditScreenContent(
                         stringResource(R.string.coupon_edit_screen_input_pin_number_placeholder),
                     )
                 }
+                InputMemo(
+                    couponUiModel?.memo ?: "",
+                    updatedText = setNewMemo,
+                )
             }
         }
 
@@ -331,7 +338,6 @@ private fun InputAmount(
     val previousAmount = rememberSaveable { mutableStateOf(amount?.toString()) }
     Column(
         horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(11.dp),
     ) {
         ToggleTitle(
             onToggleClick = {
@@ -367,6 +373,30 @@ private fun InputAmount(
                 placeholder = placeholderText,
             )
         }
+    }
+}
+
+@Composable
+private fun InputMemo(
+    text: String,
+    updatedText: (String) -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(11.dp),
+    ) {
+        Text(
+            "메모",
+            style = PretendardMedium16,
+            color = textSecondary,
+        )
+
+        MemoInputField(
+            memo = text,
+            onMemoChange = { updatedText(it) },
+            onSave = {},
+            autosave = false,
+        )
     }
 }
 
@@ -534,6 +564,7 @@ private fun CouponEditScreenContentPreview() {
             setNewPinNumber = {},
             setNewExpiryDate = {},
             setNewAmount = {},
+            setNewMemo = {},
             couponUiModel = fakeCoupon,
             selectedImageUri = null,
         )

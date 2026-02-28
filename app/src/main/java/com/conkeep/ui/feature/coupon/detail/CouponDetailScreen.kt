@@ -576,7 +576,7 @@ private fun CouponDetailScreenContent(
             if (couponUiModel?.isMonetary ?: false && couponUiModel.amount != null) {
                 Column(
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(11.dp),
                 ) {
                     Text(
                         stringResource(R.string.coupon_detail_screen_edit_amount_title),
@@ -626,7 +626,7 @@ private fun CouponDetailScreenContent(
 
             Column(
                 horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(11.dp),
             ) {
                 Text(
                     stringResource(R.string.coupon_detail_screen_memo_title),

@@ -18,8 +18,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.conkeep.R
 import com.conkeep.ui.theme.ConKeepColors.bgInput
 import com.conkeep.ui.theme.ConKeepColors.borderFocused
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
@@ -34,16 +36,19 @@ fun MemoInputField(
     onMemoChange: (String) -> Unit,
     onSave: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "쿠폰과 관련된 메모를 남겨주세요\n(예: 친구 선물, 생일 쿠폰)",
+    autosave: Boolean = true,
+    placeholder: String = stringResource(R.string.memo_input_field_placeholder),
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val currentMemo by rememberUpdatedState(memo)
 
     // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
-    LaunchedEffect(memo) {
-        if (!isFocused || memo.isBlank()) return@LaunchedEffect
-        delay(1000L) // 1초 대기
-        onSave(memo)
+    if (autosave) {
+        LaunchedEffect(memo) {
+            if (!isFocused || memo.isBlank()) return@LaunchedEffect
+            delay(1000L) // 1초 대기
+            onSave(memo)
+        }
     }
 
     OutlinedTextField(
@@ -53,8 +58,8 @@ fun MemoInputField(
             modifier
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
-                    // 포커스가 있다가 사라지는 순간 저장
-                    if (isFocused && !focusState.isFocused) {
+                    // 포커스가 있다가 사라지는 순간 자동저장
+                    if (autosave && isFocused && !focusState.isFocused) {
                         onSave(currentMemo)
                     }
                     isFocused = focusState.isFocused

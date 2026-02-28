@@ -108,6 +108,8 @@
     <string name="coupon_edit_screen_amount_title">잔액</string>
     <string name="coupon_edit_screen_is_monetary_label">금액권입니다</string>
 
+    <!--    공통 입력폼 텍스트-->
+    <string name="memo_input_field_placeholder">쿠폰과 관련된 메모를 남겨주세요\n(예: 친구 선물, 생일 쿠폰)</string>
 
     <!--    쿠폰 이미지 화면-->
     <string name="coupon_image_screen_image_description">쿠폰 이미지</string>

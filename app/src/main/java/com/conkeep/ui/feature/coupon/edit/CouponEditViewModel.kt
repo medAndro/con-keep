@@ -79,6 +79,10 @@ class CouponEditViewModel
             _coupon.value = coupon.value?.copy(amount = amount)
         }
 
+        fun setNewMemo(string: String) {
+            _coupon.value = coupon.value?.copy(memo = string)
+        }
+
         fun useCoupon() {
             viewModelScope.launch {
                 couponRepository.markAsUsed(
