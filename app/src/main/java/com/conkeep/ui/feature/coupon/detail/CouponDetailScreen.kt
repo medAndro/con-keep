@@ -161,10 +161,10 @@ fun CouponDetailScreen(
         onCouponMemoSave = viewModel::saveCouponMemo,
         onCouponAmountSave = viewModel::saveCouponAmount,
         onDeleteCoupon = {
-            viewModel.deleteCoupon({
+            viewModel.deleteCoupon {
                 Toast.makeText(context, softDeleteMessage, Toast.LENGTH_SHORT).show()
                 backStack.removeLastOrNull()
-            })
+            }
         },
         couponUiModel = coupon,
     )
@@ -190,6 +190,48 @@ private fun CouponDetailScreenContent(
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
+
+    // 입력한 잔액 관리
+    val initialAmountText =
+        if (couponUiModel?.amount == 0) "" else couponUiModel?.amount.toString()
+    var typedAmountText by rememberSaveable(couponUiModel) {
+        mutableStateOf(
+            initialAmountText,
+        )
+    }
+    // 입력한 메모 관리
+    val initialMemo = couponUiModel?.memo ?: ""
+    var typedMemo by rememberSaveable(couponUiModel) { mutableStateOf(initialMemo) }
+
+    // Safety Net: 화면을 나갈 때 최종 상태를 저장
+    val latestCouponAmount by rememberUpdatedState(couponUiModel?.amount.toString())
+    val latestAmountForExit by rememberUpdatedState(typedAmountText)
+    val latestCouponMemo by rememberUpdatedState(couponUiModel?.memo)
+    val latestMemoForExit by rememberUpdatedState(typedMemo)
+
+    fun localInputFormSave() {
+        if (latestCouponMemo != latestMemoForExit) {
+            Log.d("detail", "종료전 변경감지 저장실행됨 $latestMemoForExit")
+            onCouponMemoSave(latestMemoForExit)
+        }
+
+        if ((latestCouponAmount.toIntOrNull() ?: 0)
+            != (latestAmountForExit.toIntOrNull() ?: 0)
+        ) {
+            Log.d("detail", "종료전 변경감지 저장실행됨 $latestAmountForExit")
+            onCouponAmountSave(
+                latestAmountForExit
+                    .filter { it.isDigit() }
+                    .toIntOrNull() ?: 0,
+            )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            localInputFormSave()
+        }
+    }
 
     val downloadImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_download)
     val copyImageVector: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_copy)
@@ -242,7 +284,10 @@ private fun CouponDetailScreenContent(
                         TopBarButtonConfig(
                             iconResId = R.drawable.ic_back,
                             contentDescription = stringResource(R.string.topbar_back_description),
-                            onClick = onBackClick,
+                            onClick = {
+                                localInputFormSave()
+                                onBackClick()
+                            },
                         ),
                     ),
                 rightButtonConfigs =
@@ -257,7 +302,10 @@ private fun CouponDetailScreenContent(
                         TopBarButtonConfig(
                             iconResId = R.drawable.ic_edit,
                             contentDescription = stringResource(R.string.coupon_edit_screen_title),
-                            onClick = onCouponEdit,
+                            onClick = {
+                                localInputFormSave()
+                                onCouponEdit()
+                            },
                         ),
                     ),
             )
@@ -579,33 +627,6 @@ private fun CouponDetailScreenContent(
                         color = textSecondary,
                     )
 
-                    // 잔액 관리 섹션
-                    val initialAmountText =
-                        if (couponUiModel.amount == 0) "" else couponUiModel.amount.toString()
-
-                    var typedAmountText by rememberSaveable(couponUiModel) {
-                        mutableStateOf(
-                            initialAmountText,
-                        )
-                    }
-
-                    //  Safety Net: 화면을 나갈 때 최종 상태를 저장
-                    val latestCouponAmount by rememberUpdatedState(couponUiModel.amount.toString())
-                    val latestAmountForExit by rememberUpdatedState(typedAmountText)
-                    DisposableEffect(Unit) {
-                        onDispose {
-                            if ((latestCouponAmount.toIntOrNull() ?: 0)
-                                != (latestAmountForExit.toIntOrNull() ?: 0)
-                            ) {
-                                Log.d("detail", "종료전 변경감지 저장실행됨 $latestAmountForExit")
-                                onCouponAmountSave(
-                                    latestAmountForExit
-                                        .filter { it.isDigit() }
-                                        .toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                    }
                     AmountInputField(
                         amountText = typedAmountText,
                         onAmountChange = { typedAmountText = it },
@@ -627,22 +648,6 @@ private fun CouponDetailScreenContent(
                     color = textSecondary,
                 )
 
-                // 메모 섹션
-                val initialMemo = couponUiModel?.memo ?: ""
-
-                var typedMemo by rememberSaveable(couponUiModel) { mutableStateOf(initialMemo) }
-
-                // Safety Net: 화면을 나갈 때 최종 상태를 저장
-                val latestCouponMemo by rememberUpdatedState(couponUiModel?.memo)
-                val latestMemoForExit by rememberUpdatedState(typedMemo)
-                DisposableEffect(Unit) {
-                    onDispose {
-                        if (latestCouponMemo != latestMemoForExit) {
-                            Log.d("detail", "종료전 변경감지 저장실행됨 $latestMemoForExit")
-                            onCouponMemoSave(latestMemoForExit)
-                        }
-                    }
-                }
                 MemoInputField(
                     memo = typedMemo,
                     onMemoChange = { typedMemo = it },

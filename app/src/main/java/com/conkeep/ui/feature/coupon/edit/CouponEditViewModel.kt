@@ -86,7 +86,8 @@ class CouponEditViewModel
         }
 
         fun setNewAmount(amount: Int?) {
-            _couponUiModel.value = couponUiModel.value?.copy(amount = amount)
+            _couponUiModel.value =
+                couponUiModel.value?.copy(amount = amount, isMonetary = amount != null)
         }
 
         fun setNewMemo(string: String) {
@@ -112,6 +113,7 @@ class CouponEditViewModel
                                 expiryDate = couponUiModel.value?.expiryDate ?: ExpiryDate.Empty(),
                                 amount = couponUiModel.value?.amount,
                                 userMemo = couponUiModel.value?.memo,
+                                isMonetary = couponUiModel.value?.isMonetary ?: false,
                             )
                         Log.d("CouponEditViewModel", "saveCouponInfo: $updatedCoupon")
                         couponRepository

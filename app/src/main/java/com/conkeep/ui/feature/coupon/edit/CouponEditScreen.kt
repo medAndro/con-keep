@@ -7,6 +7,11 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,16 +112,20 @@ fun CouponEditScreen(
             }
         }
     val context = LocalContext.current
+    val couponEditedMessage = stringResource(R.string.coupon_edit_screen_coupon_edited_alert)
+    val couponDataIsSameMessage =
+        stringResource(R.string.coupon_edit_screen_coupon_data_is_same_alert)
+
 
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collect { toastMessage ->
             when (toastMessage) {
                 CouponEditEvent.CouponEdited -> {
-                    Toast.makeText(context, "쿠폰이 저장 되었습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, couponEditedMessage, Toast.LENGTH_SHORT).show()
                 }
 
                 CouponEditEvent.CouponDataIsSame -> {
-                    Toast.makeText(context, "변경된 내용이 없습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, couponDataIsSameMessage, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -371,12 +380,15 @@ private fun InputAmount(
                     }
                 }
             },
-            isChecked = amount == null,
+            isChecked = amount != null,
             titleText = stringResource(R.string.coupon_edit_screen_amount_title),
-            toggleLabel = stringResource(R.string.coupon_edit_screen_is_monetary_label),
+            toggleLabel = stringResource(R.string.coupon_edit_screen_is_not_monetary_label),
         )
-
-        if (amount != null) {
+        AnimatedVisibility(
+            visible = amount != null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
             AmountInputField(
                 amountText = previousAmount.value ?: "",
                 onAmountChange = { newAmount ->
@@ -440,7 +452,7 @@ private fun ToggleTitle(
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 만료일 없음 토글
+            // 토글
             Text(
                 toggleLabel,
                 style = PretendardMedium16,
@@ -502,34 +514,46 @@ private fun InputDate(
             isChecked = currentExpiryDate is ExpiryDate.Success,
             toggleLabel = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
         )
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(bgInput, RoundedCornerShape(10.dp))
-                    .border(
-                        width = if (isInteracting) 2.dp else 1.dp,
-                        color = if (isInteracting) borderFocused else borderSubtle,
-                        shape = RoundedCornerShape(10.dp),
-                    ).pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                when (event.type) {
-                                    PointerEventType.Press -> isInteracting = true
-                                    PointerEventType.Release, PointerEventType.Exit ->
-                                        isInteracting =
-                                            false
+        AnimatedVisibility(
+            visible = currentExpiryDate is ExpiryDate.Success,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            val displayDate =
+                (currentExpiryDate as? ExpiryDate.Success)?.value
+                    ?: Clock.System
+                        .now()
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                        .date
+
+            BoxWithConstraints(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(bgInput, RoundedCornerShape(10.dp))
+                        .border(
+                            width = if (isInteracting) 2.dp else 1.dp,
+                            color = if (isInteracting) borderFocused else borderSubtle,
+                            shape = RoundedCornerShape(10.dp),
+                        )
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    when (event.type) {
+                                        PointerEventType.Press -> isInteracting = true
+                                        PointerEventType.Release, PointerEventType.Exit ->
+                                            isInteracting =
+                                                false
+                                    }
                                 }
                             }
-                        }
-                    },
-            contentAlignment = Alignment.Center,
-        ) {
-            if (currentExpiryDate is ExpiryDate.Success) {
+                        },
+                contentAlignment = Alignment.Center,
+            ) {
                 WheelDatePicker(
                     modifier = Modifier.padding(vertical = 8.dp),
-                    startDate = currentExpiryDate.value,
+                    startDate = displayDate,
                     size = DpSize((maxWidth.value * 0.85).dp, 120.dp), // 적절한 여백이 포함된 사이즈
                     rowCount = 3,
                     textStyle = PretendardMedium16,
