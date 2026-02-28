@@ -49,7 +49,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -107,7 +106,6 @@ import kotlinx.datetime.number
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CouponDetailScreen(
-    id: String,
     backStack: NavBackStack<NavKey>,
     viewModel: CouponDetailViewModel,
 ) {
@@ -169,7 +167,6 @@ fun CouponDetailScreen(
             })
         },
         couponUiModel = coupon,
-        id = id,
     )
 }
 
@@ -187,9 +184,7 @@ private fun CouponDetailScreenContent(
     onCouponAmountSave: (Int) -> Unit,
     onDeleteCoupon: () -> Unit,
     couponUiModel: CouponUiModel?,
-    id: String,
     modifier: Modifier = Modifier,
-    isPreview: Boolean = LocalInspectionMode.current,
 ) {
     val context = LocalContext.current
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
@@ -704,7 +699,6 @@ private fun CouponDetailScreenContentPreview() {
             onCouponAmountSave = {},
             onDeleteCoupon = {},
             couponUiModel = fakeCoupon,
-            id = "0",
         )
     }
 }
@@ -731,7 +725,6 @@ private fun CouponDetailScreenExpiredContentPreview() {
                     isMonetary = true,
                     amount = 3000,
                 ),
-            id = "0",
         )
     }
 }
@@ -752,7 +745,6 @@ private fun CouponDetailScreenNullContentPreview() {
             onCouponAmountSave = {},
             onDeleteCoupon = {},
             couponUiModel = null,
-            id = "0",
         )
     }
 }
@@ -786,7 +778,6 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onCouponAmountSave = {},
             onDeleteCoupon = {},
             couponUiModel = loadingCoupon,
-            id = "0",
         )
     }
 }

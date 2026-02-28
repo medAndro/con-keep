@@ -106,7 +106,6 @@ private fun CouponNavigation(
                             factory.create(key.id)
                         }
                     CouponDetailScreen(
-                        id = key.id,
                         backStack = couponBackStack,
                         viewModel = viewModel,
                     )
