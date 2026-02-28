@@ -7,12 +7,14 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,21 +23,26 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +51,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -63,11 +71,23 @@ import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.feature.coupon.edit.CouponEditViewModel
 import com.conkeep.ui.feature.coupon.edit.TextInputField
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
+import com.conkeep.ui.theme.ConKeepColors.bgInput
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
+import com.conkeep.ui.theme.ConKeepColors.borderFocused
+import com.conkeep.ui.theme.ConKeepColors.borderSubtle
+import com.conkeep.ui.theme.ConKeepColors.brandPrimary
+import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepColors.textSecondary
+import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium16
+import com.conkeep.ui.util.spToDp
+import dev.darkokoa.datetimewheelpicker.WheelDatePicker
+import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,6 +132,7 @@ fun CouponEditScreen(
         setNewBrandName = { viewModel.setNewBrandName(it) },
         setNewProductName = { viewModel.setNewProductName(it) },
         setNewPinNumber = { viewModel.setNewPinNumber(it) },
+        setNewExpiryDate = { viewModel.setNewExpiryDate(it) },
         couponUiModel = coupon,
         selectedImageUri = selectedImageUri,
         id = id,
@@ -131,6 +152,7 @@ private fun CouponEditScreenContent(
     setNewBrandName: (String) -> Unit,
     setNewProductName: (String) -> Unit,
     setNewPinNumber: (String) -> Unit,
+    setNewExpiryDate: (ExpiryDate) -> Unit,
     couponUiModel: CouponUiModel?,
     selectedImageUri: Uri?,
     id: String,
@@ -248,6 +270,12 @@ private fun CouponEditScreenContent(
                         setNewPinNumber,
                         stringResource(R.string.coupon_edit_screen_input_pin_number_placeholder),
                     )
+                    InputDate(
+                        currentExpiryDate = couponUiModel.expiryDate,
+                        onDateChanged = {
+                            setNewExpiryDate(it)
+                        },
+                    )
                 }
             }
         }
@@ -301,6 +329,130 @@ private fun InputText(
     }
 }
 
+@Composable
+private fun InputDate(
+    currentExpiryDate: ExpiryDate,
+    onDateChanged: (ExpiryDate) -> Unit,
+) {
+    var isInteracting by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val checkedImageVector = ImageVector.vectorResource(id = R.drawable.ic_checked)
+    val uncheckedImageVector = ImageVector.vectorResource(id = R.drawable.ic_unchecked)
+
+    Column(
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy((11 - ((36 - 16f.spToDp(context)) / 2)).dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.coupon_edit_screen_expiry_date_title),
+                style = PretendardMedium16,
+                color = textSecondary,
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // 만료일 없음 토글
+                Text(
+                    stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
+                    style = PretendardMedium16,
+                    color = textSecondary,
+                )
+                Surface(
+                    onClick = {
+                        onDateChanged(
+                            when (currentExpiryDate) {
+                                is ExpiryDate.Empty ->
+                                    ExpiryDate.Success(
+                                        currentExpiryDate.value ?: Clock.System
+                                            .now()
+                                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                                            .date,
+                                    )
+
+                                ExpiryDate.Processing -> ExpiryDate.Processing
+                                is ExpiryDate.Success ->
+                                    ExpiryDate.Empty(
+                                        currentExpiryDate.value,
+                                    )
+                            },
+                        )
+                    },
+                    color = Color.Transparent,
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (currentExpiryDate is ExpiryDate.Success) uncheckedImageVector else checkedImageVector,
+                            contentDescription = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
+                            tint = textPrimary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(bgInput, RoundedCornerShape(10.dp))
+                    .border(
+                        width = if (isInteracting) 2.dp else 1.dp,
+                        color = if (isInteracting) borderFocused else borderSubtle,
+                        shape = RoundedCornerShape(10.dp),
+                    )
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                when (event.type) {
+                                    PointerEventType.Press -> isInteracting = true
+                                    PointerEventType.Release, PointerEventType.Exit ->
+                                        isInteracting =
+                                            false
+                                }
+                            }
+                        }
+                    },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (currentExpiryDate is ExpiryDate.Success) {
+                WheelDatePicker(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    startDate = currentExpiryDate.value,
+                    size = DpSize((maxWidth.value * 0.85).dp, 120.dp), // 적절한 여백이 포함된 사이즈
+                    rowCount = 3,
+                    textStyle = PretendardMedium16,
+                    textColor = textPrimary,
+                    selectorProperties =
+                        WheelPickerDefaults.selectorProperties(
+                            enabled = true,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Transparent,
+                            border =
+                                BorderStroke(
+                                    if (isInteracting) 2.dp else 1.5.dp,
+                                    brandPrimary.copy(alpha = 0.7f),
+                                ),
+                        ),
+                    onSnappedDate = { snappedDate ->
+                        onDateChanged(ExpiryDate.Success(snappedDate))
+                    },
+                )
+            }
+        }
+    }
+}
+
 private val fakeCoupon =
     CouponUiModel(
         id = "0",
@@ -316,7 +468,7 @@ private val fakeCoupon =
 @Preview(showBackground = true, name = "미사용 쿠폰")
 @Composable
 private fun CouponEditScreenContentPreview() {
-    MaterialTheme {
+    ConKeepTheme {
         CouponEditScreenContent(
             isCouponModifiedChecker = { false },
             onBackClick = {},
@@ -327,6 +479,7 @@ private fun CouponEditScreenContentPreview() {
             setNewBrandName = {},
             setNewProductName = {},
             setNewPinNumber = {},
+            setNewExpiryDate = {},
             couponUiModel = fakeCoupon,
             selectedImageUri = null,
             id = "0",

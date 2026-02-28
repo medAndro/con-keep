@@ -494,7 +494,7 @@ private fun CouponDetailScreenContent(
                     }
 
                     when (couponUiModel.expiryDate) {
-                        ExpiryDate.Empty -> {
+                        is ExpiryDate.Empty -> {
                             ExpirationBadge(
                                 status = ExpirationBadgeStatus.Common,
                                 text = stringResource(R.string.coupon_detail_screen_empty_expiry_date),

@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import com.conkeep.util.TimeProvider
@@ -68,6 +69,10 @@ class CouponEditViewModel
 
         fun setNewPinNumber(string: String) {
             _coupon.value = coupon.value?.copy(number = string)
+        }
+
+        fun setNewExpiryDate(expiryDate: ExpiryDate) {
+            _coupon.value = coupon.value?.copy(expiryDate = expiryDate)
         }
 
         fun useCoupon() {

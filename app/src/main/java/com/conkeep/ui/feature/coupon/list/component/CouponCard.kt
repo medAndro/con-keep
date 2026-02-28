@@ -200,7 +200,7 @@ fun CouponCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         when (couponUiModel.expiryDate) {
-                            ExpiryDate.Empty -> {
+                            is ExpiryDate.Empty -> {
                             }
 
                             is ExpiryDate.Processing -> {
@@ -354,7 +354,7 @@ fun CouponCardMonetaryPreview() {
                     number = "1234567890",
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     brand = "스타벅스",
-                    expiryDate = ExpiryDate.Empty,
+                    expiryDate = ExpiryDate.Empty(),
                     dDay = 0,
                     isUsed = false,
                     isExpired = false,

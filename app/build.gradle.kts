@@ -164,6 +164,8 @@ dependencies {
     // Barcode
     implementation(libs.zxing.core)
 
+    implementation(libs.datetime.wheel.picker)
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

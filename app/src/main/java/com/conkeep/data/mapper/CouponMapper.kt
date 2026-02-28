@@ -26,14 +26,14 @@ fun CouponEntity.toDomain(): Coupon =
                             CouponStatus.PENDING.name -> ExpiryDate.Processing
                             CouponStatus.UPLOADING.name -> ExpiryDate.Processing
                             CouponStatus.ANALYZING.name -> ExpiryDate.Processing
-                            else -> ExpiryDate.Empty
+                            else -> ExpiryDate.Empty()
                         }
                     }
 
                     else -> ExpiryDate.Success(date)
                 }
             }.getOrElse {
-                ExpiryDate.Empty
+                ExpiryDate.Empty()
             },
         isMonetary = isMonetary,
         amount = amount,

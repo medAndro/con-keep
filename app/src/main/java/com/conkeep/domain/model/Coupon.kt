@@ -37,5 +37,7 @@ sealed class ExpiryDate {
         val value: LocalDate,
     ) : ExpiryDate()
 
-    data object Empty : ExpiryDate()
+    data class Empty(
+        val value: LocalDate? = null,
+    ) : ExpiryDate()
 }
