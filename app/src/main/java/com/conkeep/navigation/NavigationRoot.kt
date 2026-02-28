@@ -16,7 +16,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.conkeep.ui.feature.auth.LoginScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailScreen
 import com.conkeep.ui.feature.coupon.detail.CouponDetailViewModel
-import com.conkeep.ui.feature.coupon.detail.CouponEditScreen
+import com.conkeep.ui.feature.coupon.edit.CouponEditScreen
 import com.conkeep.ui.feature.coupon.edit.CouponEditViewModel
 import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
@@ -118,7 +118,6 @@ private fun CouponNavigation(
                             factory.create(key.id)
                         }
                     CouponEditScreen(
-                        id = key.id,
                         backStack = couponBackStack,
                         viewModel = viewModel,
                     )

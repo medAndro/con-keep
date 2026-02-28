@@ -75,6 +75,10 @@ class CouponEditViewModel
             _coupon.value = coupon.value?.copy(expiryDate = expiryDate)
         }
 
+        fun setNewAmount(amount: Int?) {
+            _coupon.value = coupon.value?.copy(amount = amount)
+        }
+
         fun useCoupon() {
             viewModelScope.launch {
                 couponRepository.markAsUsed(

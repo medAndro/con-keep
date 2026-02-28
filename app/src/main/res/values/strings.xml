@@ -105,6 +105,8 @@
 
     <string name="coupon_edit_screen_expiry_date_title">유효기간</string>
     <string name="coupon_edit_screen_expiry_date_is_null_title">만료일 없음</string>
+    <string name="coupon_edit_screen_amount_title">잔액</string>
+    <string name="coupon_edit_screen_is_monetary_label">금액권입니다</string>
 
 
     <!--    쿠폰 이미지 화면-->

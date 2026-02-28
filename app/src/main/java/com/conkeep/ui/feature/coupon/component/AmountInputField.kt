@@ -48,6 +48,9 @@ fun AmountInputField(
     onAmountChange: (String) -> Unit,
     onSave: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    showLeadingIcon: Boolean = true,
+    showTrailingIcon: Boolean = true,
+    autoSave: Boolean = true,
     placeholder: String = "현재 잔액을 입력하세요",
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -55,10 +58,12 @@ fun AmountInputField(
     val focusManager = LocalFocusManager.current
 
     // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
-    LaunchedEffect(amountText) {
-        if (!isFocused) return@LaunchedEffect
-        delay(1000L) // 1초 대기
-        onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+    if (autoSave) {
+        LaunchedEffect(amountText) {
+            if (!isFocused) return@LaunchedEffect
+            delay(1000L) // 1초 대기
+            onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+        }
     }
 
     OutlinedTextField(
@@ -86,7 +91,7 @@ fun AmountInputField(
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
                     // 포커스가 있다가 사라지는 순간 저장
-                    if (isFocused && !focusState.isFocused) {
+                    if (autoSave && isFocused && !focusState.isFocused) {
                         onSave(currentAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)
                     }
                     isFocused = focusState.isFocused
@@ -107,24 +112,30 @@ fun AmountInputField(
                 onDone = {
                     // '완료' 버튼을 눌렀을 때 포커스 해제 및 저장 트리거
                     focusManager.clearFocus()
-                    onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                    if (autoSave) {
+                        onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                    }
                 },
             ),
         // 아이콘 설정
         leadingIcon = {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_won), // 원화 아이콘 등
-                contentDescription = "금액 아이콘",
-                tint = textPrimary,
-            )
+            if (showLeadingIcon) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_won), // 원화 아이콘 등
+                    contentDescription = "금액 아이콘",
+                    tint = textPrimary,
+                )
+            }
         },
         trailingIcon = {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_write), // 수정 아이콘 등
-                contentDescription = "수정 중",
-                tint = textHint,
-                modifier = Modifier.size(20.dp),
-            )
+            if (showTrailingIcon) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_write), // 수정 아이콘 등
+                    contentDescription = "수정 중",
+                    tint = textHint,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         },
         textStyle = PretendardMedium20,
         shape = RoundedCornerShape(10.dp),

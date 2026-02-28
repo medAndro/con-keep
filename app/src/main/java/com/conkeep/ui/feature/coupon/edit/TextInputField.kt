@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -16,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,6 +27,7 @@ import com.conkeep.ui.theme.ConKeepColors.bgInput
 import com.conkeep.ui.theme.ConKeepColors.borderFocused
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
 import com.conkeep.ui.theme.ConKeepColors.textHint
+import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium16
 import com.conkeep.ui.theme.PretendardMedium20
@@ -35,6 +38,8 @@ fun TextInputField(
     onTextChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    leadingIconVector: ImageVector? = null,
+    leadingIconDescription: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -52,6 +57,18 @@ fun TextInputField(
                 style = PretendardMedium16,
             )
         },
+        leadingIcon =
+            if (leadingIconVector != null) {
+                {
+                    Icon(
+                        imageVector = leadingIconVector,
+                        contentDescription = leadingIconDescription,
+                        tint = textPrimary,
+                    )
+                }
+            } else {
+                null
+            },
         keyboardOptions =
             KeyboardOptions(
                 keyboardType = KeyboardType.Text,

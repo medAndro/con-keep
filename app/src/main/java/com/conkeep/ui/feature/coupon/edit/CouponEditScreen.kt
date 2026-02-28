@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.coupon.detail
+package com.conkeep.ui.feature.coupon.edit
 
 import android.net.Uri
 import android.widget.Toast
@@ -64,12 +64,10 @@ import coil3.request.crossfade
 import com.conkeep.R
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.domain.model.ExpiryDate
-import com.conkeep.navigation.Route
 import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
-import com.conkeep.ui.feature.coupon.edit.CouponEditViewModel
-import com.conkeep.ui.feature.coupon.edit.TextInputField
+import com.conkeep.ui.feature.coupon.component.AmountInputField
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.theme.ConKeepColors.bgInput
 import com.conkeep.ui.theme.ConKeepColors.bgSurface
@@ -92,7 +90,6 @@ import kotlin.time.Clock
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CouponEditScreen(
-    id: String,
     backStack: NavBackStack<NavKey>,
     viewModel: CouponEditViewModel,
 ) {
@@ -116,12 +113,6 @@ fun CouponEditScreen(
             }
         },
         onCouponSave = {},
-        onImageClick = {
-            coupon?.id?.takeIf { it.isNotEmpty() }?.let { couponId ->
-                backStack.add(Route.CouponImageScreen(id = couponId))
-            }
-        },
-        onUseCoupon = { viewModel.useCoupon() },
         onImagePickClick = {
             pickMedia.launch(
                 PickVisualMediaRequest(
@@ -133,9 +124,9 @@ fun CouponEditScreen(
         setNewProductName = { viewModel.setNewProductName(it) },
         setNewPinNumber = { viewModel.setNewPinNumber(it) },
         setNewExpiryDate = { viewModel.setNewExpiryDate(it) },
+        setNewAmount = { viewModel.setNewAmount(it) },
         couponUiModel = coupon,
         selectedImageUri = selectedImageUri,
-        id = id,
         modifier = Modifier,
     )
 }
@@ -146,22 +137,19 @@ private fun CouponEditScreenContent(
     isCouponModifiedChecker: () -> Boolean,
     onBackClick: () -> Unit,
     onCouponSave: () -> Unit,
-    onImageClick: () -> Unit,
-    onUseCoupon: () -> Unit,
     onImagePickClick: () -> Unit,
     setNewBrandName: (String) -> Unit,
     setNewProductName: (String) -> Unit,
     setNewPinNumber: (String) -> Unit,
     setNewExpiryDate: (ExpiryDate) -> Unit,
+    setNewAmount: (Int?) -> Unit,
     couponUiModel: CouponUiModel?,
     selectedImageUri: Uri?,
-    id: String,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     var showModifiedDialog by rememberSaveable { mutableStateOf(false) }
-    val removeIcon: ImageVector = ImageVector.vectorResource(id = R.drawable.ic_close)
     val context = LocalContext.current
 
     BackHandler(enabled = true) {
@@ -276,6 +264,11 @@ private fun CouponEditScreenContent(
                             setNewExpiryDate(it)
                         },
                     )
+                    InputAmount(
+                        couponUiModel.amount,
+                        setNewAmount,
+                        stringResource(R.string.coupon_edit_screen_input_pin_number_placeholder),
+                    )
                 }
             }
         }
@@ -330,76 +323,139 @@ private fun InputText(
 }
 
 @Composable
+private fun InputAmount(
+    amount: Int?,
+    updatedText: (Int?) -> Unit,
+    placeholderText: String,
+) {
+    val previousAmount = rememberSaveable { mutableStateOf(amount?.toString()) }
+    Column(
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(11.dp),
+    ) {
+        ToggleTitle(
+            onToggleClick = {
+                when (amount) {
+                    null ->
+                        updatedText(
+                            previousAmount.value
+                                ?.filter { it.isDigit() }
+                                ?.toIntOrNull(),
+                        )
+
+                    else -> {
+                        updatedText(null)
+                    }
+                }
+            },
+            isChecked = amount == null,
+            titleText = stringResource(R.string.coupon_edit_screen_amount_title),
+            toggleLabel = stringResource(R.string.coupon_edit_screen_is_monetary_label),
+        )
+
+        if (amount != null) {
+            AmountInputField(
+                amountText = previousAmount.value ?: "",
+                onAmountChange = { newAmount ->
+                    previousAmount.value = newAmount
+                    updatedText(newAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                },
+                onSave = {},
+                showLeadingIcon = true,
+                showTrailingIcon = false,
+                autoSave = false,
+                placeholder = placeholderText,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ToggleTitle(
+    titleText: String,
+    toggleLabel: String,
+    onToggleClick: () -> Unit,
+    isChecked: Boolean,
+) {
+    val checkedImageVector = ImageVector.vectorResource(id = R.drawable.ic_checked)
+    val uncheckedImageVector = ImageVector.vectorResource(id = R.drawable.ic_unchecked)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            titleText,
+            style = PretendardMedium16,
+            color = textSecondary,
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 만료일 없음 토글
+            Text(
+                toggleLabel,
+                style = PretendardMedium16,
+                color = textSecondary,
+            )
+            Surface(
+                onClick = onToggleClick,
+                color = Color.Transparent,
+                shape = CircleShape,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isChecked) uncheckedImageVector else checkedImageVector,
+                        contentDescription = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
+                        tint = textPrimary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun InputDate(
     currentExpiryDate: ExpiryDate,
     onDateChanged: (ExpiryDate) -> Unit,
 ) {
     var isInteracting by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val checkedImageVector = ImageVector.vectorResource(id = R.drawable.ic_checked)
-    val uncheckedImageVector = ImageVector.vectorResource(id = R.drawable.ic_unchecked)
 
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy((11 - ((36 - 16f.spToDp(context)) / 2)).dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.coupon_edit_screen_expiry_date_title),
-                style = PretendardMedium16,
-                color = textSecondary,
-            )
+        ToggleTitle(
+            onToggleClick = {
+                onDateChanged(
+                    when (currentExpiryDate) {
+                        is ExpiryDate.Empty ->
+                            ExpiryDate.Success(
+                                currentExpiryDate.value ?: Clock.System
+                                    .now()
+                                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                                    .date,
+                            )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 만료일 없음 토글
-                Text(
-                    stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
-                    style = PretendardMedium16,
-                    color = textSecondary,
-                )
-                Surface(
-                    onClick = {
-                        onDateChanged(
-                            when (currentExpiryDate) {
-                                is ExpiryDate.Empty ->
-                                    ExpiryDate.Success(
-                                        currentExpiryDate.value ?: Clock.System
-                                            .now()
-                                            .toLocalDateTime(TimeZone.currentSystemDefault())
-                                            .date,
-                                    )
-
-                                ExpiryDate.Processing -> ExpiryDate.Processing
-                                is ExpiryDate.Success ->
-                                    ExpiryDate.Empty(
-                                        currentExpiryDate.value,
-                                    )
-                            },
-                        )
+                        ExpiryDate.Processing -> ExpiryDate.Processing
+                        is ExpiryDate.Success ->
+                            ExpiryDate.Empty(
+                                currentExpiryDate.value,
+                            )
                     },
-                    color = Color.Transparent,
-                    shape = CircleShape,
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (currentExpiryDate is ExpiryDate.Success) uncheckedImageVector else checkedImageVector,
-                            contentDescription = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
-                            tint = textPrimary,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
-            }
-        }
-
+                )
+            },
+            titleText = stringResource(R.string.coupon_edit_screen_expiry_date_title),
+            isChecked = currentExpiryDate is ExpiryDate.Success,
+            toggleLabel = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
+        )
         BoxWithConstraints(
             modifier =
                 Modifier
@@ -409,8 +465,7 @@ private fun InputDate(
                         width = if (isInteracting) 2.dp else 1.dp,
                         color = if (isInteracting) borderFocused else borderSubtle,
                         shape = RoundedCornerShape(10.dp),
-                    )
-                    .pointerInput(Unit) {
+                    ).pointerInput(Unit) {
                         awaitPointerEventScope {
                             while (true) {
                                 val event = awaitPointerEvent()
@@ -473,16 +528,14 @@ private fun CouponEditScreenContentPreview() {
             isCouponModifiedChecker = { false },
             onBackClick = {},
             onCouponSave = {},
-            onImageClick = {},
-            onUseCoupon = {},
             onImagePickClick = {},
             setNewBrandName = {},
             setNewProductName = {},
             setNewPinNumber = {},
             setNewExpiryDate = {},
+            setNewAmount = {},
             couponUiModel = fakeCoupon,
             selectedImageUri = null,
-            id = "0",
         )
     }
 }
