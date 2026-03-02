@@ -59,6 +59,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -101,7 +102,7 @@ fun CouponEditScreen(
     viewModel: CouponEditViewModel,
 ) {
     val coupon by viewModel.couponUiModel.collectAsStateWithLifecycle()
-    val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
+    val selectedImageUriStatus by viewModel.selectedImageUriStatus.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val pickMedia: ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?> =
         rememberLauncherForActivityResult(
@@ -152,7 +153,12 @@ fun CouponEditScreen(
         setNewAmount = { viewModel.setNewAmount(it) },
         setNewMemo = { viewModel.setNewMemo(it) },
         couponUiModel = coupon,
-        selectedImageUri = selectedImageUri,
+        selectedImageUri =
+            when (selectedImageUriStatus) {
+                is SelectedImageUriStatus.Selected -> (selectedImageUriStatus as SelectedImageUriStatus.Selected).localAbsolutePath.toUri()
+                is SelectedImageUriStatus.Uploaded -> (selectedImageUriStatus as SelectedImageUriStatus.Uploaded).localAbsolutePath.toUri()
+                else -> null
+            },
         modifier = Modifier,
     )
 }
@@ -389,7 +395,7 @@ private fun InputAmount(
             exit = shrinkVertically() + fadeOut(),
         ) {
             AmountInputField(
-                amountText = previousAmount.value ?: "",
+                amountText = previousAmount.value,
                 onAmountChange = { newAmount ->
                     previousAmount.value = newAmount
                     updatedText(newAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)

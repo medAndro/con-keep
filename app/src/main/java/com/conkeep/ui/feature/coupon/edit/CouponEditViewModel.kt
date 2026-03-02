@@ -2,10 +2,18 @@ package com.conkeep.ui.feature.coupon.edit
 
 import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.data.worker.CouponImageUploadWorker
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.domain.usecase.coupon.PreLocalProcessCouponUseCase
@@ -31,6 +39,7 @@ class CouponEditViewModel
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
         private val preLocalProcessCouponUseCase: PreLocalProcessCouponUseCase,
+        private val workManager: WorkManager,
         @Assisted private val couponId: String,
     ) : ViewModel() {
         @AssistedFactory
@@ -47,8 +56,9 @@ class CouponEditViewModel
         private val _toastEvent = MutableSharedFlow<CouponEditEvent>()
         val toastEvent = _toastEvent.asSharedFlow()
 
-        private val _selectedImageUri = MutableStateFlow<Uri?>(null)
-        val selectedImageUri = _selectedImageUri.asStateFlow()
+        private val _selectedImageUriStatus =
+            MutableStateFlow<SelectedImageUriStatus>(SelectedImageUriStatus.Init)
+        val selectedImageUriStatus = _selectedImageUriStatus.asStateFlow()
 
         init {
             viewModelScope.launch {
@@ -64,19 +74,28 @@ class CouponEditViewModel
         fun isCouponModified(): Boolean =
             when {
                 originalCouponUiModel == null -> false
-                selectedImageUri.value != null -> true
-                else -> couponUiModel.value != originalCouponUiModel
+                couponUiModel.value != originalCouponUiModel -> true
+                else -> {
+                    when (selectedImageUriStatus.value) {
+                        is SelectedImageUriStatus.Selected -> true
+                        else -> false
+                    }
+                }
             }
 
         fun pickCouponImage(uri: Uri) {
             viewModelScope.launch {
-                val preProcessResult =
+                val preProcessResult: CouponPreProcessResult =
                     preLocalProcessCouponUseCase(uri).getOrElse { e: Throwable ->
                         Log.e("CouponEditViewModel", "쿠폰 이미지 선택 전처리 실패: ${e.message}")
                         return@launch
                     }
 
-                _selectedImageUri.value = preProcessResult.localCachePath?.toUri()
+                if (preProcessResult.localCacheAbsolutePath != null) {
+                    _selectedImageUriStatus.value =
+                        SelectedImageUriStatus.Selected(preProcessResult.localCacheAbsolutePath)
+                }
+
                 _couponUiModel.value =
                     couponUiModel.value?.copy(
                         number = preProcessResult.barcode,
@@ -122,30 +141,69 @@ class CouponEditViewModel
                     originalDomainCoupon?.let {
                         val updatedCoupon =
                             it.copy(
-                                brand = couponUiModel.value?.brand,
-                                productName = couponUiModel.value?.name,
-                                couponPin = couponUiModel.value?.number,
+                                brand = couponUiModel.value?.brand ?: "",
+                                productName = couponUiModel.value?.name ?: "",
+                                couponPin = couponUiModel.value?.number ?: "",
                                 expiryDate = couponUiModel.value?.expiryDate ?: ExpiryDate.Empty(),
-                                amount = couponUiModel.value?.amount,
-                                userMemo = couponUiModel.value?.memo,
+                                amount = couponUiModel.value?.amount ?: 0,
+                                userMemo = couponUiModel.value?.memo ?: "",
                                 isMonetary = couponUiModel.value?.isMonetary ?: false,
+                                status = CouponStatus.SUCCESS.name,
+                                imageUrl =
+                                    selectedImageUriStatus.value.let { selectedImageUriStatus: SelectedImageUriStatus ->
+                                        when (selectedImageUriStatus) {
+                                            is SelectedImageUriStatus.Selected -> selectedImageUriStatus.localAbsolutePath
+                                            is SelectedImageUriStatus.Uploaded -> selectedImageUriStatus.localAbsolutePath
+                                            else -> couponUiModel.value?.r2Url
+                                        }
+                                    },
                             )
                         Log.d("CouponEditViewModel", "saveCouponInfo: $updatedCoupon")
                         couponRepository
                             .update(
                                 coupon = updatedCoupon,
+                                isDirty = true,
                             ).onSuccess {
                                 Log.d("CouponEditViewModel", "saveCouponInfo: success")
                                 originalDomainCoupon = updatedCoupon
                                 originalCouponUiModel = couponUiModel.value?.copy()
+                                if (selectedImageUriStatus.value is SelectedImageUriStatus.Selected) {
+                                    val localAbsolutePath =
+                                        (selectedImageUriStatus.value as SelectedImageUriStatus.Selected).localAbsolutePath
+                                    _selectedImageUriStatus.value =
+                                        SelectedImageUriStatus.Uploaded(localAbsolutePath)
+                                    uploadImageWorker((localAbsolutePath))
+                                }
                                 _toastEvent.emit(CouponEditEvent.CouponEdited)
-                            }.onFailure {
-                                Log.d("CouponEditViewModel", "saveCouponInfo: fail")
+                            }.onFailure { e: Throwable ->
+                                Log.e("CouponEditViewModel", "saveCouponInfo: fail ${e.message}")
                             }
                     }
                 } catch (e: Exception) {
+                    Log.e("CouponEditViewModel", "saveCouponInfo: fail ${e.message}")
                 }
             }
+        }
+
+        fun uploadImageWorker(localAbsolutePath: String) {
+            val uploadRequest =
+                OneTimeWorkRequestBuilder<CouponImageUploadWorker>()
+                    .setConstraints(
+                        Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
+                    ).setInputData(
+                        workDataOf(
+                            "COUPON_ID" to couponId,
+                            "LOCAL_ABSOLUTE_PATH_STRING" to localAbsolutePath,
+                            "UPLOAD_IMAGE_ONLY" to true,
+                        ),
+                    ).build()
+
+            workManager
+                .beginUniqueWork(
+                    "upload_img_update_coupon_$couponId",
+                    ExistingWorkPolicy.REPLACE,
+                    uploadRequest,
+                ).enqueue()
         }
     }
 
@@ -153,4 +211,16 @@ sealed class CouponEditEvent {
     data object CouponEdited : CouponEditEvent()
 
     data object CouponDataIsSame : CouponEditEvent()
+}
+
+sealed class SelectedImageUriStatus {
+    data object Init : SelectedImageUriStatus()
+
+    data class Selected(
+        val localAbsolutePath: String,
+    ) : SelectedImageUriStatus()
+
+    data class Uploaded(
+        val localAbsolutePath: String,
+    ) : SelectedImageUriStatus()
 }

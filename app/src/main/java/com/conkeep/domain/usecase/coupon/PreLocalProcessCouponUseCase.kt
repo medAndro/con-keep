@@ -43,9 +43,8 @@ class PreLocalProcessCouponUseCase
                                 ?: throw Exception("로컬 이미지 캐시 저장 실패")
 
                         CouponPreProcessResult(
-                            localCachePath = finalPath,
+                            localCacheAbsolutePath = finalPath,
                             barcode = barcode,
-                            mimeType = "image/webp",
                         )
                     } finally {
                         // 어떤 상황에서도 임시 파일은 삭제

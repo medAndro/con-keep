@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -17,6 +16,7 @@ import androidx.work.workDataOf
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.data.worker.AIRequestWorker
 import com.conkeep.data.worker.CouponImageUploadWorker
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
@@ -48,7 +48,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -194,7 +193,7 @@ class CouponListViewModel
             viewModelScope.launch {
                 try {
                     // 1. 전처리 (로컬 파일 생성 및 바코드 추출)
-                    val preProcessResult =
+                    val preProcessResult: CouponPreProcessResult =
                         preLocalProcessCouponUseCase(uri).getOrElse { e: Throwable ->
                             Log.e("CouponViewModel", "쿠폰 등록 전처리 실패: ${e.message}")
                             return@launch
@@ -206,7 +205,7 @@ class CouponListViewModel
                     // 3. UI에 즉시 반영 (리스트에 추가)
                     _couponAddedEvent.emit(couponId)
 
-                    // 4. 업로드 및 AI 분석 워커 실행
+                    // 업로드 워커 요청서
                     val uploadRequest =
                         OneTimeWorkRequestBuilder<CouponImageUploadWorker>()
                             .setConstraints(
@@ -217,19 +216,30 @@ class CouponListViewModel
                             ).setInputData(
                                 workDataOf(
                                     "COUPON_ID" to couponId,
-                                    "LOCAL_PATH" to preProcessResult.localCachePath,
-                                    "MIME_TYPE" to (preProcessResult.mimeType ?: "image/webp"),
+                                    "LOCAL_ABSOLUTE_PATH_STRING" to preProcessResult.localCacheAbsolutePath,
+                                ),
+                            ).build()
+
+                    // AI 분석 워커 요청서 (이전 워커의 IMAGE_URL을 기다림)
+                    val aiRequest =
+                        OneTimeWorkRequestBuilder<AIRequestWorker>()
+                            .setInputData(
+                                workDataOf(
+                                    "COUPON_ID" to couponId,
                                     "BARCODE" to preProcessResult.barcode,
                                     "CREATED_AT" to createdInstant.toString(),
                                 ),
-                            ).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                            ) // IMAGE_URL은 이전 단계에서 넘어옴
                             .build()
 
-                    workManager.enqueueUniqueWork(
-                        "upload_coupon_$couponId",
-                        ExistingWorkPolicy.REPLACE, // 기존에 돌고 있던 워커를 강제로 종료하고 새 워커를 즉시 실행
-                        uploadRequest,
-                    )
+                    // 체이닝 실행: 업로드(then) -> AI분석
+                    workManager
+                        .beginUniqueWork(
+                            "upload_process_coupon_$couponId",
+                            ExistingWorkPolicy.REPLACE,
+                            uploadRequest,
+                        ).then(aiRequest)
+                        .enqueue()
                 } catch (e: Exception) {
                     Log.e("CouponViewModel", "쿠폰 등록 초기 실패: ${e.message}")
                 }

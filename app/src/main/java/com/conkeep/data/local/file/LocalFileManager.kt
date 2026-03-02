@@ -303,7 +303,7 @@ class LocalFileManager
          * 파일 헤더를 읽어 실제 MIME 타입을 반환합니다.
          * Coil 캐시 파일(.1, .0)처럼 확장자가 없는 파일에 유효합니다.
          */
-        private fun getMimeTypeFromFile(file: File): String {
+        fun getMimeTypeFromFile(file: File): String {
             val options =
                 BitmapFactory.Options().apply {
                     inJustDecodeBounds = true // 실제 비트맵을 로드하지 않고 정보만 읽음

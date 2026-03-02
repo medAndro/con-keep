@@ -24,7 +24,7 @@ fun CouponEntity.toDomain(): Coupon =
                     date == null -> {
                         when (status) {
                             CouponStatus.PENDING.name -> ExpiryDate.Processing
-                            CouponStatus.UPLOADING.name -> ExpiryDate.Processing
+                            CouponStatus.IMAGE_UPLOADING.name -> ExpiryDate.Processing
                             CouponStatus.ANALYZING.name -> ExpiryDate.Processing
                             else -> ExpiryDate.Empty()
                         }

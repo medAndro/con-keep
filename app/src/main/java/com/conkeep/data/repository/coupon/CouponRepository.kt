@@ -290,9 +290,12 @@ class CouponRepository
             couponDao.amountSave(id, amount.toLong())
         }
 
-        suspend fun update(coupon: Coupon): Result<Unit> =
+        suspend fun update(
+            coupon: Coupon,
+            isDirty: Boolean = true,
+        ): Result<Unit> =
             runCatching {
-                val affectedRows = couponDao.update(coupon.toEntity())
+                val affectedRows = couponDao.update(coupon.toEntity().copy(isDirty = isDirty))
                 if (affectedRows > 0) {
                     Result.success(Unit)
                 } else {

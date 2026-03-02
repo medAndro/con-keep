@@ -11,7 +11,10 @@ enum class CouponStatus {
     SERVER_IMAGE_MISSING,
 
     /** 업로드 중: Cloudflare R2로 이미지 전송 중 (WorkManager 실행 중) */
-    UPLOADING,
+    IMAGE_UPLOADING,
+
+    /** 이미지 업로드 완료: Cloudflare R2로 이미지 전송 완료 (WorkManager 끝) */
+    IMAGE_UPLOADED,
 
     /** 분석 대기/진행 중: 서버(CF Worker)에 요청이 전달되어 AI가 작업 중 */
     ANALYZING,
