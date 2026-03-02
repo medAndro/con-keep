@@ -16,12 +16,12 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.processor.CouponPreProcessResult
-import com.conkeep.data.processor.CouponProcessor
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.data.worker.CouponImageUploadWorker
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.CouponCategory
 import com.conkeep.domain.model.ExpiryDate
+import com.conkeep.domain.usecase.coupon.PreLocalProcessCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponCountHeaderState
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponFilterType
@@ -59,7 +59,7 @@ class CouponListViewModel
     @Inject
     constructor(
         private val couponRepository: CouponRepository,
-        private val couponProcessor: CouponProcessor,
+        private val preLocalProcessCouponUseCase: PreLocalProcessCouponUseCase,
         private val timeProvider: TimeProvider,
         private val workManager: WorkManager,
     ) : ViewModel() {
@@ -194,8 +194,11 @@ class CouponListViewModel
             viewModelScope.launch {
                 try {
                     // 1. 전처리 (로컬 파일 생성 및 바코드 추출)
-                    val preProcessResult = couponProcessor.preProcessImage(uri)
-                    val path = preProcessResult.localPath ?: throw IllegalStateException("로컬 경로 없음")
+                    val preProcessResult =
+                        preLocalProcessCouponUseCase(uri).getOrElse { e: Throwable ->
+                            Log.e("CouponViewModel", "쿠폰 등록 전처리 실패: ${e.message}")
+                            return@launch
+                        }
 
                     // 2. 로컬 DB에 '분석 중' 상태로 저장
                     val (couponId, createdInstant) = addPreCouponToDb(preProcessResult)
@@ -214,7 +217,7 @@ class CouponListViewModel
                             ).setInputData(
                                 workDataOf(
                                     "COUPON_ID" to couponId,
-                                    "LOCAL_PATH" to path,
+                                    "LOCAL_PATH" to preProcessResult.localCachePath,
                                     "MIME_TYPE" to (preProcessResult.mimeType ?: "image/webp"),
                                     "BARCODE" to preProcessResult.barcode,
                                     "CREATED_AT" to createdInstant.toString(),

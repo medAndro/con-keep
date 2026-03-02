@@ -2,11 +2,13 @@ package com.conkeep.ui.feature.coupon.edit
 
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.ExpiryDate
+import com.conkeep.domain.usecase.coupon.PreLocalProcessCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import com.conkeep.util.TimeProvider
@@ -28,6 +30,7 @@ class CouponEditViewModel
     constructor(
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
+        private val preLocalProcessCouponUseCase: PreLocalProcessCouponUseCase,
         @Assisted private val couponId: String,
     ) : ViewModel() {
         @AssistedFactory
@@ -66,7 +69,19 @@ class CouponEditViewModel
             }
 
         fun pickCouponImage(uri: Uri) {
-            _selectedImageUri.value = uri
+            viewModelScope.launch {
+                val preProcessResult =
+                    preLocalProcessCouponUseCase(uri).getOrElse { e: Throwable ->
+                        Log.e("CouponEditViewModel", "쿠폰 이미지 선택 전처리 실패: ${e.message}")
+                        return@launch
+                    }
+
+                _selectedImageUri.value = preProcessResult.localCachePath?.toUri()
+                _couponUiModel.value =
+                    couponUiModel.value?.copy(
+                        number = preProcessResult.barcode,
+                    )
+            }
         }
 
         fun setNewBrandName(string: String) {
