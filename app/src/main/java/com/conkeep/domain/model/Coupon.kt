@@ -28,6 +28,7 @@ data class Coupon(
     val isSynced: Boolean,
     // 쿠폰 저장 상태
     val status: String,
+    val isDirty: Boolean,
 )
 
 sealed class ExpiryDate {

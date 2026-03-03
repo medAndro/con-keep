@@ -4,18 +4,10 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequest
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.repository.coupon.CouponRepository
-import com.conkeep.data.worker.CouponImageUploadWorker
-import com.conkeep.data.worker.UpdateWorker
+import com.conkeep.data.worker.CouponWorkManager
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.domain.usecase.coupon.PreLocalProcessCouponUseCase
@@ -41,7 +33,7 @@ class CouponEditViewModel
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
         private val preLocalProcessCouponUseCase: PreLocalProcessCouponUseCase,
-        private val workManager: WorkManager,
+        private val couponWorkManager: CouponWorkManager,
         @Assisted private val couponId: String,
     ) : ViewModel() {
         @AssistedFactory
@@ -192,15 +184,19 @@ class CouponEditViewModel
                                         (selectedImageUriStatus.value as SelectedImageUriStatus.Selected).localAbsolutePath
                                     _selectedImageUriStatus.value =
                                         SelectedImageUriStatus.Uploaded(localAbsolutePath)
-                                    val uploadImageWorker = uploadImageWorkerRequest(localAbsolutePath)
-                                    val updateWorker = updateWorkerRequest(couponId)
-                                    enqueueWorkChain(
+                                    val uploadImageWorker =
+                                        couponWorkManager.uploadImageWorkerRequest(
+                                            couponId,
+                                            localAbsolutePath,
+                                        )
+                                    val updateWorker = couponWorkManager.updateWorkerRequest(couponId)
+                                    couponWorkManager.enqueueWorkChain(
                                         "upload_process_coupon_$couponId",
                                         listOf(uploadImageWorker, updateWorker),
                                     )
                                 } else {
-                                    val updateWorker = updateWorkerRequest(couponId)
-                                    enqueueWorkChain(
+                                    val updateWorker = couponWorkManager.updateWorkerRequest(couponId)
+                                    couponWorkManager.enqueueWorkChain(
                                         "upload_process_coupon_$couponId",
                                         listOf(updateWorker),
                                     )
@@ -214,57 +210,6 @@ class CouponEditViewModel
                     Log.e("CouponEditViewModel", "saveCouponInfo: fail ${e.message}")
                 }
             }
-        }
-
-        fun uploadImageWorkerRequest(localAbsolutePath: String): OneTimeWorkRequest {
-            val uploadRequest =
-                OneTimeWorkRequestBuilder<CouponImageUploadWorker>()
-                    .setConstraints(
-                        Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
-                    ).setInputData(
-                        workDataOf(
-                            "COUPON_ID" to couponId,
-                            "LOCAL_ABSOLUTE_PATH_STRING" to localAbsolutePath,
-                            "UPLOAD_IMAGE_ONLY" to true,
-                        ),
-                    ).build()
-            return uploadRequest
-        }
-
-        fun updateWorkerRequest(couponId: String): OneTimeWorkRequest {
-            val uploadRequest =
-                OneTimeWorkRequestBuilder<UpdateWorker>()
-                    .setConstraints(
-                        Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
-                    ).setInputData(
-                        workDataOf(
-                            "COUPON_ID" to couponId,
-                        ),
-                    ).build()
-            return uploadRequest
-        }
-
-        fun enqueueWorkChain(
-            workerName: String,
-            requests: List<OneTimeWorkRequest>,
-        ) {
-            if (requests.isEmpty()) return
-
-            // 1. 첫 번째 작업으로 시작 (WorkContinuation 객체 생성)
-            var continuation =
-                workManager.beginUniqueWork(
-                    workerName,
-                    ExistingWorkPolicy.REPLACE,
-                    requests[0],
-                )
-
-            // 2. 두 번째 요소부터 반복문을 돌며 순차적으로 연결
-            for (i in 1 until requests.size) {
-                continuation = continuation.then(requests[i])
-            }
-
-            // 3. 최종적으로 큐에 삽입
-            continuation.enqueue()
         }
     }
 

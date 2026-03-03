@@ -36,6 +36,7 @@ fun Coupon.toUiModel(today: LocalDate): CouponUiModel {
             },
         status = status,
         memo = userMemo ?: "",
+        isDirty = isDirty,
     )
 }
 

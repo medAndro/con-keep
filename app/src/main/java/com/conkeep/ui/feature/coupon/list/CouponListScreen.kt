@@ -448,6 +448,7 @@ private val dummyCoupons =
             isUsed = false,
             isExpired = false,
             status = CouponStatus.SUCCESS,
+            isDirty = false,
         ),
         CouponUiModel(
             id = "1",
@@ -458,6 +459,7 @@ private val dummyCoupons =
             isUsed = false,
             isExpired = true,
             status = CouponStatus.SUCCESS,
+            isDirty = false,
         ),
         CouponUiModel(
             id = "2",
@@ -468,6 +470,7 @@ private val dummyCoupons =
             isUsed = false,
             isExpired = false,
             status = CouponStatus.ANALYZING,
+            isDirty = false,
         ),
         CouponUiModel(
             id = "3",
@@ -480,6 +483,7 @@ private val dummyCoupons =
             isMonetary = true,
             amount = "10000",
             status = CouponStatus.AI_FAILED,
+            isDirty = false,
         ),
         CouponUiModel(
             id = "4",
@@ -490,6 +494,7 @@ private val dummyCoupons =
             isUsed = false,
             isExpired = false,
             status = CouponStatus.PENDING,
+            isDirty = false,
         ),
     )
 

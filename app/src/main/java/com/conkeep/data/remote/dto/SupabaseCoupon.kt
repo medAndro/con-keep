@@ -72,7 +72,7 @@ fun CouponEntity.toDto(): SupabaseCoupon =
         // 날짜 필드
         expiryDate = expiryDate?.format(DateTimeFormatter.ISO_LOCAL_DATE),
         // timestamptz 변환 (ISO 8601)
-        usedAt = usedAt?.toString(),
-        createdAt = createdAt.toString(),
-        updatedAt = updatedAt.toString(),
+        usedAt = usedAt?.let { usedAt -> Instant.ofEpochMilli(usedAt).toString() },
+        createdAt = Instant.ofEpochMilli(createdAt).toString(),
+        updatedAt = Instant.ofEpochMilli(updatedAt).toString(),
     )

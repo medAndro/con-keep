@@ -238,6 +238,7 @@ class CouponRepository
                         }.body()
 
                 if (response.success) {
+                    couponDao.setIsClean(couponId)
                     Result.success(response.message)
                 } else {
                     Result.failure(Exception("업데이트 요청 실패 (서버 로직 에러)"))
@@ -264,7 +265,6 @@ class CouponRepository
                             filter {
                                 gte("updated_at", lastSyncTime)
                                 eq("user_id", currentUserId)
-                                eq("is_deleted", false)
                             }
                         }
 
@@ -276,7 +276,6 @@ class CouponRepository
                         if (localCoupon?.isDirty == true) return@forEach
 
                         val entity = dto.toEntity()
-
                         couponDao.upsert(entity)
                         couponDao.setIsClean(dto.id)
                         userPrefs.updateLastSyncTime(dto.updatedAt)

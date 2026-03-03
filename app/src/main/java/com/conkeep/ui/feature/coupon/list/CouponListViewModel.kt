@@ -270,6 +270,7 @@ class CouponListViewModel
                     updatedAt = nowInstant,
                     isSynced = false,
                     status = CouponStatus.PENDING.name,
+                    isDirty = false,
                 )
 
             // Repository 호출 → ID 반환 받음

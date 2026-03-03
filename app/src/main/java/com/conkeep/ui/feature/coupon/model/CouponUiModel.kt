@@ -19,6 +19,7 @@ data class CouponUiModel(
     val amount: String = "",
     val status: CouponStatus,
     val memo: String = "",
+    val isDirty: Boolean,
 )
 
 val CouponUiModel.badgeStatus: ExpirationBadgeStatus

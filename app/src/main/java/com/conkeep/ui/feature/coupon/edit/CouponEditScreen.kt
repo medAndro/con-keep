@@ -585,6 +585,7 @@ private val fakeCoupon =
         isUsed = false,
         isExpired = false,
         status = CouponStatus.SUCCESS,
+        isDirty = false,
     )
 
 @Preview(showBackground = true, name = "미사용 쿠폰")

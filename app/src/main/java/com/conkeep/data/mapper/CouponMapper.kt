@@ -54,6 +54,7 @@ fun CouponEntity.toDomain(): Coupon =
                 .fromEpochMilliseconds(updatedAt),
         isSynced = isSynced,
         status = status,
+        isDirty = isDirty,
     )
 
 fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
@@ -78,6 +79,7 @@ fun Coupon.toEntity(): CouponEntity =
         updatedAt = updatedAt.toEpochMilliseconds(),
         isSynced = isSynced,
         status = status,
+        isDirty = isDirty,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }

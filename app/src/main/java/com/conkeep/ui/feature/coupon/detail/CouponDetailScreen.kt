@@ -166,6 +166,7 @@ fun CouponDetailScreen(
                 backStack.removeLastOrNull()
             }
         },
+        onUpdateCouponToWorker = viewModel::updateCouponToWorker,
         couponUiModel = coupon,
     )
 }
@@ -183,6 +184,7 @@ private fun CouponDetailScreenContent(
     onCouponMemoSave: (String) -> Unit,
     onCouponAmountSave: (String) -> Unit,
     onDeleteCoupon: () -> Unit,
+    onUpdateCouponToWorker: () -> Unit,
     couponUiModel: CouponUiModel?,
     modifier: Modifier = Modifier,
 ) {
@@ -240,6 +242,7 @@ private fun CouponDetailScreenContent(
                 latestAmountForExit,
             )
         }
+        onUpdateCouponToWorker()
     }
 
     DisposableEffect(Unit) {
@@ -701,6 +704,7 @@ private val fakeCoupon =
         dDay = -3,
         status = CouponStatus.SUCCESS,
         memo = "생일 선물로 받은 쿠폰",
+        isDirty = false,
     )
 
 @Preview(showBackground = true, name = "미사용 쿠폰")
@@ -718,6 +722,7 @@ private fun CouponDetailScreenContentPreview() {
             onCouponMemoSave = {},
             onCouponAmountSave = {},
             onDeleteCoupon = {},
+            onUpdateCouponToWorker = {},
             couponUiModel = fakeCoupon,
         )
     }
@@ -738,6 +743,7 @@ private fun CouponDetailScreenExpiredContentPreview() {
             onCouponMemoSave = {},
             onCouponAmountSave = {},
             onDeleteCoupon = {},
+            onUpdateCouponToWorker = {},
             couponUiModel =
                 fakeCoupon.copy(
                     isExpired = true,
@@ -764,6 +770,7 @@ private fun CouponDetailScreenNullContentPreview() {
             onCouponMemoSave = {},
             onCouponAmountSave = {},
             onDeleteCoupon = {},
+            onUpdateCouponToWorker = {},
             couponUiModel = null,
         )
     }
@@ -780,6 +787,7 @@ private val loadingCoupon =
         isExpired = false,
         dDay = -3,
         status = CouponStatus.SUCCESS,
+        isDirty = false,
     )
 
 @Preview(showBackground = true, name = "인식중 쿠폰")
@@ -797,6 +805,7 @@ private fun CouponDetailScreenLoadingContentPreview() {
             onCouponMemoSave = {},
             onCouponAmountSave = {},
             onDeleteCoupon = {},
+            onUpdateCouponToWorker = {},
             couponUiModel = loadingCoupon,
         )
     }

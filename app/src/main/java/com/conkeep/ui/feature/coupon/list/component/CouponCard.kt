@@ -364,6 +364,7 @@ fun CouponCardMonetaryPreview() {
                     isMonetary = true,
                     amount = "1234567",
                     status = CouponStatus.SUCCESS,
+                    isDirty = false,
                 ),
             onClick = {},
         )
@@ -390,6 +391,7 @@ fun CouponCardNormalPreview() {
                     isMonetary = false,
                     amount = "",
                     status = CouponStatus.SUCCESS,
+                    isDirty = false,
                 ),
             onClick = {},
         )
@@ -416,6 +418,7 @@ fun CouponCardUsedPreview() {
                     isMonetary = false,
                     amount = "",
                     status = CouponStatus.SUCCESS,
+                    isDirty = false,
                 ),
             onClick = {},
         )
