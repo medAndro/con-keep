@@ -29,7 +29,11 @@ fun Coupon.toUiModel(today: LocalDate): CouponUiModel {
         isExpired = expiryLocalDate?.let { it < today } ?: true,
         r2Url = imageUrl,
         isMonetary = isMonetary,
-        amount = amount,
+        amount =
+            when {
+                amount == null -> "0"
+                else -> amount.toString()
+            },
         status = status,
         memo = userMemo ?: "",
     )

@@ -96,14 +96,16 @@ class CouponDetailViewModel
             }
         }
 
-        fun saveCouponAmount(newAmount: Int) {
-            if (newAmount == couponUiModel.value?.amount) return
+        fun saveCouponAmount(newAmount: String) {
+            val newIntAmount = newAmount.toIntOrNull() ?: 0
+            val oldIntAmount = couponUiModel.value?.amount?.toIntOrNull() ?: 0
+            if (newIntAmount == oldIntAmount) return
 
             viewModelScope.launch {
                 try {
                     couponRepository.amountSave(
                         id = couponId,
-                        amount = newAmount,
+                        amount = newIntAmount,
                     )
                 } catch (e: Exception) {
                     _errorEvent.emit(CouponDetailError.AmountSaveFailed)

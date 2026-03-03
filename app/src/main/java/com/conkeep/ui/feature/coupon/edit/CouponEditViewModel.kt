@@ -121,9 +121,20 @@ class CouponEditViewModel
             _couponUiModel.value = couponUiModel.value?.copy(expiryDate = expiryDate)
         }
 
-        fun setNewAmount(amount: Int?) {
+        fun setNewAmount(amount: String) {
             _couponUiModel.value =
-                couponUiModel.value?.copy(amount = amount, isMonetary = amount != null)
+                couponUiModel.value?.copy(amount = amount)
+        }
+
+        fun toggleMonetary() {
+            _couponUiModel.value =
+                couponUiModel.value?.copy(
+                    isMonetary =
+                        when {
+                            couponUiModel.value?.isMonetary == true -> false
+                            else -> true
+                        },
+                )
         }
 
         fun setNewMemo(string: String) {
@@ -147,7 +158,14 @@ class CouponEditViewModel
                                 productName = couponUiModel.value?.name ?: "",
                                 couponPin = couponUiModel.value?.number ?: "",
                                 expiryDate = couponUiModel.value?.expiryDate ?: ExpiryDate.Empty(),
-                                amount = couponUiModel.value?.amount ?: 0,
+                                amount =
+                                    when {
+                                        couponUiModel.value?.isMonetary == true ->
+                                            couponUiModel.value?.amount?.toIntOrNull()
+                                                ?: 0
+
+                                        else -> null
+                                    },
                                 userMemo = couponUiModel.value?.memo ?: "",
                                 isMonetary = couponUiModel.value?.isMonetary ?: false,
                                 status = CouponStatus.SUCCESS.name,

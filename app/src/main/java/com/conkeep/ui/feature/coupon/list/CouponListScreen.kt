@@ -478,7 +478,7 @@ private val dummyCoupons =
             isUsed = true,
             isExpired = false,
             isMonetary = true,
-            amount = 10000,
+            amount = "10000",
             status = CouponStatus.AI_FAILED,
         ),
         CouponUiModel(

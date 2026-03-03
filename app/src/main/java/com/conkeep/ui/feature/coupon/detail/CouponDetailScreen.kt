@@ -181,7 +181,7 @@ private fun CouponDetailScreenContent(
     onCouponImageSave: () -> Unit,
     onCouponNumberCopy: (String) -> Unit,
     onCouponMemoSave: (String) -> Unit,
-    onCouponAmountSave: (Int) -> Unit,
+    onCouponAmountSave: (String) -> Unit,
     onDeleteCoupon: () -> Unit,
     couponUiModel: CouponUiModel?,
     modifier: Modifier = Modifier,
@@ -192,17 +192,34 @@ private fun CouponDetailScreenContent(
     val focusManager = LocalFocusManager.current
 
     // 입력한 잔액 관리
-    val initialAmountText =
-        if (couponUiModel?.amount == 0) "" else couponUiModel?.amount.toString()
-    var typedAmountText by rememberSaveable(couponUiModel) {
-        mutableStateOf(
-            initialAmountText,
-        )
+    var typedAmountText by rememberSaveable(couponUiModel?.id) {
+        mutableStateOf(couponUiModel?.amount ?: "")
+    }
+    LaunchedEffect(couponUiModel?.amount) {
+        val serverAmount = couponUiModel?.amount ?: ""
+
+        // 숫자 값으로 비교합니다.
+        // (사용자가 입력 중인 "000"과 서버의 "0"은 숫자로는 0으로 같으므로 업데이트를 건너뜁니다)
+        val serverValue = serverAmount.toLongOrNull() ?: 0L
+        val localValue = typedAmountText.toLongOrNull() ?: 0L
+
+        if (serverValue != localValue) {
+            // 숫자 자체가 바뀌었을 때만(예: 0 -> 5000) UI를 갱신합니다.
+            typedAmountText = serverAmount
+        }
     }
     // 입력한 메모 관리
-    val initialMemo = couponUiModel?.memo ?: ""
-    var typedMemo by rememberSaveable(couponUiModel) { mutableStateOf(initialMemo) }
+    var typedMemo by rememberSaveable(couponUiModel?.id) {
+        mutableStateOf(couponUiModel?.memo ?: "")
+    }
 
+    // 외부 변경 시에만 반영
+    LaunchedEffect(couponUiModel?.memo) {
+        val serverMemo = couponUiModel?.memo ?: ""
+        if (serverMemo != typedMemo) {
+            typedMemo = serverMemo
+        }
+    }
     // Safety Net: 화면을 나갈 때 최종 상태를 저장
     val latestCouponAmount by rememberUpdatedState(couponUiModel?.amount.toString())
     val latestAmountForExit by rememberUpdatedState(typedAmountText)
@@ -220,9 +237,7 @@ private fun CouponDetailScreenContent(
         ) {
             Log.d("detail", "종료전 변경감지 저장실행됨 $latestAmountForExit")
             onCouponAmountSave(
-                latestAmountForExit
-                    .filter { it.isDigit() }
-                    .toIntOrNull() ?: 0,
+                latestAmountForExit,
             )
         }
     }
@@ -616,7 +631,7 @@ private fun CouponDetailScreenContent(
                 }
             }
 
-            if (couponUiModel?.isMonetary ?: false && couponUiModel.amount != null) {
+            if (couponUiModel?.isMonetary ?: false) {
                 Column(
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.spacedBy(11.dp),
@@ -630,7 +645,7 @@ private fun CouponDetailScreenContent(
                     AmountInputField(
                         amountText = typedAmountText,
                         onAmountChange = { typedAmountText = it },
-                        onSave = { amount ->
+                        onSave = { amount: String ->
                             onCouponAmountSave(amount)
                             Log.d("detail", "저장실행됨 $amount")
                         },
@@ -728,7 +743,7 @@ private fun CouponDetailScreenExpiredContentPreview() {
                     isExpired = true,
                     isUsed = true,
                     isMonetary = true,
-                    amount = 3000,
+                    amount = "3000",
                 ),
         )
     }

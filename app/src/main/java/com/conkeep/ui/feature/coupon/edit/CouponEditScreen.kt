@@ -151,6 +151,7 @@ fun CouponEditScreen(
         setNewPinNumber = { viewModel.setNewPinNumber(it) },
         setNewExpiryDate = { viewModel.setNewExpiryDate(it) },
         setNewAmount = { viewModel.setNewAmount(it) },
+        toggleMonetary = { viewModel.toggleMonetary() },
         setNewMemo = { viewModel.setNewMemo(it) },
         couponUiModel = coupon,
         selectedImageUri =
@@ -174,7 +175,8 @@ private fun CouponEditScreenContent(
     setNewProductName: (String) -> Unit,
     setNewPinNumber: (String) -> Unit,
     setNewExpiryDate: (ExpiryDate) -> Unit,
-    setNewAmount: (Int?) -> Unit,
+    setNewAmount: (String) -> Unit,
+    toggleMonetary: () -> Unit,
     setNewMemo: (String) -> Unit,
     couponUiModel: CouponUiModel?,
     selectedImageUri: Uri?,
@@ -301,6 +303,8 @@ private fun CouponEditScreenContent(
                     )
                     InputAmount(
                         couponUiModel.amount,
+                        couponUiModel.isMonetary,
+                        toggleMonetary,
                         setNewAmount,
                     )
                 }
@@ -362,43 +366,32 @@ private fun InputText(
 
 @Composable
 private fun InputAmount(
-    amount: Int?,
-    updatedText: (Int?) -> Unit,
-    placeholderText: String? = null,
+    amount: String,
+    isMonetary: Boolean,
+    toggleMonetary: () -> Unit,
+    updatedText: (String) -> Unit,
 ) {
-    val previousAmount = rememberSaveable { mutableStateOf(amount?.toString() ?: "") }
     Column(
         horizontalAlignment = Alignment.Start,
     ) {
-        ToggleTitle(
+        ToggleCheckbox(
             onToggleClick = {
-                when (amount) {
-                    null ->
-                        updatedText(
-                            previousAmount.value
-                                .filter { it.isDigit() }
-                                .toIntOrNull() ?: 0,
-                        )
-
-                    else -> {
-                        updatedText(null)
-                    }
-                }
+                updatedText(amount)
+                toggleMonetary()
             },
-            isChecked = amount != null,
+            isChecked = !isMonetary,
             titleText = stringResource(R.string.coupon_edit_screen_amount_title),
             toggleLabel = stringResource(R.string.coupon_edit_screen_is_not_monetary_label),
         )
         AnimatedVisibility(
-            visible = amount != null,
+            visible = isMonetary,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
             AmountInputField(
-                amountText = previousAmount.value,
+                amountText = amount,
                 onAmountChange = { newAmount ->
-                    previousAmount.value = newAmount
-                    updatedText(newAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                    updatedText(newAmount)
                 },
                 onSave = {},
                 showLeadingIcon = true,
@@ -435,7 +428,7 @@ private fun InputMemo(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ToggleTitle(
+private fun ToggleCheckbox(
     titleText: String,
     toggleLabel: String,
     onToggleClick: () -> Unit,
@@ -471,7 +464,7 @@ private fun ToggleTitle(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = if (isChecked) uncheckedImageVector else checkedImageVector,
+                        imageVector = if (isChecked) checkedImageVector else uncheckedImageVector,
                         contentDescription = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
                         tint = textPrimary,
                         modifier = Modifier.size(24.dp),
@@ -495,7 +488,7 @@ private fun InputDate(
         verticalArrangement = Arrangement.spacedBy((11 - ((36 - 16f.spToDp(context)) / 2)).dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        ToggleTitle(
+        ToggleCheckbox(
             onToggleClick = {
                 onDateChanged(
                     when (currentExpiryDate) {
@@ -516,7 +509,7 @@ private fun InputDate(
                 )
             },
             titleText = stringResource(R.string.coupon_edit_screen_expiry_date_title),
-            isChecked = currentExpiryDate is ExpiryDate.Success,
+            isChecked = currentExpiryDate !is ExpiryDate.Success,
             toggleLabel = stringResource(R.string.coupon_edit_screen_expiry_date_is_null_title),
         )
         AnimatedVisibility(
@@ -608,6 +601,7 @@ private fun CouponEditScreenContentPreview() {
             setNewPinNumber = {},
             setNewExpiryDate = {},
             setNewAmount = {},
+            toggleMonetary = {},
             setNewMemo = {},
             couponUiModel = fakeCoupon,
             selectedImageUri = null,

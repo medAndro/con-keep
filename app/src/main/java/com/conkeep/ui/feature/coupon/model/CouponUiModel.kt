@@ -16,7 +16,7 @@ data class CouponUiModel(
     val localImagePath: String? = null,
     val r2Url: String? = null,
     val isMonetary: Boolean = false,
-    val amount: Int? = null,
+    val amount: String = "",
     val status: CouponStatus,
     val memo: String = "",
 )

@@ -47,7 +47,7 @@ import kotlinx.coroutines.delay
 fun AmountInputField(
     amountText: String,
     onAmountChange: (String) -> Unit,
-    onSave: (Int) -> Unit,
+    onSave: (String) -> Unit,
     modifier: Modifier = Modifier,
     showLeadingIcon: Boolean = true,
     showTrailingIcon: Boolean = true,
@@ -63,7 +63,7 @@ fun AmountInputField(
         LaunchedEffect(amountText) {
             if (!isFocused) return@LaunchedEffect
             delay(1000L) // 1초 대기
-            onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+            onSave(amountText)
         }
     }
 
@@ -93,7 +93,7 @@ fun AmountInputField(
                 .onFocusChanged { focusState ->
                     // 포커스가 있다가 사라지는 순간 저장
                     if (autoSave && isFocused && !focusState.isFocused) {
-                        onSave(currentAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                        onSave(currentAmount)
                     }
                     isFocused = focusState.isFocused
                 },
@@ -114,7 +114,7 @@ fun AmountInputField(
                     // '완료' 버튼을 눌렀을 때 포커스 해제 및 저장 트리거
                     focusManager.clearFocus()
                     if (autoSave) {
-                        onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                        onSave(amountText)
                     }
                 },
             ),
