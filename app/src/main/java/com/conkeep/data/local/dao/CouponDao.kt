@@ -168,6 +168,9 @@ interface CouponDao {
     @Upsert
     suspend fun upsert(coupon: CouponEntity): Long
 
+    @Query("UPDATE coupons SET is_dirty = 0 WHERE id = :id")
+    suspend fun setIsClean(id: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(coupons: List<CouponEntity>)
 

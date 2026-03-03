@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -14,6 +15,7 @@ import com.conkeep.data.local.entity.CouponStatus
 import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.data.worker.CouponImageUploadWorker
+import com.conkeep.data.worker.UpdateWorker
 import com.conkeep.domain.model.Coupon
 import com.conkeep.domain.model.ExpiryDate
 import com.conkeep.domain.usecase.coupon.PreLocalProcessCouponUseCase
@@ -172,7 +174,18 @@ class CouponEditViewModel
                                         (selectedImageUriStatus.value as SelectedImageUriStatus.Selected).localAbsolutePath
                                     _selectedImageUriStatus.value =
                                         SelectedImageUriStatus.Uploaded(localAbsolutePath)
-                                    uploadImageWorker((localAbsolutePath))
+                                    val uploadImageWorker = uploadImageWorkerRequest(localAbsolutePath)
+                                    val updateWorker = updateWorkerRequest(couponId)
+                                    enqueueWorkChain(
+                                        "upload_process_coupon_$couponId",
+                                        listOf(uploadImageWorker, updateWorker),
+                                    )
+                                } else {
+                                    val updateWorker = updateWorkerRequest(couponId)
+                                    enqueueWorkChain(
+                                        "upload_process_coupon_$couponId",
+                                        listOf(updateWorker),
+                                    )
                                 }
                                 _toastEvent.emit(CouponEditEvent.CouponEdited)
                             }.onFailure { e: Throwable ->
@@ -185,7 +198,7 @@ class CouponEditViewModel
             }
         }
 
-        fun uploadImageWorker(localAbsolutePath: String) {
+        fun uploadImageWorkerRequest(localAbsolutePath: String): OneTimeWorkRequest {
             val uploadRequest =
                 OneTimeWorkRequestBuilder<CouponImageUploadWorker>()
                     .setConstraints(
@@ -197,13 +210,43 @@ class CouponEditViewModel
                             "UPLOAD_IMAGE_ONLY" to true,
                         ),
                     ).build()
+            return uploadRequest
+        }
 
-            workManager
-                .beginUniqueWork(
-                    "upload_img_update_coupon_$couponId",
+        fun updateWorkerRequest(couponId: String): OneTimeWorkRequest {
+            val uploadRequest =
+                OneTimeWorkRequestBuilder<UpdateWorker>()
+                    .setConstraints(
+                        Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
+                    ).setInputData(
+                        workDataOf(
+                            "COUPON_ID" to couponId,
+                        ),
+                    ).build()
+            return uploadRequest
+        }
+
+        fun enqueueWorkChain(
+            workerName: String,
+            requests: List<OneTimeWorkRequest>,
+        ) {
+            if (requests.isEmpty()) return
+
+            // 1. 첫 번째 작업으로 시작 (WorkContinuation 객체 생성)
+            var continuation =
+                workManager.beginUniqueWork(
+                    workerName,
                     ExistingWorkPolicy.REPLACE,
-                    uploadRequest,
-                ).enqueue()
+                    requests[0],
+                )
+
+            // 2. 두 번째 요소부터 반복문을 돌며 순차적으로 연결
+            for (i in 1 until requests.size) {
+                continuation = continuation.then(requests[i])
+            }
+
+            // 3. 최종적으로 큐에 삽입
+            continuation.enqueue()
         }
     }
 

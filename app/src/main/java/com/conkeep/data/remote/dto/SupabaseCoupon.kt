@@ -21,6 +21,7 @@ data class SupabaseCoupon(
     val category: String? = null,
     @SerialName("user_memo") val userMemo: String? = null,
     @SerialName("is_used") val isUsed: Boolean = false,
+    @SerialName("is_deleted") val isDeleted: Boolean = false,
     @SerialName("used_at") val usedAt: String? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
@@ -41,6 +42,7 @@ fun SupabaseCoupon.toEntity(): CouponEntity =
         category = category,
         userMemo = userMemo,
         isUsed = isUsed,
+        isDeleted = isDeleted,
         usedAt =
             usedAt?.let { timestamptzStr ->
                 Instant.parse(timestamptzStr).toEpochMilli()
@@ -66,6 +68,8 @@ fun CouponEntity.toDto(): SupabaseCoupon =
         amount = amount,
         category = category,
         isUsed = isUsed,
+        isDeleted = isDeleted,
+        // 날짜 필드
         expiryDate = expiryDate?.format(DateTimeFormatter.ISO_LOCAL_DATE),
         // timestamptz 변환 (ISO 8601)
         usedAt = usedAt?.toString(),
