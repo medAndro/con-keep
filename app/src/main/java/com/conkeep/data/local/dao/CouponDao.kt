@@ -21,6 +21,9 @@ interface CouponDao {
     @Query("SELECT * FROM coupons WHERE id = :id")
     fun getCouponFlow(id: String): Flow<CouponEntity?>
 
+    @Query("SELECT * FROM coupons WHERE id = :id")
+    suspend fun getCouponOnce(id: String): CouponEntity?
+
     /**
      * [통합 검색/필터/정렬 쿼리]
      * @param userId: 사용자 ID
@@ -165,11 +168,14 @@ interface CouponDao {
     @Upsert
     suspend fun upsert(coupon: CouponEntity): Long
 
+    @Query("UPDATE coupons SET is_dirty = 0 WHERE id = :id")
+    suspend fun setIsClean(id: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(coupons: List<CouponEntity>)
 
     @Update
-    suspend fun update(coupon: CouponEntity)
+    suspend fun update(coupon: CouponEntity): Int
 
     @Query("UPDATE coupons SET image_url = :imageUrl WHERE id = :id")
     suspend fun updateR2Info(

@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,19 +47,24 @@ import kotlinx.coroutines.delay
 fun AmountInputField(
     amountText: String,
     onAmountChange: (String) -> Unit,
-    onSave: (Int) -> Unit,
+    onSave: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "현재 잔액을 입력하세요",
+    showLeadingIcon: Boolean = true,
+    showTrailingIcon: Boolean = true,
+    autoSave: Boolean = true,
+    placeholder: String? = null,
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val currentAmount by rememberUpdatedState(amountText)
     val focusManager = LocalFocusManager.current
 
     // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
-    LaunchedEffect(amountText) {
-        if (!isFocused) return@LaunchedEffect
-        delay(1000L) // 1초 대기
-        onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+    if (autoSave) {
+        LaunchedEffect(amountText) {
+            if (!isFocused) return@LaunchedEffect
+            delay(1000L) // 1초 대기
+            onSave(amountText)
+        }
     }
 
     OutlinedTextField(
@@ -86,14 +92,14 @@ fun AmountInputField(
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
                     // 포커스가 있다가 사라지는 순간 저장
-                    if (isFocused && !focusState.isFocused) {
-                        onSave(currentAmount.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                    if (autoSave && isFocused && !focusState.isFocused) {
+                        onSave(currentAmount)
                     }
                     isFocused = focusState.isFocused
                 },
         placeholder = {
             Text(
-                text = placeholder,
+                text = placeholder ?: stringResource(R.string.amount_input_placeholder),
                 style = PretendardMedium16,
             )
         },
@@ -107,24 +113,30 @@ fun AmountInputField(
                 onDone = {
                     // '완료' 버튼을 눌렀을 때 포커스 해제 및 저장 트리거
                     focusManager.clearFocus()
-                    onSave(amountText.filter { it.isDigit() }.toIntOrNull() ?: 0)
+                    if (autoSave) {
+                        onSave(amountText)
+                    }
                 },
             ),
         // 아이콘 설정
         leadingIcon = {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_won), // 원화 아이콘 등
-                contentDescription = "금액 아이콘",
-                tint = textPrimary,
-            )
+            if (showLeadingIcon) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_won), // 원화 아이콘 등
+                    contentDescription = "금액 아이콘",
+                    tint = textPrimary,
+                )
+            }
         },
         trailingIcon = {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_write), // 수정 아이콘 등
-                contentDescription = "수정 중",
-                tint = textHint,
-                modifier = Modifier.size(20.dp),
-            )
+            if (showTrailingIcon) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_write), // 수정 아이콘 등
+                    contentDescription = "수정 중",
+                    tint = textHint,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         },
         textStyle = PretendardMedium20,
         shape = RoundedCornerShape(10.dp),

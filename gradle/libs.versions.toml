@@ -2,6 +2,7 @@
 agp = "8.13.2"
 barcodeScanning = "17.3.0"
 composeShimmer = "1.3.3"
+datetimeWheelPicker = "1.1.0"
 zxing-core = "3.5.4"
 coreSplashscreen = "1.2.0"
 datastorePreferences = "1.2.0"
@@ -70,9 +71,6 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 
-# Navigation
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
-
 # Hilt
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
@@ -117,11 +115,10 @@ androidx-paging-compose = { module = "androidx.paging:paging-compose", version.r
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging3" }
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
 
-# Shimmer
+# ETC
 compose-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version.ref = "composeShimmer" }
-
-# Barcode
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
+datetime-wheel-picker = { module = "io.github.darkokoa:datetime-wheel-picker", version.ref = "datetimeWheelPicker" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

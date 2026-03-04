@@ -1,8 +1,16 @@
 package com.conkeep.ui.feature.coupon.edit
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.data.processor.CouponPreProcessResult
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.data.worker.CouponWorkManager
+import com.conkeep.domain.model.Coupon
+import com.conkeep.domain.model.ExpiryDate
+import com.conkeep.domain.usecase.coupon.PreLocalProcessCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import com.conkeep.util.TimeProvider
@@ -11,10 +19,10 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -24,6 +32,8 @@ class CouponEditViewModel
     constructor(
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
+        private val preLocalProcessCouponUseCase: PreLocalProcessCouponUseCase,
+        private val couponWorkManager: CouponWorkManager,
         @Assisted private val couponId: String,
     ) : ViewModel() {
         @AssistedFactory
@@ -31,23 +41,192 @@ class CouponEditViewModel
             fun create(couponId: String): CouponEditViewModel
         }
 
-        val coupon: StateFlow<CouponUiModel?> =
-            couponRepository
-                .getCoupon(couponId)
-                .map { domainCoupon ->
-                    domainCoupon?.toUiModel(timeProvider.getToday())
-                }.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5000),
-                    initialValue = null,
-                )
+        private var originalCouponUiModel: CouponUiModel? = null
+        private var originalDomainCoupon: Coupon? = null
 
-        fun useCoupon() {
+        private val _couponUiModel = MutableStateFlow<CouponUiModel?>(null)
+        val couponUiModel = _couponUiModel.asStateFlow()
+
+        private val _toastEvent = MutableSharedFlow<CouponEditEvent>()
+        val toastEvent = _toastEvent.asSharedFlow()
+
+        private val _selectedImageUriStatus =
+            MutableStateFlow<SelectedImageUriStatus>(SelectedImageUriStatus.Init)
+        val selectedImageUriStatus = _selectedImageUriStatus.asStateFlow()
+
+        init {
             viewModelScope.launch {
-                couponRepository.markAsUsed(
-                    id = couponId,
-                    timestamp = System.currentTimeMillis(),
+                val domainCoupon = couponRepository.getCouponOnce(couponId)
+                originalDomainCoupon = domainCoupon
+                val uiModel = domainCoupon?.toUiModel(timeProvider.getToday())
+
+                originalCouponUiModel = uiModel
+                _couponUiModel.value = uiModel
+            }
+        }
+
+        fun isCouponModified(): Boolean =
+            when {
+                originalCouponUiModel == null -> false
+                couponUiModel.value != originalCouponUiModel -> true
+                else -> {
+                    when (selectedImageUriStatus.value) {
+                        is SelectedImageUriStatus.Selected -> true
+                        else -> false
+                    }
+                }
+            }
+
+        fun pickCouponImage(uri: Uri) {
+            viewModelScope.launch {
+                val preProcessResult: CouponPreProcessResult =
+                    preLocalProcessCouponUseCase(uri).getOrElse { e: Throwable ->
+                        Log.e("CouponEditViewModel", "쿠폰 이미지 선택 전처리 실패: ${e.message}")
+                        return@launch
+                    }
+
+                if (preProcessResult.localCacheAbsolutePath != null) {
+                    _selectedImageUriStatus.value =
+                        SelectedImageUriStatus.Selected(preProcessResult.localCacheAbsolutePath)
+                }
+
+                _couponUiModel.value =
+                    couponUiModel.value?.copy(
+                        number = preProcessResult.barcode,
+                    )
+            }
+        }
+
+        fun setNewBrandName(string: String) {
+            _couponUiModel.value = couponUiModel.value?.copy(brand = string)
+        }
+
+        fun setNewProductName(string: String) {
+            _couponUiModel.value = couponUiModel.value?.copy(name = string)
+        }
+
+        fun setNewPinNumber(string: String) {
+            _couponUiModel.value = couponUiModel.value?.copy(number = string)
+        }
+
+        fun setNewExpiryDate(expiryDate: ExpiryDate) {
+            _couponUiModel.value = couponUiModel.value?.copy(expiryDate = expiryDate)
+        }
+
+        fun setNewAmount(amount: String) {
+            _couponUiModel.value =
+                couponUiModel.value?.copy(amount = amount)
+        }
+
+        fun toggleMonetary() {
+            _couponUiModel.value =
+                couponUiModel.value?.copy(
+                    isMonetary =
+                        when {
+                            couponUiModel.value?.isMonetary == true -> false
+                            else -> true
+                        },
                 )
+        }
+
+        fun setNewMemo(string: String) {
+            _couponUiModel.value = couponUiModel.value?.copy(memo = string)
+        }
+
+        fun saveCouponInfo() {
+            if (!isCouponModified()) {
+                viewModelScope.launch {
+                    _toastEvent.emit(CouponEditEvent.CouponDataIsSame)
+                }
+                return
+            }
+
+            viewModelScope.launch {
+                try {
+                    originalDomainCoupon?.let {
+                        val updatedCoupon =
+                            it.copy(
+                                brand = couponUiModel.value?.brand ?: "",
+                                productName = couponUiModel.value?.name ?: "",
+                                couponPin = couponUiModel.value?.number ?: "",
+                                expiryDate = couponUiModel.value?.expiryDate ?: ExpiryDate.Empty(),
+                                amount =
+                                    when {
+                                        couponUiModel.value?.isMonetary == true ->
+                                            couponUiModel.value?.amount?.toIntOrNull()
+                                                ?: 0
+
+                                        else -> null
+                                    },
+                                userMemo = couponUiModel.value?.memo ?: "",
+                                isMonetary = couponUiModel.value?.isMonetary ?: false,
+                                status = CouponStatus.SUCCESS.name,
+                                imageUrl =
+                                    selectedImageUriStatus.value.let { selectedImageUriStatus: SelectedImageUriStatus ->
+                                        when (selectedImageUriStatus) {
+                                            is SelectedImageUriStatus.Selected -> selectedImageUriStatus.localAbsolutePath
+                                            is SelectedImageUriStatus.Uploaded -> selectedImageUriStatus.localAbsolutePath
+                                            else -> couponUiModel.value?.r2Url
+                                        }
+                                    },
+                            )
+                        Log.d("CouponEditViewModel", "saveCouponInfo: $updatedCoupon")
+                        couponRepository
+                            .update(
+                                coupon = updatedCoupon,
+                                isDirty = true,
+                            ).onSuccess {
+                                Log.d("CouponEditViewModel", "saveCouponInfo: success")
+                                originalDomainCoupon = updatedCoupon
+                                originalCouponUiModel = couponUiModel.value?.copy()
+                                if (selectedImageUriStatus.value is SelectedImageUriStatus.Selected) {
+                                    val localAbsolutePath =
+                                        (selectedImageUriStatus.value as SelectedImageUriStatus.Selected).localAbsolutePath
+                                    _selectedImageUriStatus.value =
+                                        SelectedImageUriStatus.Uploaded(localAbsolutePath)
+                                    val uploadImageWorker =
+                                        couponWorkManager.uploadImageWorkerRequest(
+                                            couponId,
+                                            localAbsolutePath,
+                                        )
+                                    val updateWorker = couponWorkManager.updateWorkerRequest(couponId)
+                                    couponWorkManager.enqueueWorkChain(
+                                        "upload_process_coupon_$couponId",
+                                        listOf(uploadImageWorker, updateWorker),
+                                    )
+                                } else {
+                                    val updateWorker = couponWorkManager.updateWorkerRequest(couponId)
+                                    couponWorkManager.enqueueWorkChain(
+                                        "upload_process_coupon_$couponId",
+                                        listOf(updateWorker),
+                                    )
+                                }
+                                _toastEvent.emit(CouponEditEvent.CouponEdited)
+                            }.onFailure { e: Throwable ->
+                                Log.e("CouponEditViewModel", "saveCouponInfo: fail ${e.message}")
+                            }
+                    }
+                } catch (e: Exception) {
+                    Log.e("CouponEditViewModel", "saveCouponInfo: fail ${e.message}")
+                }
             }
         }
     }
+
+sealed class CouponEditEvent {
+    data object CouponEdited : CouponEditEvent()
+
+    data object CouponDataIsSame : CouponEditEvent()
+}
+
+sealed class SelectedImageUriStatus {
+    data object Init : SelectedImageUriStatus()
+
+    data class Selected(
+        val localAbsolutePath: String,
+    ) : SelectedImageUriStatus()
+
+    data class Uploaded(
+        val localAbsolutePath: String,
+    ) : SelectedImageUriStatus()
+}

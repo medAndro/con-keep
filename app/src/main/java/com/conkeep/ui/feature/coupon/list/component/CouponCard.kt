@@ -139,7 +139,7 @@ fun CouponCard(
                                 text =
                                     stringResource(
                                         R.string.coupon_card_monetary_value,
-                                        couponUiModel.amount ?: 0,
+                                        couponUiModel.amount.toIntOrNull() ?: 0,
                                     ),
                                 style = PretendardSemibold13,
                                 maxLines = 1,
@@ -176,7 +176,8 @@ fun CouponCard(
                                 CouponStatus.SUCCESS -> couponUiModel.name ?: ""
                                 CouponStatus.AI_FAILED -> "AI 인식 실패..."
                                 CouponStatus.PENDING -> "분석 대기중..."
-                                CouponStatus.UPLOADING -> "이미지 업로드 중..."
+                                CouponStatus.IMAGE_UPLOADING -> "이미지 업로드 중..."
+                                CouponStatus.IMAGE_UPLOADED -> "이미지 업로드 완료"
                                 CouponStatus.UPLOAD_FAILED -> "이미지 업로드 실패..."
                                 CouponStatus.LOCAL_IMAGE_MISSING -> "서버에서 이미지 로딩중..."
                                 CouponStatus.SERVER_IMAGE_MISSING -> "이미지를 찾을 수 없습니다"
@@ -200,7 +201,7 @@ fun CouponCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         when (couponUiModel.expiryDate) {
-                            ExpiryDate.Empty -> {
+                            is ExpiryDate.Empty -> {
                             }
 
                             is ExpiryDate.Processing -> {
@@ -354,15 +355,16 @@ fun CouponCardMonetaryPreview() {
                     number = "1234567890",
                     name = "스타벅스 [간편한 한끼(HOT)] 카페 아메리카노T+탕종 파마산 치즈 베이글",
                     brand = "스타벅스",
-                    expiryDate = ExpiryDate.Empty,
+                    expiryDate = ExpiryDate.Empty(),
                     dDay = 0,
                     isUsed = false,
                     isExpired = false,
                     localImagePath = null,
                     r2Url = null,
                     isMonetary = true,
-                    amount = 1234567,
+                    amount = "1234567",
                     status = CouponStatus.SUCCESS,
+                    isDirty = false,
                 ),
             onClick = {},
         )
@@ -387,8 +389,9 @@ fun CouponCardNormalPreview() {
                     localImagePath = null,
                     r2Url = null,
                     isMonetary = false,
-                    amount = null,
+                    amount = "",
                     status = CouponStatus.SUCCESS,
+                    isDirty = false,
                 ),
             onClick = {},
         )
@@ -413,8 +416,9 @@ fun CouponCardUsedPreview() {
                     localImagePath = null,
                     r2Url = null,
                     isMonetary = false,
-                    amount = null,
+                    amount = "",
                     status = CouponStatus.SUCCESS,
+                    isDirty = false,
                 ),
             onClick = {},
         )

@@ -24,16 +24,16 @@ fun CouponEntity.toDomain(): Coupon =
                     date == null -> {
                         when (status) {
                             CouponStatus.PENDING.name -> ExpiryDate.Processing
-                            CouponStatus.UPLOADING.name -> ExpiryDate.Processing
+                            CouponStatus.IMAGE_UPLOADING.name -> ExpiryDate.Processing
                             CouponStatus.ANALYZING.name -> ExpiryDate.Processing
-                            else -> ExpiryDate.Empty
+                            else -> ExpiryDate.Empty()
                         }
                     }
 
                     else -> ExpiryDate.Success(date)
                 }
             }.getOrElse {
-                ExpiryDate.Empty
+                ExpiryDate.Empty()
             },
         isMonetary = isMonetary,
         amount = amount,
@@ -54,6 +54,7 @@ fun CouponEntity.toDomain(): Coupon =
                 .fromEpochMilliseconds(updatedAt),
         isSynced = isSynced,
         status = status,
+        isDirty = isDirty,
     )
 
 fun List<CouponEntity>.toDomain(): List<Coupon> = map { it.toDomain() }
@@ -78,6 +79,7 @@ fun Coupon.toEntity(): CouponEntity =
         updatedAt = updatedAt.toEpochMilliseconds(),
         isSynced = isSynced,
         status = status,
+        isDirty = isDirty,
     )
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }

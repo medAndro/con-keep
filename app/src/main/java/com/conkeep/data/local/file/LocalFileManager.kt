@@ -167,6 +167,24 @@ class LocalFileManager
             }
 
         /**
+         * 압축이 완료된 파일을 캐시 폴더로 이동시키고 경로를 반환합니다.
+         */
+        fun saveToCache(compressedFile: File): String? =
+            try {
+                val imageDir = tempImageDir.apply { if (!exists()) mkdirs() }
+                val fileName = "coupon_cache_${System.currentTimeMillis()}.webp"
+                val destinationFile = File(imageDir, fileName)
+
+                compressedFile.copyTo(destinationFile, overwrite = true)
+                destinationFile.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            } finally {
+                compressedFile.delete()
+            }
+
+        /**
          * 특정 파일명으로 복사본을 만들어 공유용 URI 발행
          * @param absolutePath 원본 파일 경로
          * @param newFileName 보여주고 싶은 파일명 (확장자 제외)
@@ -285,7 +303,7 @@ class LocalFileManager
          * 파일 헤더를 읽어 실제 MIME 타입을 반환합니다.
          * Coil 캐시 파일(.1, .0)처럼 확장자가 없는 파일에 유효합니다.
          */
-        private fun getMimeTypeFromFile(file: File): String {
+        fun getMimeTypeFromFile(file: File): String {
             val options =
                 BitmapFactory.Options().apply {
                     inJustDecodeBounds = true // 실제 비트맵을 로드하지 않고 정보만 읽음

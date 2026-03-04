@@ -51,6 +51,7 @@ fun ConKeepConfirmDialog(
     cancelBackGroundColor: Color = dialogNormalBg,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    onCancel: () -> Unit = onDismiss,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -102,7 +103,7 @@ fun ConKeepConfirmDialog(
                     ) {
                         // 취소 버튼
                         Button(
-                            onClick = onDismiss,
+                            onClick = onCancel,
                             modifier =
                                 Modifier
                                     .weight(1f)
@@ -112,11 +113,10 @@ fun ConKeepConfirmDialog(
                         ) {
                             Text(cancelText, style = PretendardSemibold14, color = cancelTextColor)
                         }
-                        // 확인(삭제) 버튼
+                        // 확인 버튼
                         Button(
                             onClick = {
                                 onConfirm()
-                                onDismiss()
                             },
                             modifier =
                                 Modifier
@@ -125,7 +125,11 @@ fun ConKeepConfirmDialog(
                             colors = ButtonDefaults.buttonColors(containerColor = confirmBackgroundColor),
                             shape = RoundedCornerShape(12.dp),
                         ) {
-                            Text(confirmText, style = PretendardSemibold14, color = confirmTextColor)
+                            Text(
+                                confirmText,
+                                style = PretendardSemibold14,
+                                color = confirmTextColor,
+                            )
                         }
                     }
                 }

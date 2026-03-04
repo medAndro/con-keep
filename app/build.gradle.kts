@@ -23,8 +23,8 @@ android {
         applicationId = "com.conkeep"
         minSdk = 28
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.0.11"
+        versionCode = 15
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -163,6 +163,8 @@ dependencies {
 
     // Barcode
     implementation(libs.zxing.core)
+
+    implementation(libs.datetime.wheel.picker)
 
     // Test
     testImplementation(libs.junit)

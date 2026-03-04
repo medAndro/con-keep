@@ -17,6 +17,7 @@ import com.conkeep.data.remote.dto.AiAnalyzeRequest
 import com.conkeep.data.remote.dto.CouponDto
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
+import com.conkeep.data.remote.dto.toDto
 import com.conkeep.data.remote.dto.toEntity
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.di.annotation.AuthClient
@@ -31,6 +32,7 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -120,6 +122,11 @@ class CouponRepository
             couponDao
                 .getCouponFlow(id)
                 .map { entity -> entity?.toDomain() }
+
+        suspend fun getCouponOnce(id: String): Coupon? =
+            couponDao
+                .getCouponOnce(id)
+                .let { entity -> entity?.toDomain() }
 
         suspend fun addCoupon(coupon: Coupon): String {
             // currentUserIdFlow의 가장 최신 유효 값을 가져옴
@@ -216,6 +223,34 @@ class CouponRepository
                 Result.failure(Exception("분석 요청 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
             }
 
+        suspend fun updateJob(couponId: String): Result<String> =
+            try {
+                val couponDto: SupabaseCoupon =
+                    couponDao.getCouponOnce(couponId)?.toDto() ?: return Result.failure(
+                        Exception("쿠폰을 찾을 수 없습니다."),
+                    )
+
+                val response: AiAnalyzeJobResponse =
+                    authClient
+                        .patch("${BuildConfig.BASE_URL}/update") {
+                            contentType(ContentType.Application.Json)
+                            setBody(couponDto)
+                        }.body()
+
+                if (response.success) {
+                    couponDao.setIsClean(couponId)
+                    Result.success(response.message)
+                } else {
+                    Result.failure(Exception("업데이트 요청 실패 (서버 로직 에러)"))
+                }
+            } catch (e: ClientRequestException) {
+                Result.failure(Exception("업데이트 요청 실패: ${e.response.status}"))
+            } catch (e: TimeoutCancellationException) {
+                Result.failure(Exception("업데이트 요청 시간 초과 (네트워크 상태를 확인하세요)"))
+            } catch (e: Exception) {
+                Result.failure(Exception("업데이트 요청 중 알 수 없는 오류 발생: ${e.localizedMessage}"))
+            }
+
         suspend fun syncIncremental(): Result<List<CouponDto>> =
             withContext(Dispatchers.IO) {
                 try {
@@ -230,7 +265,6 @@ class CouponRepository
                             filter {
                                 gte("updated_at", lastSyncTime)
                                 eq("user_id", currentUserId)
-                                eq("is_deleted", false)
                             }
                         }
 
@@ -242,8 +276,8 @@ class CouponRepository
                         if (localCoupon?.isDirty == true) return@forEach
 
                         val entity = dto.toEntity()
-
                         couponDao.upsert(entity)
+                        couponDao.setIsClean(dto.id)
                         userPrefs.updateLastSyncTime(dto.updatedAt)
                     }
                     Result.success(coupons)
@@ -284,6 +318,21 @@ class CouponRepository
         ) {
             couponDao.amountSave(id, amount.toLong())
         }
+
+        suspend fun update(
+            coupon: Coupon,
+            isDirty: Boolean = true,
+        ): Result<Unit> =
+            runCatching {
+                val affectedRows = couponDao.update(coupon.toEntity().copy(isDirty = isDirty))
+                if (affectedRows > 0) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("수정할 쿠폰을 찾을 수 없습니다."))
+                }
+            }.getOrElse {
+                Result.failure(it) // DB 에러 발생 시
+            }
 
         suspend fun softDelete(id: String): Result<Unit> {
             try {

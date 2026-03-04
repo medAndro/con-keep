@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.data.worker.CouponWorkManager
 import com.conkeep.domain.usecase.coupon.SaveCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
@@ -30,6 +31,7 @@ class CouponDetailViewModel
         private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
         private val saveCouponUseCase: SaveCouponUseCase,
+        private val couponWorkManager: CouponWorkManager,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -56,6 +58,7 @@ class CouponDetailViewModel
                     id = couponId,
                     timestamp = System.currentTimeMillis(),
                 )
+                forceUpdateCouponToWorker()
             }
         }
 
@@ -64,6 +67,7 @@ class CouponDetailViewModel
                 couponRepository.unUsedMark(
                     id = couponId,
                 )
+                forceUpdateCouponToWorker()
             }
         }
 
@@ -89,25 +93,29 @@ class CouponDetailViewModel
                         id = couponId,
                         memo = newMemo,
                     )
+                    forceUpdateCouponToWorker()
                 } catch (e: Exception) {
                     _errorEvent.emit(CouponDetailError.MemoSaveFailed)
-                    Log.e("ViewModel", "메모 저장 중 오류 발생", e)
+                    Log.e(TAG, "메모 저장 중 오류 발생", e)
                 }
             }
         }
 
-        fun saveCouponAmount(newAmount: Int) {
-            if (newAmount == couponUiModel.value?.amount) return
+        fun saveCouponAmount(newAmount: String) {
+            val newIntAmount = newAmount.toIntOrNull() ?: 0
+            val oldIntAmount = couponUiModel.value?.amount?.toIntOrNull() ?: 0
+            if (newIntAmount == oldIntAmount) return
 
             viewModelScope.launch {
                 try {
                     couponRepository.amountSave(
                         id = couponId,
-                        amount = newAmount,
+                        amount = newIntAmount,
                     )
+                    forceUpdateCouponToWorker()
                 } catch (e: Exception) {
                     _errorEvent.emit(CouponDetailError.AmountSaveFailed)
-                    Log.e("ViewModel", "금액 저장 중 오류 발생", e)
+                    Log.e(TAG, "금액 저장 중 오류 발생", e)
                 }
             }
         }
@@ -120,14 +128,31 @@ class CouponDetailViewModel
                             id = couponId,
                         ).onSuccess {
                             onSuccess()
+                            forceUpdateCouponToWorker()
                         }.onFailure {
                             _errorEvent.emit(CouponDetailError.SoftDeleteFailed)
                         }
                 } catch (e: Exception) {
                     _errorEvent.emit(CouponDetailError.SoftDeleteFailed)
-                    Log.e("ViewModel", "쿠폰 삭제 중 오류 발생", e)
+                    Log.e(TAG, "쿠폰 삭제 중 오류 발생", e)
                 }
             }
+        }
+
+        fun updateCouponToWorker() {
+            val isDirty = couponUiModel.value?.isDirty ?: false
+            if (!isDirty) return
+            forceUpdateCouponToWorker()
+        }
+
+        private fun forceUpdateCouponToWorker() {
+            val request = couponWorkManager.updateWorkerRequest(couponId)
+            couponWorkManager.enqueueWorkChain("coupon_detail_update_work_$couponId", listOf(request))
+            Log.d("CouponDetailViewModel", "updateCouponToWorker: $couponId")
+        }
+
+        companion object {
+            private const val TAG = "CouponDetailViewModel"
         }
     }
 

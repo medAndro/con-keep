@@ -1,76 +1,87 @@
-package com.conkeep.ui.feature.coupon.component
+package com.conkeep.ui.feature.coupon.edit
 
-import android.util.Log
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.conkeep.R
 import com.conkeep.ui.theme.ConKeepColors.bgInput
 import com.conkeep.ui.theme.ConKeepColors.borderFocused
 import com.conkeep.ui.theme.ConKeepColors.borderSubtle
 import com.conkeep.ui.theme.ConKeepColors.textHint
+import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium16
-import kotlinx.coroutines.delay
+import com.conkeep.ui.theme.PretendardMedium20
 
 @Composable
-fun MemoInputField(
-    memo: String,
-    onMemoChange: (String) -> Unit,
-    onSave: (String) -> Unit,
+fun TextInputField(
+    text: String,
+    onTextChange: (String) -> Unit,
+    placeholder: String,
     modifier: Modifier = Modifier,
-    autosave: Boolean = true,
-    placeholder: String = stringResource(R.string.memo_input_field_placeholder),
+    leadingIconVector: ImageVector? = null,
+    leadingIconDescription: String? = null,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    val currentMemo by rememberUpdatedState(memo)
-
-    // 포커스가 있을 떄, 1초 뒤에 자동 저장 (Debounce)
-    if (autosave) {
-        LaunchedEffect(memo) {
-            if (!isFocused) return@LaunchedEffect
-            delay(1000L) // 1초 대기
-            onSave(memo)
-        }
-    }
+    val focusManager = LocalFocusManager.current
 
     OutlinedTextField(
-        value = memo,
-        onValueChange = onMemoChange,
+        value = text,
+        onValueChange = { input ->
+            onTextChange(input)
+        },
         modifier =
             modifier
-                .fillMaxWidth()
-                .onFocusChanged { focusState ->
-                    // 포커스가 있다가 사라지는 순간 자동저장
-                    if (autosave && isFocused && !focusState.isFocused) {
-                        onSave(currentMemo)
-                    }
-                    isFocused = focusState.isFocused
-                },
+                .fillMaxWidth(),
         placeholder = {
             Text(
                 text = placeholder,
                 style = PretendardMedium16,
             )
         },
-        textStyle = PretendardMedium16,
+        leadingIcon =
+            if (leadingIconVector != null) {
+                {
+                    Icon(
+                        imageVector = leadingIconVector,
+                        contentDescription = leadingIconDescription,
+                        tint = textPrimary,
+                    )
+                }
+            } else {
+                null
+            },
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Done,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onDone = {
+                    // '완료' 버튼을 눌렀을 때 포커스 해제
+                    focusManager.clearFocus()
+                },
+            ),
+        textStyle = PretendardMedium20,
         shape = RoundedCornerShape(10.dp),
         colors =
             OutlinedTextFieldDefaults.colors(
@@ -81,23 +92,22 @@ fun MemoInputField(
                 focusedContainerColor = bgInput,
                 unfocusedContainerColor = bgInput,
             ),
-        minLines = 5, // 메모장이니 최소 높이 확보
-        maxLines = 12,
+        singleLine = true,
     )
 }
 
 @Preview(showBackground = true, name = "기본 - 플레이스홀더")
 @Composable
-private fun MemoInputFieldPlaceholderPreview() {
+private fun AmountInputInputFieldPlaceholderPreview() {
     ConKeepTheme {
         Surface(
             modifier = Modifier.padding(20.dp),
             color = Color.White,
         ) {
-            MemoInputField(
-                memo = "",
-                onMemoChange = {},
-                onSave = {},
+            TextInputField(
+                text = "",
+                onTextChange = {},
+                placeholder = "플레이스홀더 텍스트",
             )
         }
     }
@@ -105,16 +115,16 @@ private fun MemoInputFieldPlaceholderPreview() {
 
 @Preview(showBackground = true, name = "내용 입력됨")
 @Composable
-private fun MemoInputFieldContentPreview() {
+private fun AmountInputInputFieldContentPreview() {
     ConKeepTheme {
         Surface(
             modifier = Modifier.padding(20.dp),
             color = Color.White,
         ) {
-            MemoInputField(
-                memo = "친구에게 생일선물로 받은 쿠폰입니다.",
-                onMemoChange = {},
-                onSave = {},
+            TextInputField(
+                text = "배달의 민족",
+                onTextChange = {},
+                placeholder = "",
             )
         }
     }
@@ -122,19 +132,19 @@ private fun MemoInputFieldContentPreview() {
 
 @Preview(showBackground = true, name = "인터랙티브 테스트")
 @Composable
-private fun MemoInputFieldInteractivePreview() {
+private fun AmountInputInputFieldInteractivePreview() {
     // 실제 타이핑을 테스트해볼 수 있는 프리뷰
-    var text by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("스타벅스") }
 
     ConKeepTheme {
         Surface(
             modifier = Modifier.padding(20.dp),
             color = Color.White,
         ) {
-            MemoInputField(
-                memo = text,
-                onMemoChange = { text = it },
-                onSave = { Log.d("Preview", "저장 로직 실행: $it") },
+            TextInputField(
+                text = "스타벅스",
+                onTextChange = { amount = it },
+                placeholder = "브랜드명을 입력하세요",
             )
         }
     }

@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.conkeep.data.local.entity.CouponStatus
+import com.conkeep.data.local.file.LocalFileManager
 import com.conkeep.data.repository.coupon.CouponRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -21,75 +23,80 @@ class CouponImageUploadWorker
     constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
+        private val localFileManager: LocalFileManager,
         private val couponRepository: CouponRepository,
     ) : CoroutineWorker(context, workerParams) {
         override suspend fun doWork(): Result {
             val couponId = inputData.getString("COUPON_ID") ?: return Result.failure()
-            val localPath = inputData.getString("LOCAL_PATH") ?: return Result.failure()
-            val mimeType = inputData.getString("MIME_TYPE") ?: "image/webp"
-            val barcode = inputData.getString("BARCODE")
-            val createdAt = inputData.getString("CREATED_AT") ?: ""
+            val localAbsolutePath =
+                inputData.getString("LOCAL_ABSOLUTE_PATH_STRING") ?: return Result.failure()
+            val isUploadImageOnly = inputData.getBoolean("UPLOAD_IMAGE_ONLY", false)
 
             return try {
-                val file = File(localPath)
+                val file = File(localAbsolutePath)
+                Log.d(TAG, "업로드할 이미지 파일: $file")
                 if (!file.exists()) {
+                    Log.e(TAG, "업로드할 이미지 파일이 존재하지 않습니다: $file")
                     couponRepository.updateStatus(couponId, "FILE_LOST")
                     return Result.failure()
                 }
+                val mimeType = localFileManager.getMimeTypeFromFile(file)
+                Log.d(TAG, "업로드할 이미지 파일의 MIME 타입: $mimeType")
 
                 // 1. 프리사인드 URL 발급
                 val urlResponse =
                     couponRepository.getPresignedUrl(file, couponId, mimeType).getOrThrow()
+                val finalImageUrl = urlResponse.imageUrl
 
                 // 2. R2 실제 업로드
-                couponRepository.updateStatus(couponId, CouponStatus.UPLOADING.name)
-                couponRepository
-                    .uploadCouponImageR2(
-                        file,
-                        urlResponse.uploadPresignedUrl,
-                        mimeType,
-                    ).getOrThrow()
+                couponRepository.updateStatus(couponId, CouponStatus.IMAGE_UPLOADING.name)
 
-                couponRepository.updateR2Info(couponId, urlResponse.imageUrl)
-                Log.d("CouponImageUploadWorker", "업로드 성공, 분석 시작")
-
-                // 3. AI 분석 요청
-                val aiResponse =
-                    couponRepository.requestAiAnalyzeJob(
-                        couponId,
-                        urlResponse.imageUrl,
-                        barcode,
-                        createdAt,
+                val uploadResult =
+                    couponRepository.uploadCouponImageR2(
+                        imageFile = file,
+                        uploadUrl = urlResponse.uploadPresignedUrl,
+                        contentType = mimeType,
                     )
 
-                aiResponse.fold(
-                    onSuccess = { message: String ->
-                        Log.d("CouponImageUploadWorker", "AI 분석 요청 성공: $message")
-                        couponRepository.updateStatus(couponId, CouponStatus.ANALYZING.name)
-                        Result.success()
-                    },
-                    onFailure = { throwable ->
-                        Log.e(
-                            "CouponImageUploadWorker",
-                            "AI 분석 요청 실패: ${throwable.message}",
-                            throwable,
-                        )
+                return if (uploadResult.isSuccess) {
+                    // 3. DB 업데이트
+                    Log.d(TAG, "R2 업로드 성공: $finalImageUrl")
+                    couponRepository.updateR2Info(couponId, finalImageUrl)
+                    when (isUploadImageOnly) {
+                        true -> couponRepository.updateStatus(couponId, CouponStatus.SUCCESS.name)
+                        false ->
+                            couponRepository.updateStatus(
+                                couponId,
+                                CouponStatus.IMAGE_UPLOADED.name,
+                            )
+                    }
+
+                    // 4. 로컬 캐시 삭제 (성공했으므로)
+                    if (file.exists()) file.delete()
+
+                    // 5. WorkManager의 Result.success 반환
+                    Result.success(workDataOf("IMAGE_URL" to finalImageUrl))
+                } else {
+                    // 업로드 실패 시 에러 추출
+                    val error = uploadResult.exceptionOrNull()
+                    Log.e(TAG, "R2 업로드 실패: ${error?.message}")
+
+                    // 재시도 정책에 따라 분기
+                    if (runAttemptCount < 3) {
+                        Result.retry()
+                    } else {
                         couponRepository.updateStatus(couponId, CouponStatus.UPLOAD_FAILED.name)
                         Result.failure()
-                    },
-                )
+                    }
+                }
             } catch (e: ClientRequestException) {
-                // 4xx
                 handleHttpError(couponId, e)
             } catch (e: ServerResponseException) {
-                // 5xx
                 handleHttpError(couponId, e)
             } catch (e: IOException) {
-                // 네트워크 연결 오류
-                Log.e("CouponImageUploadWorker", "네트워크 연결 오류: ${e.message}", e)
-                handleNetworkError(couponId)
+                handleNetworkError(couponId, e)
             } catch (e: Exception) {
-                Log.e("CouponImageUploadWorker", "예상치 못한 오류: ${e.message}", e)
+                Log.e(TAG, "예상치 못한 오류: ${e.message}", e)
                 if (runAttemptCount < 3) {
                     Result.retry()
                 } else {
@@ -104,19 +111,19 @@ class CouponImageUploadWorker
             responseException: ResponseException,
         ): Result {
             Log.w(
-                "CouponImageUploadWorker",
+                TAG,
                 "state code: ${responseException.response.status.value} for coupon $couponId",
             )
 
-            return when {
-                responseException is ClientRequestException -> { // 클라이언트 오류
+            return when (responseException) {
+                is ClientRequestException -> { // 클라이언트 오류
                     couponRepository.updateStatus(couponId, CouponStatus.UPLOAD_FAILED.name)
                     Result.failure()
                 }
 
-                responseException is ServerResponseException -> { // 서버 오류
+                is ServerResponseException -> { // 서버 오류
                     if (runAttemptCount < 5) {
-                        couponRepository.updateStatus(couponId, CouponStatus.UPLOADING.name)
+                        couponRepository.updateStatus(couponId, CouponStatus.IMAGE_UPLOADING.name)
                         Result.retry()
                     } else {
                         couponRepository.updateStatus(couponId, CouponStatus.AI_FAILED.name)
@@ -131,14 +138,21 @@ class CouponImageUploadWorker
             }
         }
 
-        private suspend fun handleNetworkError(couponId: String): Result {
-            Log.d("CouponImageUploadWorker", "네트워크 연결 오류 재시도 $runAttemptCount/15")
+        private suspend fun handleNetworkError(
+            couponId: String,
+            responseException: IOException,
+        ): Result {
+            Log.d(TAG, "네트워크 연결 오류 재시도 $runAttemptCount/15, ${responseException.message}")
             if (runAttemptCount < 15) {
-                couponRepository.updateStatus(couponId, CouponStatus.UPLOADING.name)
+                couponRepository.updateStatus(couponId, CouponStatus.IMAGE_UPLOADING.name)
                 return Result.retry()
             } else {
                 couponRepository.updateStatus(couponId, CouponStatus.AI_FAILED.name)
                 return Result.failure()
             }
+        }
+
+        companion object {
+            private const val TAG = "CouponImageUploadWorker"
         }
     }
