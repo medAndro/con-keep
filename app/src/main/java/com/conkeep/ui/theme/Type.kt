@@ -37,6 +37,7 @@ val PretendardSemibold13 = PretendardSemibold.copy(fontSize = 13.sp)
 val PretendardSemibold14 = PretendardSemibold.copy(fontSize = 14.sp)
 val PretendardSemibold16 = PretendardSemibold.copy(fontSize = 16.sp)
 val PretendardSemibold18 = PretendardSemibold.copy(fontSize = 18.sp)
+val PretendardSemibold20 = PretendardSemibold.copy(fontSize = 20.sp)
 val PretendardSemibold24 = PretendardSemibold.copy(fontSize = 24.sp)
 
 val PretendardBold =
