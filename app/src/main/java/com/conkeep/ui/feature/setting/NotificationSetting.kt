@@ -39,6 +39,7 @@ import kotlinx.datetime.LocalTime
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSetting(
+    onAddNewAlarmClick: () -> Unit,
     modifier: Modifier = Modifier,
     couponAlarmSettings: List<CouponAlarmSetting> = emptyList(),
 ) {
@@ -100,6 +101,7 @@ fun NotificationSetting(
                         0.6.dp,
                         borderSubtle,
                     ),
+                onClick = onAddNewAlarmClick,
             ) {
                 Box(
                     modifier =
@@ -208,6 +210,7 @@ fun NotificationSettingEmptyPreview() {
     ConKeepTheme {
         Surface(color = brandSecondary) {
             NotificationSetting(
+                onAddNewAlarmClick = {},
                 couponAlarmSettings = emptyList(),
             )
         }
@@ -220,6 +223,7 @@ fun NotificationSettingPreview() {
     ConKeepTheme {
         Surface(color = brandSecondary) {
             NotificationSetting(
+                onAddNewAlarmClick = {},
                 couponAlarmSettings =
                     listOf(
                         CouponAlarmSetting(0, LocalTime(12, 0)),

@@ -10,7 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -20,10 +23,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.conkeep.BuildConfig
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.SettingTopBar
+import com.conkeep.ui.theme.ConKeepColors.textSecondary
 import com.conkeep.ui.theme.ConKeepTheme
+import com.conkeep.ui.theme.PretendardMedium12
+import kotlinx.datetime.LocalTime
+import java.util.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +53,8 @@ fun SettingScreenContent(
 ) {
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
+
+    val notifications = remember { mutableStateListOf<CouponAlarmSetting>() }
 
     Scaffold(
         topBar = {
@@ -74,10 +84,27 @@ fun SettingScreenContent(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Column(
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(11.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                NotificationSetting()
+                NotificationSetting(
+                    {
+                        // todo: 실제 알림 추가 코드로 교체 필요
+                        notifications.add(
+                            CouponAlarmSetting(
+                                daysBefore = Random().nextInt(10),
+                                targetTime = LocalTime(Random().nextInt(24), 0),
+                            ),
+                        )
+                    },
+                    couponAlarmSettings = notifications,
+                )
+                NormalSetting()
+                Text(
+                    "현재 버전 v${BuildConfig.VERSION_NAME}",
+                    style = PretendardMedium12,
+                    color = textSecondary,
+                )
             }
         }
     }
