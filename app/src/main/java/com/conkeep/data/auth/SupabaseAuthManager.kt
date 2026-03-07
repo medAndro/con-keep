@@ -4,10 +4,12 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.Settings
+import android.util.Base64
 import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.conkeep.BuildConfig
+import com.conkeep.data.repository.auth.AuthRepository
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import io.github.jan.supabase.SupabaseClient
@@ -34,6 +36,7 @@ class SupabaseAuthManager
     @Inject
     constructor(
         supabase: SupabaseClient,
+        authRepository: AuthRepository,
     ) {
         val auth = supabase.auth
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -44,7 +47,7 @@ class SupabaseAuthManager
                 .map { status ->
                     status is SessionStatus.Authenticated
                 }.stateIn(
-                    scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                    scope = scope,
                     started = SharingStarted.Eagerly, // 앱 시작부터 추적
                     initialValue = false,
                 )
@@ -70,6 +73,23 @@ class SupabaseAuthManager
             currentUserFlow
                 .map { it?.id }
                 .stateIn(scope, SharingStarted.Eagerly, auth.currentUserOrNull()?.id)
+
+        // 현재 사용자의 마스터키
+        val currentUserMasterKeyFlow: StateFlow<ByteArray?> =
+            auth.sessionStatus
+                .map { status ->
+                    when (status) {
+                        is SessionStatus.Authenticated -> {
+                            runCatching { authRepository.getMasterKey().masterKey }
+                                .onFailure { Log.e("SupabaseAuth", "마스터키 fetch 실패", it) }
+                                .onSuccess { Log.d("SupabaseAuth", "마스터키 fetch 성공") }
+                                .getOrNull()
+                                ?.let { Base64.decode(it, Base64.NO_WRAP) }
+                        }
+
+                        else -> null
+                    }
+                }.stateIn(scope, SharingStarted.Eagerly, null)
 
         suspend fun awaitInitialSession(): Boolean {
             auth.awaitInitialization()

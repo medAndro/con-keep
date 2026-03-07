@@ -20,6 +20,7 @@ import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toDto
 import com.conkeep.data.remote.dto.toEntity
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
+import com.conkeep.data.util.CouponCrypto
 import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
@@ -255,10 +256,14 @@ class CouponRepository
             withContext(Dispatchers.IO) {
                 try {
                     val lastSyncTime = userPrefs.lastSyncTime.first()
-                    Log.d("CouponRepository", "증분 동기화 시작: $lastSyncTime")
                     val currentUserId =
                         authManager.currentUserIdFlow.first()
                             ?: return@withContext Result.failure(Exception("Not logged in"))
+
+                    // 마스터키 획득 (null이면 동기화 중단)
+                    val masterKey =
+                        authManager.currentUserMasterKeyFlow.first()
+                            ?: return@withContext Result.failure(Exception("마스터키 없음"))
 
                     val response =
                         supabase.from("coupons").select {
@@ -272,10 +277,24 @@ class CouponRepository
 
                     coupons.forEach { dto: CouponDto ->
                         val localCoupon = couponDao.getCouponById(dto.id)
-
                         if (localCoupon?.isDirty == true) return@forEach
 
-                        val entity = dto.toEntity()
+                        // 복호화 + imageUrl 파생
+                        val decryptedPin =
+                            dto.couponPin?.let {
+                                CouponCrypto.decryptPin(masterKey, it)
+                            }
+                        val imageKey = CouponCrypto.deriveImageKey(masterKey, dto.id)
+                        val imageUrl =
+                            "${BuildConfig.COUPON_IMAGE_ENDPOINT}$imageKey.webp" +
+                                dto.imageTimestamp?.let { "?t=$it" }.orEmpty()
+                        Log.d("CouponRepository", "imageUrl: $imageUrl")
+
+                        val entity =
+                            dto.toEntity(imageUrl).copy(
+                                couponPin = decryptedPin, // 복호화된 평문
+                                imageUrl = imageUrl, // 파생된 URL
+                            )
                         couponDao.upsert(entity)
                         couponDao.setIsClean(dto.id)
                         userPrefs.updateLastSyncTime(dto.updatedAt)

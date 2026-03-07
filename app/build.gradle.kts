@@ -23,8 +23,8 @@ android {
         applicationId = "com.conkeep"
         minSdk = 28
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.1.1"
+        versionCode = 17
+        versionName = "0.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -47,6 +47,11 @@ android {
             type = "String",
             "SUPABASE_ANON_KEY",
             "\"${gradleLocalProperties(rootDir, providers).getProperty("SUPABASE_ANON_KEY")}\"",
+        )
+        buildConfigField(
+            type = "String",
+            "COUPON_IMAGE_ENDPOINT",
+            "\"${gradleLocalProperties(rootDir, providers).getProperty("COUPON_IMAGE_ENDPOINT")}\"",
         )
     }
 

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class CouponDto(
     val id: String,
     @SerialName("user_id") val userId: String,
-    @SerialName("image_url") val imageUrl: String?,
+    @SerialName("image_timestamp") val imageTimestamp: Long?,
     @SerialName("product_name") val productName: String?,
     val brand: String?,
     @SerialName("coupon_pin") val couponPin: String?,
