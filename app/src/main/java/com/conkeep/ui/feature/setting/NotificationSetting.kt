@@ -41,14 +41,14 @@ import kotlinx.datetime.LocalTime
 fun NotificationSetting(
     onAddNewAlarmClick: () -> Unit,
     modifier: Modifier = Modifier,
-    couponAlarmSettings: List<CouponAlarmSetting> = emptyList(),
+    couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
 ) {
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            "알림 설정",
+            "만료일 알림 설정",
             style = PretendardSemibold20,
             color = textPrimary,
         )
@@ -85,7 +85,7 @@ fun NotificationSetting(
                 }
 
                 else ->
-                    couponAlarmSettings.forEach { couponAlarmSetting ->
+                    couponAlarmSettings.sortedWith(compareBy({ it.daysBefore }, { it.targetTime })).forEach { couponAlarmSetting ->
                         NotificationItem(couponAlarmSetting = couponAlarmSetting, onTrashClick = {})
                     }
             }
@@ -211,7 +211,7 @@ fun NotificationSettingEmptyPreview() {
         Surface(color = brandSecondary) {
             NotificationSetting(
                 onAddNewAlarmClick = {},
-                couponAlarmSettings = emptyList(),
+                couponAlarmSettings = emptySet(),
             )
         }
     }
@@ -225,7 +225,7 @@ fun NotificationSettingPreview() {
             NotificationSetting(
                 onAddNewAlarmClick = {},
                 couponAlarmSettings =
-                    listOf(
+                    setOf(
                         CouponAlarmSetting(0, LocalTime(12, 0)),
                         CouponAlarmSetting(1, LocalTime(9, 0)),
                     ),

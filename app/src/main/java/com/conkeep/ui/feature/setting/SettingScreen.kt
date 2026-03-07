@@ -1,5 +1,6 @@
 package com.conkeep.ui.feature.setting
 
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,12 +12,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -31,7 +35,6 @@ import com.conkeep.ui.theme.ConKeepColors.textSecondary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium12
 import kotlinx.datetime.LocalTime
-import java.util.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,8 +56,41 @@ fun SettingScreenContent(
 ) {
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
-    val notifications = remember { mutableStateListOf<CouponAlarmSetting>() }
+    val notifications = rememberSaveable { mutableStateSetOf<CouponAlarmSetting>() }
+
+    val showSettingBottomSheet = rememberSaveable { mutableStateOf<CouponAlarmSetting?>(null) }
+
+    showSettingBottomSheet.value?.let { initAlarmSetting: CouponAlarmSetting ->
+        AlarmSettingBottomSheet(
+            onDismiss = {
+                showSettingBottomSheet.value = null
+            },
+            onConfirm = { selectedAlarm ->
+                val addResult =
+                    notifications.add(
+                        selectedAlarm,
+                    )
+                when (addResult) {
+                    true -> {
+                        Toast.makeText(context, "알림이 추가되었습니다.", Toast.LENGTH_SHORT).show()
+                    }
+
+                    false -> {
+                        Toast.makeText(context, "해당 알림은 이미 추가되어 있습니다.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                showSettingBottomSheet.value = null
+            },
+            initAlarmSetting = initAlarmSetting,
+            onCancel = {
+                showSettingBottomSheet.value = null
+            },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -89,13 +125,7 @@ fun SettingScreenContent(
             ) {
                 NotificationSetting(
                     {
-                        // todo: 실제 알림 추가 코드로 교체 필요
-                        notifications.add(
-                            CouponAlarmSetting(
-                                daysBefore = Random().nextInt(10),
-                                targetTime = LocalTime(Random().nextInt(24), 0),
-                            ),
-                        )
+                        showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
                     },
                     couponAlarmSettings = notifications,
                 )
