@@ -84,7 +84,7 @@ fun Coupon.toEntity(): CouponEntity =
 
 fun List<Coupon>.toEntity(): List<CouponEntity> = map { it.toEntity() }
 
-fun CouponDto.toEntity(): CouponEntity {
+fun CouponDto.toEntity(imageUrl: String? = null): CouponEntity {
     // ISO 8601 문자열을 Long(Epoch Milli)으로 변환하는 헬퍼 함수
     fun String?.toEpochMilli(): Long =
         if (this.isNullOrBlank()) {
@@ -96,7 +96,7 @@ fun CouponDto.toEntity(): CouponEntity {
     return CouponEntity(
         id = this.id,
         userId = this.userId,
-        imageUrl = this.imageUrl,
+        imageUrl = imageUrl,
         productName = this.productName ?: "",
         brand = this.brand ?: "",
         couponPin = this.couponPin ?: "",

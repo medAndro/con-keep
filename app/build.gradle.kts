@@ -48,6 +48,11 @@ android {
             "SUPABASE_ANON_KEY",
             "\"${gradleLocalProperties(rootDir, providers).getProperty("SUPABASE_ANON_KEY")}\"",
         )
+        buildConfigField(
+            type = "String",
+            "COUPON_IMAGE_ENDPOINT",
+            "\"${gradleLocalProperties(rootDir, providers).getProperty("COUPON_IMAGE_ENDPOINT")}\"",
+        )
     }
 
     buildTypes {
