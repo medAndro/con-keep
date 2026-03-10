@@ -20,7 +20,6 @@ import com.conkeep.navigation.Route
 import com.conkeep.ui.theme.ConKeepTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -72,13 +71,17 @@ class MainActivity : ComponentActivity() {
 
         // 백그라운드에서 로그인 상태 체크
         lifecycleScope.launch {
-            delay(100) // 최소 표시 시간
+            // [초기화 대기] Supabase 초기화 및 세션 복구 대기 (최대 3초)
+            withTimeoutOrNull(3000L) {
+                authManager.awaitInitialSession()
+            } ?: false
 
+            // [상태 감지 시작] 이제부터 로그인 상태 변화를 지속적으로 관찰
             authManager.isLoggedIn.collect { isLoggedIn ->
-                Log.d("MainActivity", "로그인 상태 변경 감지: $isLoggedIn")
-
                 when {
                     isLoggedIn -> {
+                        Log.d("MainActivity", "로그인 상태 감지: 데이터 동기화 및 경로 설정")
+
                         // 1. 유저 ID 동기화 (FcmService에서 사용 가능하도록)
                         launch { syncUserIdToPrefs() }
 
@@ -95,8 +98,13 @@ class MainActivity : ComponentActivity() {
                     }
 
                     else -> {
-                        // 로그아웃 시 로컬 데이터 삭제
-                        launch { userPrefs.clearAll() }
+                        Log.d("MainActivity", "비로그인 상태 감지")
+
+                        // 초기화가 끝난(isReady가 참이 되려는) 시점 이후에 로그아웃된 경우만 clear
+                        // 초기 로딩 중에는 clearAll()을 호출하지 않도록 주의
+                        if (isReady.value) {
+                            launch { userPrefs.clearAll() }
+                        }
 
                         if (initialRoute.value == null) {
                             initialRoute.value = Route.LoginScreen
@@ -104,13 +112,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // 초기 경로가 결정되면 스플래시 해제
-                if (initialRoute.value != null) {
+                // 초기 경로가 결정되면 스플래시 해제 (딱 한 번만 실행됨)
+                if (initialRoute.value != null && !isReady.value) {
                     isReady.value = true
                 }
             }
         }
-
         setContent {
             ConKeepTheme(darkTheme = false) {
                 if (isReady.value && initialRoute.value != null) {
