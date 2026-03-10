@@ -22,8 +22,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.BuildConfig
@@ -56,9 +58,58 @@ fun SettingScreen(
     onTabChange: (TabDestination) -> Unit,
     viewModel: SettingViewModel = hiltViewModel(),
 ) {
+    val couponAlarmSettings by viewModel.couponAlarmSettings.collectAsStateWithLifecycle(
+        initialValue = emptySet(),
+    )
+    val context = LocalContext.current
+    val addCouponAlarmSettingSuccessMessage = "알림이 추가되었습니다."
+    val addCouponAlarmSettingErrorMessage = "해당 알림은 이미 추가되어 있습니다."
+
+    val removeCouponAlarmSettingSuccessMessage = "알림이 삭제되었습니다."
+    val removeCouponAlarmSettingFailedMessage = "알림이 삭제되지 않았습니다."
+
+    LaunchedEffect(Unit) {
+        viewModel.toastEvent.collect { toastMessage ->
+            when (toastMessage) {
+                SettingEvent.AddCouponAlarmSettingSuccess ->
+                    Toast
+                        .makeText(
+                            context,
+                            addCouponAlarmSettingSuccessMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                SettingEvent.DuplicatedCouponAlarmSetting ->
+                    Toast
+                        .makeText(
+                            context,
+                            addCouponAlarmSettingErrorMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                SettingEvent.RemoveCouponAlarmSettingFailed ->
+                    Toast
+                        .makeText(
+                            context,
+                            removeCouponAlarmSettingFailedMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                SettingEvent.RemoveCouponAlarmSettingSuccess ->
+                    Toast
+                        .makeText(
+                            context,
+                            removeCouponAlarmSettingSuccessMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+            }
+        }
+    }
     SettingScreenContent(
         onTabChange = onTabChange,
-        onTestNotification = viewModel::testNotification,
+        couponAlarmSettings = couponAlarmSettings,
+        addCouponAlarmSetting = viewModel::addCouponAlarmSetting,
+        removeCouponAlarmSetting = viewModel::removeCouponAlarmSetting,
     )
 }
 
@@ -66,16 +117,15 @@ fun SettingScreen(
 @Composable
 fun SettingScreenContent(
     onTabChange: (TabDestination) -> Unit,
-    onTestNotification: () -> Unit,
+    addCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
+    removeCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
     modifier: Modifier = Modifier,
+    couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
 ) {
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val activity = context as Activity
-
-    val notifications = rememberSaveable { mutableStateSetOf<CouponAlarmSetting>() }
-
     val showSettingBottomSheet = rememberSaveable { mutableStateOf<CouponAlarmSetting?>(null) }
     val showSettingsDialog = rememberSaveable { mutableStateOf(false) }
 
@@ -149,21 +199,7 @@ fun SettingScreenContent(
                 showSettingBottomSheet.value = null
             },
             onConfirm = { selectedAlarm ->
-                val addResult =
-                    notifications.add(
-                        selectedAlarm,
-                    )
-                when (addResult) {
-                    true -> {
-                        onTestNotification()
-                        Toast.makeText(context, "알림이 추가되었습니다.", Toast.LENGTH_SHORT).show()
-                    }
-
-                    false -> {
-                        Toast.makeText(context, "해당 알림은 이미 추가되어 있습니다.", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
+                addCouponAlarmSetting(selectedAlarm)
                 showSettingBottomSheet.value = null
             },
             initAlarmSetting = initAlarmSetting,
@@ -209,7 +245,10 @@ fun SettingScreenContent(
                     {
                         checkPermissionAndShowSheet()
                     },
-                    couponAlarmSettings = notifications,
+                    {
+                        removeCouponAlarmSetting(it)
+                    },
+                    couponAlarmSettings = couponAlarmSettings,
                 )
                 NormalSetting()
                 Text(
@@ -228,7 +267,8 @@ private fun SettingScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         SettingScreenContent(
             onTabChange = {},
-            onTestNotification = {},
+            addCouponAlarmSetting = {},
+            removeCouponAlarmSetting = {},
         )
     }
 }

@@ -40,6 +40,7 @@ import kotlinx.datetime.LocalTime
 @Composable
 fun NotificationSetting(
     onAddNewAlarmClick: () -> Unit,
+    onTrashClick: (CouponAlarmSetting) -> Unit,
     modifier: Modifier = Modifier,
     couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
 ) {
@@ -86,7 +87,7 @@ fun NotificationSetting(
 
                 else ->
                     couponAlarmSettings.sortedWith(compareBy({ it.daysBefore }, { it.targetTime })).forEach { couponAlarmSetting ->
-                        NotificationItem(couponAlarmSetting = couponAlarmSetting, onTrashClick = {})
+                        NotificationItem(couponAlarmSetting = couponAlarmSetting, onTrashClick = onTrashClick)
                     }
             }
 
@@ -132,7 +133,7 @@ fun NotificationSetting(
 @Composable
 fun NotificationItem(
     couponAlarmSetting: CouponAlarmSetting,
-    onTrashClick: () -> Unit,
+    onTrashClick: (CouponAlarmSetting) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -160,7 +161,7 @@ fun NotificationItem(
                 color = badgeWarning,
             )
             IconButton(
-                onClick = onTrashClick,
+                onClick = { onTrashClick(couponAlarmSetting) },
                 modifier =
                     Modifier
                         .size(36.dp)
@@ -212,6 +213,7 @@ fun NotificationSettingEmptyPreview() {
             NotificationSetting(
                 onAddNewAlarmClick = {},
                 couponAlarmSettings = emptySet(),
+                onTrashClick = {},
             )
         }
     }
@@ -229,6 +231,7 @@ fun NotificationSettingPreview() {
                         CouponAlarmSetting(0, LocalTime(12, 0)),
                         CouponAlarmSetting(1, LocalTime(9, 0)),
                     ),
+                onTrashClick = {},
             )
         }
     }

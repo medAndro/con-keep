@@ -4,6 +4,7 @@ package com.conkeep.di
 import android.content.Context
 import androidx.room.Room
 import com.conkeep.data.local.CouponDatabase
+import com.conkeep.data.local.ExpiryAlertDatabase
 import com.conkeep.data.local.dao.CouponDao
 import dagger.Module
 import dagger.Provides
@@ -31,4 +32,21 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideCouponDao(database: CouponDatabase): CouponDao = database.couponDao()
+
+    @Provides
+    @Singleton
+    fun provideExpiryAlertDatabase(
+        @ApplicationContext context: Context,
+    ): ExpiryAlertDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                ExpiryAlertDatabase::class.java,
+                "expiry_alert_database",
+            ).fallbackToDestructiveMigration(true) // Todo: 개발 중에만 사용하며 배포시 제거 필요
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideExpiryAlertDao(database: ExpiryAlertDatabase) = database.expiryAlertDao()
 }
