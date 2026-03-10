@@ -48,11 +48,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -256,14 +258,16 @@ class CouponRepository
             withContext(Dispatchers.IO) {
                 try {
                     val lastSyncTime = userPrefs.lastSyncTime.first()
-                    val currentUserId =
-                        authManager.currentUserIdFlow.first()
-                            ?: return@withContext Result.failure(Exception("Not logged in"))
-
-                    // 마스터키 획득 (null이면 동기화 중단)
-                    val masterKey =
-                        authManager.currentUserMasterKeyFlow.first()
-                            ?: return@withContext Result.failure(Exception("마스터키 없음"))
+                    val (currentUserId, masterKey) =
+                        withTimeout(10000L) {
+                            // 10초 동안 대기
+                            combine(
+                                authManager.currentUserIdFlow,
+                                authManager.currentUserMasterKeyFlow,
+                            ) { id, key ->
+                                if (id != null && key != null) id to key else null
+                            }.filterNotNull().first()
+                        }
 
                     val response =
                         supabase.from("coupons").select {
