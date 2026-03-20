@@ -1,5 +1,6 @@
 package com.conkeep
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -7,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
 
     private var isReady = mutableStateOf(false)
     private val initialRoute = mutableStateOf<Route?>(null)
+    private var pendingCouponId = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -120,11 +123,34 @@ class MainActivity : ComponentActivity() {
         setContent {
             ConKeepTheme(darkTheme = false) {
                 if (isReady.value && initialRoute.value != null) {
-                    initialRoute.value?.let { route ->
-                        NavigationRoot(initialRoute = route)
-                    }
+                    NavigationRoot(
+                        initialRoute = initialRoute.value!!,
+                        // [추가] 펜딩된 ID 전달 및 처리가 끝나면 null로 비워주는 콜백
+                        pendingCouponId = pendingCouponId.value,
+                        onDeepLinkHandled = { pendingCouponId.value = null },
+                    )
+                }
+
+                // 앱이 처음 켜질 때 Intent 확인
+                LaunchedEffect(Unit) {
+                    handleIntent(intent)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        val couponId = intent.getStringExtra("coupon_id")
+        val navigateTo = intent.getStringExtra("navigate_to")
+
+        if (navigateTo == "detail" && couponId != null) {
+            // 이제 navController.navigate 대신 상태값을 변경합니다.
+            pendingCouponId.value = couponId
         }
     }
 

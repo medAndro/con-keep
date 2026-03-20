@@ -1,6 +1,7 @@
 package com.conkeep.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,7 +25,11 @@ import com.conkeep.ui.feature.coupon.list.CouponScreen
 import com.conkeep.ui.feature.setting.SettingScreen
 
 @Composable
-fun NavigationRoot(initialRoute: Route) {
+fun NavigationRoot(
+    initialRoute: Route,
+    pendingCouponId: String?,
+    onDeepLinkHandled: () -> Unit,
+) {
     var isLoggedIn by rememberSaveable {
         mutableStateOf(initialRoute != Route.LoginScreen)
     }
@@ -38,18 +43,44 @@ fun NavigationRoot(initialRoute: Route) {
         }
 
         else -> {
-            MainNavigation()
+            MainNavigation(
+                pendingCouponId = pendingCouponId,
+                onDeepLinkHandled = onDeepLinkHandled,
+            )
         }
     }
 }
 
 @Composable
-private fun MainNavigation() {
+private fun MainNavigation(
+    pendingCouponId: String?,
+    onDeepLinkHandled: () -> Unit,
+) {
     val couponBackStack = rememberNavBackStack(Route.CouponScreen)
     val settingBackStack = rememberNavBackStack(Route.SettingScreen)
 
     var activeTab by rememberSaveable {
         mutableStateOf(TabDestination.Coupon)
+    }
+
+    // [딥링크 감지 로직]
+    LaunchedEffect(pendingCouponId) {
+        if (pendingCouponId != null) {
+            // 1. 탭을 쿠폰 탭으로 강제 이동
+            activeTab = TabDestination.Coupon
+
+            // 2. 이미 상세 페이지가 열려있을 수 있으므로 중복 방지 처리를 하며 상세 페이지 추가
+            // Navigation3는 BackStack(List)에 Key를 추가하면 바로 화면이 이동합니다.
+            val route = Route.CouponDetailScreen(pendingCouponId)
+
+            // 현재 스택의 마지막이 해당 쿠폰 상세가 아닐 때만 추가
+            if (couponBackStack.lastOrNull() != route) {
+                couponBackStack.add(route)
+            }
+
+            // 3. 처리가 완료되었음을 Activity에 알림
+            onDeepLinkHandled()
+        }
     }
 
     TabContainer(

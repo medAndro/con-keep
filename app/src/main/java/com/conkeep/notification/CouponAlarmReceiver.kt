@@ -44,7 +44,7 @@ class CouponAlarmReceiver : BroadcastReceiver() {
                 val targetCoupons: List<Coupon> = couponRepository.getImminentCoupons(daysBefore)
 
                 if (targetCoupons.isNotEmpty()) {
-                    notificationHelper.showGroupedNotifications(targetCoupons)
+                    notificationHelper.showGroupedNotifications(daysBefore, targetCoupons)
                 }
 
                 // [핵심] 다음 알람 스케줄링
