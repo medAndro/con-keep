@@ -22,10 +22,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -35,7 +37,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -130,7 +135,44 @@ fun SettingScreenContent(
         rememberSaveable(stateSaver = CouponAlarmSetting.Saver) {
             mutableStateOf(null)
         }
-    val showSettingsDialog = rememberSaveable { mutableStateOf(false) }
+    val showNotificationSettingsDialog = rememberSaveable { mutableStateOf(false) }
+    val showExactAlarmSettingsDialog = rememberSaveable { mutableStateOf(false) }
+    var pendingExactAlarmCheck by rememberSaveable { mutableStateOf(false) }
+
+    DisposableEffect(
+        LocalLifecycleOwner.current,
+    ) {
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME && pendingExactAlarmCheck) {
+                    pendingExactAlarmCheck = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val alarmManager =
+                            context.getSystemService(android.app.AlarmManager::class.java)
+                        if (alarmManager.canScheduleExactAlarms()) {
+                            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+                        }
+                    }
+                }
+            }
+        val lifecycle = (context as androidx.lifecycle.LifecycleOwner).lifecycle
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+
+    val checkExactAlarmAndShowSheet = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(android.app.AlarmManager::class.java)
+            if (alarmManager.canScheduleExactAlarms()) {
+                showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+            } else {
+                showExactAlarmSettingsDialog.value = true
+            }
+        } else {
+            // Android 11 이하: 권한 불필요
+            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+        }
+    }
 
     // 권한 요청을 위한 런처 정의
     val permissionLauncher =
@@ -138,15 +180,14 @@ fun SettingScreenContent(
             contract = ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
             if (isGranted) {
-                // 권한 허용 시 바로 바텀시트 띄우기
-                showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+                checkExactAlarmAndShowSheet() // 알림 권한 허용 → 정확한 알람 권한 체크로 이동
             } else {
                 if (!ActivityCompat.shouldShowRequestPermissionRationale(
                         activity,
                         android.Manifest.permission.POST_NOTIFICATIONS,
                     )
                 ) {
-                    showSettingsDialog.value = true
+                    showNotificationSettingsDialog.value = true
                 } else {
                     Toast.makeText(context, "알림 권한이 거부되었습니다.", Toast.LENGTH_SHORT).show()
                 }
@@ -161,36 +202,56 @@ fun SettingScreenContent(
                     context,
                     android.Manifest.permission.POST_NOTIFICATIONS,
                 )
-
             if (permissionStatus == PackageManager.PERMISSION_GRANTED) {
-                // 이미 권한이 있음
-                showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+                checkExactAlarmAndShowSheet() // 알림 이미 있으면 바로 정확한 알람 및 리마인더 체크로
             } else {
-                // 권한 요청 실행
                 permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             }
         } else {
-            // Android 13 미만은 권한 체크 없이 바로 실행
-            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+            checkExactAlarmAndShowSheet()
         }
     }
 
-    if (showSettingsDialog.value) {
+    // POST_NOTIFICATIONS 거부 시 다이얼로그
+    if (showNotificationSettingsDialog.value) {
         ConKeepConfirmDialog(
             title = "알림 권한 없음",
-            description = "쿠폰 만료 알림을 받기 위해서\n설정에서 알림 권한 허용이 필요합니다.",
+            description = "쿠폰 만료 알림을 표시하기 위해서\n설정에서 알림 권한 허용이 필요합니다.",
             confirmText = "설정하기",
             cancelText = "취소",
             onConfirm = {
-                showSettingsDialog.value = false
-                // 시스템 설정 페이지로 이동
+                showNotificationSettingsDialog.value = false
                 val intent =
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", context.packageName, null)
                     }
                 context.startActivity(intent)
             },
-            onDismiss = { showSettingsDialog.value = false },
+            onDismiss = { showNotificationSettingsDialog.value = false },
+            confirmTextColor = textPrimary,
+            confirmBackgroundColor = brandPrimary,
+        )
+    }
+
+    // 알람 및 리마인더 다이얼로그 canScheduleExactAlarms() false 시 (Android 12+)
+    if (showExactAlarmSettingsDialog.value) {
+        ConKeepConfirmDialog(
+            title = "알람 및 리마인더 권한 없음",
+            description = "정확한 쿠폰 만료 알림을 받기 위해서\n설정에서 알람 및 리마인더 권한 허용이 필요합니다.",
+            confirmText = "설정하기",
+            cancelText = "취소",
+            onConfirm = {
+                showExactAlarmSettingsDialog.value = false
+                pendingExactAlarmCheck = true
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val intent =
+                        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = "package:${context.packageName}".toUri()
+                        }
+                    context.startActivity(intent)
+                }
+            },
+            onDismiss = { showExactAlarmSettingsDialog.value = false },
             confirmTextColor = textPrimary,
             confirmBackgroundColor = brandPrimary,
         )

@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.data.repository.setting.ExpiryAlertRepository
@@ -80,11 +81,32 @@ class CouponAlarmScheduler
                     )
 
                 // 알람 등록 실행
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent,
-                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        // 권한이 있는 경우: 정확한 알람 예약
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent,
+                        )
+                        Log.d("CouponAlarmScheduler", "정확한 알람 등록 성공: $triggerAtMillis")
+                    } else {
+                        // 권한이 없는 경우: 일반 알람으로 예약 (차선책)
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent,
+                        )
+                        Log.d("CouponAlarmScheduler", "정확한 알람 권한 없음: 일반 알람으로 등록")
+                    }
+                } else {
+                    // Android 12 미만: 바로 정확한 알람 사용 가능
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent,
+                    )
+                }
                 true
             } catch (e: Exception) {
                 Log.e("CouponAlarmScheduler", "알람 등록 중 오류 발생: ${e.message}")
