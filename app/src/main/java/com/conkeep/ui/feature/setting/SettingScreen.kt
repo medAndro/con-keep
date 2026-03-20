@@ -126,7 +126,10 @@ fun SettingScreenContent(
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val activity = context as Activity
-    val showSettingBottomSheet = rememberSaveable { mutableStateOf<CouponAlarmSetting?>(null) }
+    val showSettingBottomSheet =
+        rememberSaveable(stateSaver = CouponAlarmSetting.Saver) {
+            mutableStateOf(null)
+        }
     val showSettingsDialog = rememberSaveable { mutableStateOf(false) }
 
     // 권한 요청을 위한 런처 정의

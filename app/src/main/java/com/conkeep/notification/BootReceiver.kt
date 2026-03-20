@@ -12,16 +12,17 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class BootReceiver : BroadcastReceiver() {
-
     @Inject
     lateinit var couponAlarmScheduler: CouponAlarmScheduler
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         // 시스템으로부터 전달받은 액션이 부팅 완료인지 확인
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == "android.intent.action.QUICKBOOT_POWERON"
         ) {
-
             Log.d("BootReceiver", "기기 부팅 완료 감지: 알람 재등록을 시작합니다.")
 
             // 비동기 작업을 위해 리시버 수명 연장

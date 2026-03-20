@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -86,9 +87,14 @@ fun NotificationSetting(
                 }
 
                 else ->
-                    couponAlarmSettings.sortedWith(compareBy({ it.daysBefore }, { it.targetTime })).forEach { couponAlarmSetting ->
-                        NotificationItem(couponAlarmSetting = couponAlarmSetting, onTrashClick = onTrashClick)
-                    }
+                    couponAlarmSettings
+                        .sortedWith(compareBy({ it.daysBefore }, { it.targetTime }))
+                        .forEach { couponAlarmSetting ->
+                            NotificationItem(
+                                couponAlarmSetting = couponAlarmSetting,
+                                onTrashClick = onTrashClick,
+                            )
+                        }
             }
 
             Surface(
@@ -202,6 +208,33 @@ data class CouponAlarmSetting(
             }
 
         return "만료 $dayText $amPm $hour12:00".trim()
+    }
+
+    companion object {
+        val Saver =
+            mapSaver<CouponAlarmSetting?>(
+                save = { setting ->
+                    if (setting == null) {
+                        mapOf("isNull" to true)
+                    } else {
+                        mapOf(
+                            "isNull" to false,
+                            "daysBefore" to setting.daysBefore,
+                            "targetTime" to setting.targetTime.toNanosecondOfDay(),
+                        )
+                    }
+                },
+                restore = { savedMap ->
+                    if (savedMap["isNull"] as Boolean) {
+                        null
+                    } else {
+                        CouponAlarmSetting(
+                            daysBefore = savedMap["daysBefore"] as Int,
+                            targetTime = LocalTime.fromNanosecondOfDay(savedMap["targetTime"] as Long),
+                        )
+                    }
+                },
+            )
     }
 }
 
