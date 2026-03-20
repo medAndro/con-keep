@@ -11,7 +11,7 @@ import kotlinx.datetime.LocalTime
 @TypeConverters(ExpiryAlertTypeConverters::class)
 @Database(
     entities = [ExpiryAlertEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class ExpiryAlertDatabase : RoomDatabase() {

@@ -33,6 +33,17 @@ class ExpiryAlertRepository
                         }
                 }
 
+        suspend fun getCouponAlarmSettingsSingleShot(): Set<CouponAlarmSetting> {
+            // 안전하게 인증된 ID를 가져옴 (최대 5초 대기)
+            val userId = authManager.getAuthenticatedUserId() ?: return emptySet()
+
+            // Flow가 아닌 직접 DAO에서 리스트를 한 번만 가져옴
+            return expiryAlertDao
+                .getAlertsDirect(userId) // DAO에 리턴 타입이 List인 함수 추가 필요
+                .map { it.toCouponAlarmSetting() }
+                .toSet()
+        }
+
         suspend fun addCouponAlarmSetting(couponAlarmSetting: CouponAlarmSetting): Boolean {
             val userId = authManager.currentUserIdFlow.filterNotNull().first()
             val resultId = expiryAlertDao.insert(couponAlarmSetting.toExpiryAlertEntity(userId))

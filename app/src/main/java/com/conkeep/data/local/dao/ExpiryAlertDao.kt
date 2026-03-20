@@ -18,4 +18,7 @@ interface ExpiryAlertDao {
 
     @Query("SELECT * FROM expiry_alerts where user_id = :userId ORDER BY daysBefore ASC, targetTime ASC")
     fun getAlerts(userId: String): Flow<List<ExpiryAlertEntity>>
+
+    @Query("SELECT * FROM expiry_alerts where user_id = :userId ORDER BY daysBefore ASC, targetTime ASC")
+    suspend fun getAlertsDirect(userId: String): List<ExpiryAlertEntity>
 }
