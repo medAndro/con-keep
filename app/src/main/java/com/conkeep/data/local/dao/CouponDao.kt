@@ -24,6 +24,27 @@ interface CouponDao {
     @Query("SELECT * FROM coupons WHERE id = :id")
     suspend fun getCouponOnce(id: String): CouponEntity?
 
+    @Query("SELECT * FROM coupons WHERE user_id = :userId AND is_deleted = 0 AND is_used = 0 and expiry_date = :expiryDate")
+    suspend fun getImminentCoupons(
+        userId: String,
+        expiryDate: String,
+    ): List<CouponEntity>
+
+    @Query(
+        """
+    SELECT MIN(expiry_date) 
+    FROM coupons 
+    WHERE user_id = :userId 
+      AND is_used = 0 
+      AND is_deleted = 0 
+      AND expiry_date >= :thresholdDate
+    """,
+    )
+    suspend fun getMinExpiryDate(
+        userId: String,
+        thresholdDate: String,
+    ): String?
+
     /**
      * [통합 검색/필터/정렬 쿼리]
      * @param userId: 사용자 ID

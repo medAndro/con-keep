@@ -6,6 +6,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.conkeep.data.repository.coupon.CouponRepository
+import com.conkeep.notification.CouponAlarmScheduler
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import io.ktor.client.plugins.ClientRequestException
@@ -20,10 +21,12 @@ class CouponSyncWorker
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
         private val couponRepository: CouponRepository,
+        private val couponAlarmScheduler: CouponAlarmScheduler,
     ) : CoroutineWorker(context, workerParams) {
         override suspend fun doWork(): Result =
             try {
                 val syncResult = couponRepository.syncIncremental()
+                couponAlarmScheduler.allAlarmRefresh()
                 syncResult.fold(
                     onSuccess = {
                         Log.d("Worker", "증분 동기화 완료")

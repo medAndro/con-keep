@@ -20,7 +20,6 @@ import com.conkeep.navigation.Route
 import com.conkeep.ui.theme.ConKeepTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -135,10 +134,7 @@ class MainActivity : ComponentActivity() {
      */
     private suspend fun syncUserIdToPrefs() {
         try {
-            val userId =
-                withTimeoutOrNull(5000L) {
-                    authManager.currentUserIdFlow.filterNotNull().first()
-                } ?: return
+            val userId = authManager.getAuthenticatedUserId() ?: return
             userPrefs.updateUserId(userId)
             Log.d("MainActivity", "유저 ID 로컬 동기화 완료: $userId")
         } catch (e: Exception) {
@@ -152,10 +148,7 @@ class MainActivity : ComponentActivity() {
     private suspend fun handleFcmTokenUpdate() {
         try {
             // 1. 유저 ID 대기 (최대 5초)
-            val userId =
-                withTimeoutOrNull(5000L) {
-                    authManager.currentUserIdFlow.filterNotNull().first()
-                } ?: return
+            val userId = authManager.getAuthenticatedUserId() ?: return
 
             // 2. 현재 기기의 최신 토큰 가져오기
             val currentToken = FirebaseMessaging.getInstance().token.await()

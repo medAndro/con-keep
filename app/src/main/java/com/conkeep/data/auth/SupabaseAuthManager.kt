@@ -25,8 +25,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
@@ -73,6 +76,33 @@ class SupabaseAuthManager
             currentUserFlow
                 .map { it?.id }
                 .stateIn(scope, SharingStarted.Eagerly, auth.currentUserOrNull()?.id)
+
+        /**
+         * [중요] 백그라운드 작업용 안전한 ID 획득 함수
+         * 1. Supabase 초기화 대기 (로컬 세션 복구)
+         * 2. 로그인 기록이 없으면 null 반환 (불필요한 동작 방지)
+         * 3. 로그인 기록이 있다면 유효한 ID가 나올 때까지 최대 5초 대기
+         */
+        suspend fun getAuthenticatedUserId(): String? {
+            try {
+                // Supabase 내부 초기화 (DataStore에서 토큰 읽기) 대기
+                auth.awaitInitialization()
+
+                // 초기화 직후 세션이 아예 없다면 비로그인 상태로 간주
+                if (auth.currentSessionOrNull() == null) {
+                    Log.d("SupabaseAuth", "로그인 세션이 없습니다. 작업을 중단합니다.")
+                    return null
+                }
+
+                // 세션은 있지만 Flow에 아직 ID가 안 채워졌을 수 있으므로 대기
+                return withTimeoutOrNull(5000L) {
+                    currentUserIdFlow.filterNotNull().first()
+                }
+            } catch (e: Exception) {
+                Log.e("SupabaseAuth", "인증 정보 확인 중 오류 발생", e)
+                return null
+            }
+        }
 
         // 현재 사용자의 마스터키
         val currentUserMasterKeyFlow: StateFlow<ByteArray?> =

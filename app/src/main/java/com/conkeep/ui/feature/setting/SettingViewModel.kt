@@ -3,7 +3,7 @@ package com.conkeep.ui.feature.setting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.setting.ExpiryAlertRepository
-import com.conkeep.notification.NotificationHelper
+import com.conkeep.notification.CouponAlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -18,8 +18,8 @@ import javax.inject.Inject
 class SettingViewModel
     @Inject
     constructor(
-        private val notificationHelper: NotificationHelper,
         private val expiryAlertRepository: ExpiryAlertRepository,
+        private val couponAlarmScheduler: CouponAlarmScheduler,
     ) : ViewModel() {
         val couponAlarmSettings: Flow<Set<CouponAlarmSetting>> =
             expiryAlertRepository
@@ -30,16 +30,20 @@ class SettingViewModel
 
         fun addCouponAlarmSetting(couponAlarmSetting: CouponAlarmSetting) {
             viewModelScope.launch {
-                val result = expiryAlertRepository.addCouponAlarmSetting(couponAlarmSetting)
+                //  DB에 설정 추가 시도
+                val isDbSaved = expiryAlertRepository.addCouponAlarmSetting(couponAlarmSetting)
 
-                when (result) {
-                    true -> {
-                        _toastEvent.emit(SettingEvent.AddCouponAlarmSettingSuccess)
-                    }
+                if (!isDbSaved) {
+                    _toastEvent.emit(SettingEvent.DuplicatedCouponAlarmSetting)
+                    return@launch
+                }
 
-                    false -> {
-                        _toastEvent.emit(SettingEvent.DuplicatedCouponAlarmSetting)
-                    }
+                // DB 저장 성공 시 알람 스케줄링 시도
+                val isAlarmScheduled = couponAlarmScheduler.scheduleNextAlarm(couponAlarmSetting)
+
+                if (isAlarmScheduled) {
+                    // 모든 과정 성공
+                    _toastEvent.emit(SettingEvent.AddCouponAlarmSettingSuccess)
                 }
             }
         }
@@ -47,6 +51,8 @@ class SettingViewModel
         fun removeCouponAlarmSetting(couponAlarmSetting: CouponAlarmSetting) {
             viewModelScope.launch {
                 val result = expiryAlertRepository.removeCouponAlarmSetting(couponAlarmSetting)
+                couponAlarmScheduler.cancelAlarm(couponAlarmSetting)
+
                 when (result) {
                     true -> {
                         _toastEvent.emit(SettingEvent.RemoveCouponAlarmSettingSuccess)
@@ -57,14 +63,6 @@ class SettingViewModel
                     }
                 }
             }
-        }
-
-        fun testNotification() {
-            notificationHelper.showExpiryNotification(
-                id = 1,
-                title = "테스트 알림 제목",
-                message = "테스트 알림 내용",
-            )
         }
     }
 
