@@ -5,11 +5,9 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import androidx.work.WorkManager
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
-import com.conkeep.data.local.file.LocalFileManager
 import com.conkeep.data.mapper.toDomain
 import com.conkeep.data.mapper.toEntity
 import com.conkeep.data.remote.dto.AiAnalyzeJobResponse
@@ -26,6 +24,7 @@ import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponSortType
+import com.conkeep.ui.feature.setting.CouponAlarmSetting
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
@@ -48,14 +47,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Singleton
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,8 +75,6 @@ class CouponRepository
         private val couponDao: CouponDao,
         private val userPrefs: UserPreferencesRepository,
         private val authManager: SupabaseAuthManager,
-        private val workManager: WorkManager,
-        private val localFileManager: LocalFileManager,
         @param:R2UploadClient private val r2Client: HttpClient,
         @param:AuthClient private val authClient: HttpClient,
     ) {
@@ -128,6 +135,60 @@ class CouponRepository
             couponDao
                 .getCouponOnce(id)
                 .let { entity -> entity?.toDomain() }
+
+        // N일 만료일인 쿠폰들을 가져옴
+        suspend fun getImminentCoupons(daysBefore: Int): List<Coupon> {
+            val userId = authManager.getAuthenticatedUserId() ?: return emptyList()
+
+            // 1. 현재 시점 및 타임존 설정
+            val now: Instant = Clock.System.now()
+            val systemTimeZone: TimeZone = TimeZone.currentSystemDefault()
+
+            // 2. 오늘 날짜 가져오기
+            val today: LocalDate = now.toLocalDateTime(systemTimeZone).date
+
+            // 3. daysBefore만큼 더한 날짜 계산
+            // 예: 오늘이 2026-03-10이고 daysBefore가 1이면 오늘 기준 만료 1일전인 2026-03-11일 쿠폰들을 찾아 가져옴
+            val targetDate = today.plus(daysBefore, DateTimeUnit.DAY)
+
+            // 4. yyyy-mm-dd 스트링으로 변환 (toString()이 기본적으로 이 포맷임)
+            val dateString: String = targetDate.toString()
+
+            return couponDao.getImminentCoupons(userId, dateString).toDomain()
+        }
+
+        // 전달받은 알람 시간 기준 가장 근미래에 울릴 날짜를 가져옴
+        suspend fun getNextAlarmTriggerDate(
+            setting: CouponAlarmSetting,
+            forceNext: Boolean = false,
+        ): LocalDate? {
+            val userId = authManager.getAuthenticatedUserId() ?: return null
+
+            val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+            val today = now.date
+            val currentLocalTime = now.time
+
+            // '오늘' 설정된 시간에 알람을 울릴 수 있는지 판단
+            val earliestTriggerDate =
+                if (forceNext || setting.targetTime < currentLocalTime) {
+                    today.plus(1, DateTimeUnit.DAY) // 리시버에서 호출되었거나, 이미 지났다면 내일부터 가능
+                } else {
+                    today // 아직 안 지났다면 오늘부터 가능
+                }
+
+            // 검색해야 할 최소 만료일 계산
+            // 예: 3일 전 알람인데 오늘(월) 울리려면, 최소 목요일 만료 쿠폰이 있어야 함
+            val thresholdDate = earliestTriggerDate.plus(setting.daysBefore, DateTimeUnit.DAY)
+
+            // DB에서 해당 시점 이후 가장 빠른 만료일 조회
+            val nextExpiryDateString =
+                couponDao.getMinExpiryDate(userId, thresholdDate.toString()) ?: return null
+            val nextExpiryDate = LocalDate.parse(nextExpiryDateString)
+
+            // 실제 알람이 울릴 날짜 계산 (찾은 만료일 - N일 전)
+            // 예: 실제 찾은 쿠폰이 금요일 만료라면, 알람은 화요일에 울림 (금 - 3일)
+            return nextExpiryDate.minus(setting.daysBefore, DateTimeUnit.DAY)
+        }
 
         suspend fun addCoupon(coupon: Coupon): String {
             // currentUserIdFlow의 가장 최신 유효 값을 가져옴
@@ -256,14 +317,16 @@ class CouponRepository
             withContext(Dispatchers.IO) {
                 try {
                     val lastSyncTime = userPrefs.lastSyncTime.first()
-                    val currentUserId =
-                        authManager.currentUserIdFlow.first()
-                            ?: return@withContext Result.failure(Exception("Not logged in"))
-
-                    // 마스터키 획득 (null이면 동기화 중단)
-                    val masterKey =
-                        authManager.currentUserMasterKeyFlow.first()
-                            ?: return@withContext Result.failure(Exception("마스터키 없음"))
+                    val (currentUserId, masterKey) =
+                        withTimeout(10000L) {
+                            // 10초 동안 대기
+                            combine(
+                                authManager.currentUserIdFlow,
+                                authManager.currentUserMasterKeyFlow,
+                            ) { id, key ->
+                                if (id != null && key != null) id to key else null
+                            }.filterNotNull().first()
+                        }
 
                     val response =
                         supabase.from("coupons").select {
@@ -299,6 +362,7 @@ class CouponRepository
                         couponDao.setIsClean(dto.id)
                         userPrefs.updateLastSyncTime(dto.updatedAt)
                     }
+                    Log.d("CouponRepository", "증분 동기화 완료")
                     Result.success(coupons)
                 } catch (e: Exception) {
                     Log.e("CouponRepository", "증분 동기화 실패", e)

@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -40,6 +41,7 @@ import kotlinx.datetime.LocalTime
 @Composable
 fun NotificationSetting(
     onAddNewAlarmClick: () -> Unit,
+    onTrashClick: (CouponAlarmSetting) -> Unit,
     modifier: Modifier = Modifier,
     couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
 ) {
@@ -85,9 +87,14 @@ fun NotificationSetting(
                 }
 
                 else ->
-                    couponAlarmSettings.sortedWith(compareBy({ it.daysBefore }, { it.targetTime })).forEach { couponAlarmSetting ->
-                        NotificationItem(couponAlarmSetting = couponAlarmSetting, onTrashClick = {})
-                    }
+                    couponAlarmSettings
+                        .sortedWith(compareBy({ it.daysBefore }, { it.targetTime }))
+                        .forEach { couponAlarmSetting ->
+                            NotificationItem(
+                                couponAlarmSetting = couponAlarmSetting,
+                                onTrashClick = onTrashClick,
+                            )
+                        }
             }
 
             Surface(
@@ -132,7 +139,7 @@ fun NotificationSetting(
 @Composable
 fun NotificationItem(
     couponAlarmSetting: CouponAlarmSetting,
-    onTrashClick: () -> Unit,
+    onTrashClick: (CouponAlarmSetting) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -160,7 +167,7 @@ fun NotificationItem(
                 color = badgeWarning,
             )
             IconButton(
-                onClick = onTrashClick,
+                onClick = { onTrashClick(couponAlarmSetting) },
                 modifier =
                     Modifier
                         .size(36.dp)
@@ -202,6 +209,33 @@ data class CouponAlarmSetting(
 
         return "만료 $dayText $amPm $hour12:00".trim()
     }
+
+    companion object {
+        val Saver =
+            mapSaver<CouponAlarmSetting?>(
+                save = { setting ->
+                    if (setting == null) {
+                        mapOf("isNull" to true)
+                    } else {
+                        mapOf(
+                            "isNull" to false,
+                            "daysBefore" to setting.daysBefore,
+                            "targetTime" to setting.targetTime.toNanosecondOfDay(),
+                        )
+                    }
+                },
+                restore = { savedMap ->
+                    if (savedMap["isNull"] as Boolean) {
+                        null
+                    } else {
+                        CouponAlarmSetting(
+                            daysBefore = savedMap["daysBefore"] as Int,
+                            targetTime = LocalTime.fromNanosecondOfDay(savedMap["targetTime"] as Long),
+                        )
+                    }
+                },
+            )
+    }
 }
 
 @Preview
@@ -212,6 +246,7 @@ fun NotificationSettingEmptyPreview() {
             NotificationSetting(
                 onAddNewAlarmClick = {},
                 couponAlarmSettings = emptySet(),
+                onTrashClick = {},
             )
         }
     }
@@ -229,6 +264,7 @@ fun NotificationSettingPreview() {
                         CouponAlarmSetting(0, LocalTime(12, 0)),
                         CouponAlarmSetting(1, LocalTime(9, 0)),
                     ),
+                onTrashClick = {},
             )
         }
     }

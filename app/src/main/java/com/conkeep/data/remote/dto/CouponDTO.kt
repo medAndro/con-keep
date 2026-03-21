@@ -1,7 +1,5 @@
 package com.conkeep.data.remote.dto
 
-import androidx.room.TypeConverter
-import com.conkeep.ui.feature.coupon.model.CouponSortType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -25,11 +23,3 @@ data class CouponDto(
     val status: String,
     @SerialName("is_deleted") val isDeleted: Boolean,
 )
-
-class CouponTypeConverters {
-    @TypeConverter
-    fun fromSortType(type: CouponSortType): Int = type.sortType
-
-    @TypeConverter
-    fun toSortType(value: Int): CouponSortType = CouponSortType.entries.find { it.sortType == value } ?: CouponSortType.RECENT_ADD
-}

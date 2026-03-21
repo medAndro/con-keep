@@ -63,7 +63,10 @@ fun CouponAlarmWheelPicker(
             (0..maxDaysBefore).map { if (it == 0) "당일" else "${it}일 전" }
         }
     val amPmOptions = listOf("오전", "오후")
-    val hourOptions = (1..12).map { it.toString() }
+    val hourOptions =
+        remember {
+            listOf("12") + (1..11).map { it.toString() }
+        }
 
     // 2. 초기 상태 설정
     var currentDaysBefore by remember { mutableStateOf(initialSetting.daysBefore) }
@@ -143,7 +146,12 @@ fun CouponAlarmWheelPicker(
                 startIndex = hourOptions.indexOf(currentHour12.toString()),
                 onScrollFinished = { index ->
                     currentHour12 = hourOptions[index].toInt()
-                    onAlarmSettingChanged(CouponAlarmSetting(currentDaysBefore, createLocalTime(currentAmPm, currentHour12)))
+                    onAlarmSettingChanged(
+                        CouponAlarmSetting(
+                            currentDaysBefore,
+                            createLocalTime(currentAmPm, currentHour12),
+                        ),
+                    )
                     return@WheelTextPickerWithSuffix index
                 },
             )
