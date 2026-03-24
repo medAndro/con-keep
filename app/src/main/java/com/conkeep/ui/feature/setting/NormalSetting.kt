@@ -30,7 +30,10 @@ import com.conkeep.ui.theme.PretendardSemibold20
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NormalSetting(modifier: Modifier = Modifier) {
+fun NormalSetting(
+    onClickNotice: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -49,7 +52,7 @@ fun NormalSetting(modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            NormalSettingItem("설정1", onClick = {})
+            NormalSettingItem("공지사항", onClick = onClickNotice)
             NormalSettingItem("설정2", onClick = {})
             NormalSettingItem("설정3", onClick = {})
         }
@@ -85,7 +88,10 @@ fun NormalSettingItem(
                 painter = painterResource(R.drawable.ic_chevron_right_small),
                 contentDescription = "삭제",
                 tint = textPrimary,
-                modifier = Modifier.size(20.dp).align(Alignment.TopEnd),
+                modifier =
+                    Modifier
+                        .size(20.dp)
+                        .align(Alignment.TopEnd),
             )
         }
     }
@@ -96,7 +102,10 @@ fun NormalSettingItem(
 fun NormalSettingPreview() {
     ConKeepTheme {
         Surface(color = brandSecondary) {
-            NormalSetting()
+            NormalSetting(
+                onClickNotice = {},
+                modifier = Modifier.padding(20.dp),
+            )
         }
     }
 }

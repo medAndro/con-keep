@@ -6,10 +6,14 @@ import android.content.Intent
 import android.provider.Settings
 import android.util.Base64
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import com.conkeep.BuildConfig
 import com.conkeep.data.repository.auth.AuthRepository
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import io.github.jan.supabase.SupabaseClient
@@ -190,6 +194,10 @@ class SupabaseAuthManager
                         ?: throw Exception("로그인 후 사용자 정보를 가져오지 못했습니다.")
 
                 Result.success(user)
+            } catch (e: GetCredentialProviderConfigurationException) {
+                // Play Services 미준비
+                handlePlayServicesUpdate(activity)
+                Result.failure(PlayServicesNotReadyException("Google Play Services를 업데이트해주세요"))
             } catch (e: androidx.credentials.exceptions.NoCredentialException) {
                 promptAddGoogleAccount(activity)
                 Result.failure(NoGoogleAccountException("구글 계정을 먼저 추가해주세요"))
@@ -223,6 +231,31 @@ class SupabaseAuthManager
             }
         }
 
+        private fun handlePlayServicesUpdate(activity: Activity) {
+            val api = GoogleApiAvailability.getInstance()
+            val status = api.isGooglePlayServicesAvailable(activity)
+
+            if (status != ConnectionResult.SUCCESS && api.isUserResolvableError(status)) {
+                api.getErrorDialog(activity, status, 9000)?.show()
+            } else {
+                try {
+                    activity.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            "market://details?id=com.google.android.gms".toUri(),
+                        ),
+                    )
+                } catch (e: ActivityNotFoundException) {
+                    activity.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            "https://play.google.com/store/apps/details?id=com.google.android.gms".toUri(),
+                        ),
+                    )
+                }
+            }
+        }
+
         suspend fun signOut() {
             auth.signOut()
         }
@@ -237,5 +270,9 @@ class SupabaseAuthManager
     }
 
 class NoGoogleAccountException(
+    message: String,
+) : Exception(message)
+
+class PlayServicesNotReadyException(
     message: String,
 ) : Exception(message)
