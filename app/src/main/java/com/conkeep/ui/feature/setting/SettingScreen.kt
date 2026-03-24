@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.BuildConfig
+import com.conkeep.navigation.Route
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.ConKeepConfirmDialog
@@ -110,6 +111,9 @@ fun SettingScreen(
         }
     }
     SettingScreenContent(
+        onClickNotice = {
+            settingBackStack.add(Route.NoticeScreen)
+        },
         onTabChange = onTabChange,
         couponAlarmSettings = couponAlarmSettings,
         addCouponAlarmSetting = viewModel::addCouponAlarmSetting,
@@ -120,6 +124,7 @@ fun SettingScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreenContent(
+    onClickNotice: () -> Unit,
     onTabChange: (TabDestination) -> Unit,
     addCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
     removeCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
@@ -309,7 +314,7 @@ fun SettingScreenContent(
                     },
                     couponAlarmSettings = couponAlarmSettings,
                 )
-                NormalSetting()
+                NormalSetting(onClickNotice)
                 Text(
                     "현재 버전 v${BuildConfig.VERSION_NAME}",
                     style = PretendardMedium12,
@@ -325,6 +330,7 @@ fun SettingScreenContent(
 private fun SettingScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         SettingScreenContent(
+            onClickNotice = {},
             onTabChange = {},
             addCouponAlarmSetting = {},
             removeCouponAlarmSetting = {},

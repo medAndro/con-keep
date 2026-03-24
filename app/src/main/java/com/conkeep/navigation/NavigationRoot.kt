@@ -23,6 +23,7 @@ import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
 import com.conkeep.ui.feature.coupon.list.CouponScreen
 import com.conkeep.ui.feature.setting.SettingScreen
+import com.conkeep.ui.feature.setting.notice.NoticeScreen
 
 @Composable
 fun NavigationRoot(
@@ -188,6 +189,12 @@ private fun SettingNavigation(
             entryProvider {
                 entry<Route.SettingScreen> {
                     SettingScreen(
+                        settingBackStack = settingBackStack,
+                        onTabChange = onTabChange,
+                    )
+                }
+                entry<Route.NoticeScreen> {
+                    NoticeScreen(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
                     )
