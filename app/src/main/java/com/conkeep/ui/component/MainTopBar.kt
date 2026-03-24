@@ -66,7 +66,7 @@ fun MainTopBar(
                     Image(
                         painter = cornEmojiPainter,
                         contentDescription = stringResource(R.string.topbar_conkeep_logo_description),
-                        modifier = Modifier.size(42.dp),
+                        modifier = Modifier.size(45.dp),
                     )
                     Text(
                         text = stringResource(R.string.app_name),
