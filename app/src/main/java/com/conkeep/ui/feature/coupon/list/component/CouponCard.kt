@@ -106,8 +106,8 @@ fun CouponCard(
                                 .crossfade(true)
                                 .build(),
                         contentDescription = stringResource(R.string.coupon_card_image_description),
-                        placeholder = painterResource(R.drawable.ic_corn_ms_emoji),
-                        error = painterResource(R.drawable.ic_corn_ms_emoji),
+                        placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                        error = painterResource(R.drawable.ic_launcher_foreground),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.matchParentSize(),
                     )
