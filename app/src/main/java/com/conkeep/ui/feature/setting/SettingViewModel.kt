@@ -2,6 +2,7 @@ package com.conkeep.ui.feature.setting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.setting.ExpiryAlertRepository
 import com.conkeep.notification.CouponAlarmScheduler
 import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
@@ -21,6 +22,7 @@ class SettingViewModel
     constructor(
         private val expiryAlertRepository: ExpiryAlertRepository,
         private val couponAlarmScheduler: CouponAlarmScheduler,
+        private val supabaseAuthManager: SupabaseAuthManager,
     ) : ViewModel() {
         val couponAlarmSettings: Flow<Set<CouponAlarmSetting>> =
             expiryAlertRepository
@@ -65,6 +67,13 @@ class SettingViewModel
                 }
             }
         }
+
+        fun logout() {
+            viewModelScope.launch {
+                supabaseAuthManager.signOut()
+                _toastEvent.emit(SettingEvent.LogoutSuccess)
+            }
+        }
     }
 
 sealed class SettingEvent {
@@ -75,4 +84,6 @@ sealed class SettingEvent {
     data object RemoveCouponAlarmSettingSuccess : SettingEvent()
 
     data object RemoveCouponAlarmSettingFailed : SettingEvent()
+
+    data object LogoutSuccess : SettingEvent()
 }

@@ -70,6 +70,7 @@ import kotlinx.datetime.LocalTime
 fun SettingScreen(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
+    moveLoginScreen: () -> Unit,
     viewModel: SettingViewModel = hiltViewModel(),
 ) {
     val couponAlarmSettings by viewModel.couponAlarmSettings.collectAsStateWithLifecycle(
@@ -82,6 +83,8 @@ fun SettingScreen(
 
     val removeCouponAlarmSettingSuccessMessage = "알림이 삭제되었습니다."
     val removeCouponAlarmSettingFailedMessage = "알림이 삭제되지 않았습니다."
+
+    val logoutSettingMessage = "로그아웃 되었습니다."
 
     val showSettingBottomSheet =
         rememberSaveable(stateSaver = CouponAlarmSetting.Saver) {
@@ -199,6 +202,16 @@ fun SettingScreen(
                             removeCouponAlarmSettingSuccessMessage,
                             Toast.LENGTH_SHORT,
                         ).show()
+
+                SettingEvent.LogoutSuccess -> {
+                    Toast
+                        .makeText(
+                            context,
+                            logoutSettingMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    moveLoginScreen()
+                }
             }
         }
     }
@@ -218,6 +231,7 @@ fun SettingScreen(
         onUpdateBottomSheet = { showSettingBottomSheet.value = it },
         showLogoutDialog = showLogoutDialog.value,
         onShowLogoutDialog = { showLogoutDialog.value = true },
+        onLogout = viewModel::logout,
         onDismissLogoutDialog = {
             showLogoutDialog.value = false
         },
@@ -246,6 +260,7 @@ fun SettingScreenContent(
     // 계정 설정 관련
     showLogoutDialog: Boolean,
     onShowLogoutDialog: () -> Unit,
+    onLogout: () -> Unit,
     onDismissLogoutDialog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -315,10 +330,13 @@ fun SettingScreenContent(
     if (showLogoutDialog) {
         ConKeepConfirmDialog(
             title = "로그아웃 확인",
-            description = "다시 로그인하면 저장된 쿠폰을 불러올 있어요",
+            description = "다시 로그인하면 저장된 쿠폰을 불러올 수 있어요",
             confirmText = "로그아웃",
             cancelText = "취소",
-            onConfirm = { onDismissLogoutDialog() }, // todo: 로그아웃 추가 필요
+            onConfirm = {
+                onLogout()
+                onDismissLogoutDialog()
+            },
             onDismiss = { onDismissLogoutDialog() },
             confirmTextColor = textPrimary,
             confirmBackgroundColor = brandPrimary,
@@ -397,6 +415,7 @@ private fun SettingScreenContentPreview() {
             onUpdateBottomSheet = {},
             showLogoutDialog = false,
             onShowLogoutDialog = {},
+            onLogout = {},
             onDismissLogoutDialog = {},
         )
     }
@@ -422,6 +441,7 @@ private fun SettingScreenContentPermissionDialogPreview() {
             onUpdateBottomSheet = {},
             showLogoutDialog = false,
             onShowLogoutDialog = {},
+            onLogout = {},
             onDismissLogoutDialog = {},
         )
     }

@@ -47,6 +47,9 @@ fun NavigationRoot(
             MainNavigation(
                 pendingCouponId = pendingCouponId,
                 onDeepLinkHandled = onDeepLinkHandled,
+                navigateLoginScreen = {
+                    isLoggedIn = false
+                },
             )
         }
     }
@@ -56,6 +59,7 @@ fun NavigationRoot(
 private fun MainNavigation(
     pendingCouponId: String?,
     onDeepLinkHandled: () -> Unit,
+    navigateLoginScreen: () -> Unit,
 ) {
     val couponBackStack = rememberNavBackStack(Route.CouponScreen)
     val settingBackStack = rememberNavBackStack(Route.SettingScreen)
@@ -100,6 +104,10 @@ private fun MainNavigation(
                 SettingNavigation(
                     settingBackStack = settingBackStack,
                     onTabChange = { activeTab = it },
+                    moveLoginScreen = {
+                        activeTab = TabDestination.Coupon
+                        navigateLoginScreen()
+                    },
                 )
             }
         }
@@ -172,6 +180,7 @@ private fun CouponNavigation(
 private fun SettingNavigation(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
+    moveLoginScreen: () -> Unit,
 ) {
     NavDisplay(
         backStack = settingBackStack,
@@ -191,6 +200,7 @@ private fun SettingNavigation(
                     SettingScreen(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
+                        moveLoginScreen = moveLoginScreen,
                     )
                 }
                 entry<Route.NoticeScreen> {
