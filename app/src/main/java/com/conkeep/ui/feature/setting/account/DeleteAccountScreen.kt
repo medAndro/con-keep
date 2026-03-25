@@ -18,6 +18,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -33,9 +35,11 @@ import com.conkeep.R
 import com.conkeep.navigation.Route
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
+import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.TopBarButtonConfig
 import com.conkeep.ui.theme.ConKeepColors.badgeExpiringBg
+import com.conkeep.ui.theme.ConKeepColors.brandSecondary
 import com.conkeep.ui.theme.ConKeepColors.buttonPositiveBg
 import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepColors.textSecondary
@@ -54,6 +58,40 @@ fun DeleteAccountScreen(
     val placeholderPainter = painterResource(R.drawable.img_conkeep_byebye)
     val context = LocalContext.current
 
+    val showDeleteAccountDialog = rememberSaveable { mutableStateOf(false) }
+
+    fun cancelDeleteAccount() {
+        settingBackStack.removeLastOrNull()
+        onTabChange(TabDestination.Coupon)
+        Toast.makeText(context, "콘킾을 계속 사용해주셔서 감사합니다!", Toast.LENGTH_SHORT).show()
+    }
+
+    if (showDeleteAccountDialog.value) {
+        ConKeepConfirmDialog(
+            title = "마지막 알림",
+            description = "탈퇴하기 버튼을 누르면 탈퇴 처리됩니다.\n이 작업은 되돌릴 수 없습니다.",
+            confirmText = "돌아가기",
+            cancelText = "탈퇴하기",
+            onConfirm = {
+                // 탈퇴 취소 로직
+                showDeleteAccountDialog.value = false
+                cancelDeleteAccount()
+            },
+            onDismiss = {
+                // 닫기 로직
+                showDeleteAccountDialog.value = false
+            },
+            onCancel = {
+                // 탈퇴 처리 로직
+                showDeleteAccountDialog.value = false
+                Toast.makeText(context, "그동안 콘킾을 이용해주셔서 감사합니다.", Toast.LENGTH_SHORT).show()
+            },
+            confirmTextColor = textWhite,
+            confirmBackgroundColor = buttonPositiveBg,
+            cancelTextColor = textSecondary,
+            cancelBackGroundColor = brandSecondary,
+        )
+    }
     Scaffold(
         topBar = {
             EvenlyTextTopBar(
@@ -125,11 +163,7 @@ fun DeleteAccountScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Button(
-                    onClick = {
-                        settingBackStack.removeLastOrNull()
-                        onTabChange(TabDestination.Coupon)
-                        Toast.makeText(context, "콘킾을 계속 사용해주셔서 감사합니다!", Toast.LENGTH_SHORT).show()
-                    },
+                    onClick = { cancelDeleteAccount() },
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -148,7 +182,7 @@ fun DeleteAccountScreen(
                 }
 
                 Button(
-                    onClick = { },
+                    onClick = { showDeleteAccountDialog.value = true },
                     modifier =
                         Modifier
                             .fillMaxWidth()
