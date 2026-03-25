@@ -30,4 +30,8 @@ enum class CouponStatus {
 
     /** 영구적 실패: 클라이언트 이슈로 업로드 자체가 실패함 */
     PERMANENT_FAILED,
+
+    /** 삭제됨: SoftDeleted된 쿠폰 */
+    DELETED,
+
 }
