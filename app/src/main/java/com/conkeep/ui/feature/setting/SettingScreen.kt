@@ -1,6 +1,8 @@
 package com.conkeep.ui.feature.setting
 
+import android.Manifest
 import android.app.Activity
+import android.app.AlarmManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -39,6 +41,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
@@ -86,10 +90,11 @@ fun SettingScreen(
     val showNotificationSettingsDialog = rememberSaveable { mutableStateOf(false) }
     val showExactAlarmSettingsDialog = rememberSaveable { mutableStateOf(false) }
     var pendingExactAlarmCheck by rememberSaveable { mutableStateOf(false) }
+    val showLogoutDialog = rememberSaveable { mutableStateOf(false) }
 
     val checkExactAlarmAndShowSheet = {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val alarmManager = context.getSystemService(android.app.AlarmManager::class.java)
+            val alarmManager = context.getSystemService(AlarmManager::class.java)
             if (alarmManager.canScheduleExactAlarms()) {
                 showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
             } else {
@@ -111,7 +116,7 @@ fun SettingScreen(
             } else {
                 if (!ActivityCompat.shouldShowRequestPermissionRationale(
                         activity,
-                        android.Manifest.permission.POST_NOTIFICATIONS,
+                        Manifest.permission.POST_NOTIFICATIONS,
                     )
                 ) {
                     showNotificationSettingsDialog.value = true
@@ -127,12 +132,12 @@ fun SettingScreen(
             val permissionStatus =
                 ContextCompat.checkSelfPermission(
                     context,
-                    android.Manifest.permission.POST_NOTIFICATIONS,
+                    Manifest.permission.POST_NOTIFICATIONS,
                 )
             if (permissionStatus == PackageManager.PERMISSION_GRANTED) {
                 checkExactAlarmAndShowSheet() // 알림 이미 있으면 바로 정확한 알람 및 리마인더 체크로
             } else {
-                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         } else {
             checkExactAlarmAndShowSheet()
@@ -143,19 +148,19 @@ fun SettingScreen(
         LocalLifecycleOwner.current,
     ) {
         val observer =
-            androidx.lifecycle.LifecycleEventObserver { _, event ->
+            LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME && pendingExactAlarmCheck) {
                     pendingExactAlarmCheck = false
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val alarmManager =
-                            context.getSystemService(android.app.AlarmManager::class.java)
+                            context.getSystemService(AlarmManager::class.java)
                         if (alarmManager.canScheduleExactAlarms()) {
                             showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
                         }
                     }
                 }
             }
-        val lifecycle = (context as androidx.lifecycle.LifecycleOwner).lifecycle
+        val lifecycle = (context as LifecycleOwner).lifecycle
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
@@ -211,6 +216,11 @@ fun SettingScreen(
         onDismissExactAlarmDialog = { showExactAlarmSettingsDialog.value = false },
         showSettingBottomSheet = showSettingBottomSheet.value,
         onUpdateBottomSheet = { showSettingBottomSheet.value = it },
+        showLogoutDialog = showLogoutDialog.value,
+        onShowLogoutDialog = { showLogoutDialog.value = true },
+        onDismissLogoutDialog = {
+            showLogoutDialog.value = false
+        },
     )
 }
 
@@ -233,6 +243,10 @@ fun SettingScreenContent(
     onDismissExactAlarmDialog: () -> Unit,
     showSettingBottomSheet: CouponAlarmSetting?,
     onUpdateBottomSheet: (CouponAlarmSetting?) -> Unit,
+    // 계정 설정 관련
+    showLogoutDialog: Boolean,
+    onShowLogoutDialog: () -> Unit,
+    onDismissLogoutDialog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -297,6 +311,20 @@ fun SettingScreenContent(
         )
     }
 
+    // 로그아웃 다이얼로그
+    if (showLogoutDialog) {
+        ConKeepConfirmDialog(
+            title = "로그아웃 확인",
+            description = "다시 로그인하면 저장된 쿠폰을 불러올 있어요",
+            confirmText = "로그아웃",
+            cancelText = "취소",
+            onConfirm = { onDismissLogoutDialog() }, // todo: 로그아웃 추가 필요
+            onDismiss = { onDismissLogoutDialog() },
+            confirmTextColor = textPrimary,
+            confirmBackgroundColor = brandPrimary,
+        )
+    }
+
     Scaffold(
         topBar = {
             SettingTopBar()
@@ -338,7 +366,7 @@ fun SettingScreenContent(
                     couponAlarmSettings = couponAlarmSettings,
                 )
                 NormalSetting(onClickNotice)
-                AccountSetting({}, {})
+                AccountSetting({ onShowLogoutDialog() }, {})
                 Text(
                     "현재 버전 v${BuildConfig.VERSION_NAME}",
                     style = PretendardMedium12,
@@ -367,6 +395,9 @@ private fun SettingScreenContentPreview() {
             onDismissExactAlarmDialog = {},
             showSettingBottomSheet = null,
             onUpdateBottomSheet = {},
+            showLogoutDialog = false,
+            onShowLogoutDialog = {},
+            onDismissLogoutDialog = {},
         )
     }
 }
@@ -389,6 +420,9 @@ private fun SettingScreenContentPermissionDialogPreview() {
             onDismissExactAlarmDialog = {},
             showSettingBottomSheet = null,
             onUpdateBottomSheet = {},
+            showLogoutDialog = false,
+            onShowLogoutDialog = {},
+            onDismissLogoutDialog = {},
         )
     }
 }
