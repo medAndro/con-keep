@@ -72,74 +72,13 @@ fun SettingScreen(
         initialValue = emptySet(),
     )
     val context = LocalContext.current
+    val activity = context as Activity
     val addCouponAlarmSettingSuccessMessage = "알림이 추가되었습니다."
     val addCouponAlarmSettingErrorMessage = "해당 알림은 이미 추가되어 있습니다."
 
     val removeCouponAlarmSettingSuccessMessage = "알림이 삭제되었습니다."
     val removeCouponAlarmSettingFailedMessage = "알림이 삭제되지 않았습니다."
 
-    LaunchedEffect(Unit) {
-        viewModel.toastEvent.collect { toastMessage ->
-            when (toastMessage) {
-                SettingEvent.AddCouponAlarmSettingSuccess ->
-                    Toast
-                        .makeText(
-                            context,
-                            addCouponAlarmSettingSuccessMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-
-                SettingEvent.DuplicatedCouponAlarmSetting ->
-                    Toast
-                        .makeText(
-                            context,
-                            addCouponAlarmSettingErrorMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-
-                SettingEvent.RemoveCouponAlarmSettingFailed ->
-                    Toast
-                        .makeText(
-                            context,
-                            removeCouponAlarmSettingFailedMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-
-                SettingEvent.RemoveCouponAlarmSettingSuccess ->
-                    Toast
-                        .makeText(
-                            context,
-                            removeCouponAlarmSettingSuccessMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-            }
-        }
-    }
-    SettingScreenContent(
-        onClickNotice = {
-            settingBackStack.add(Route.NoticeScreen)
-        },
-        onTabChange = onTabChange,
-        couponAlarmSettings = couponAlarmSettings,
-        addCouponAlarmSetting = viewModel::addCouponAlarmSetting,
-        removeCouponAlarmSetting = viewModel::removeCouponAlarmSetting,
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingScreenContent(
-    onClickNotice: () -> Unit,
-    onTabChange: (TabDestination) -> Unit,
-    addCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
-    removeCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
-    modifier: Modifier = Modifier,
-    couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
-) {
-    val scrollState = rememberScrollState()
-    val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    val activity = context as Activity
     val showSettingBottomSheet =
         rememberSaveable(stateSaver = CouponAlarmSetting.Saver) {
             mutableStateOf(null)
@@ -147,27 +86,6 @@ fun SettingScreenContent(
     val showNotificationSettingsDialog = rememberSaveable { mutableStateOf(false) }
     val showExactAlarmSettingsDialog = rememberSaveable { mutableStateOf(false) }
     var pendingExactAlarmCheck by rememberSaveable { mutableStateOf(false) }
-
-    DisposableEffect(
-        LocalLifecycleOwner.current,
-    ) {
-        val observer =
-            androidx.lifecycle.LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_RESUME && pendingExactAlarmCheck) {
-                    pendingExactAlarmCheck = false
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val alarmManager =
-                            context.getSystemService(android.app.AlarmManager::class.java)
-                        if (alarmManager.canScheduleExactAlarms()) {
-                            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
-                        }
-                    }
-                }
-            }
-        val lifecycle = (context as androidx.lifecycle.LifecycleOwner).lifecycle
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
-    }
 
     val checkExactAlarmAndShowSheet = {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -221,37 +139,137 @@ fun SettingScreenContent(
         }
     }
 
+    DisposableEffect(
+        LocalLifecycleOwner.current,
+    ) {
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME && pendingExactAlarmCheck) {
+                    pendingExactAlarmCheck = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val alarmManager =
+                            context.getSystemService(android.app.AlarmManager::class.java)
+                        if (alarmManager.canScheduleExactAlarms()) {
+                            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+                        }
+                    }
+                }
+            }
+        val lifecycle = (context as androidx.lifecycle.LifecycleOwner).lifecycle
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.toastEvent.collect { toastMessage ->
+            when (toastMessage) {
+                SettingEvent.AddCouponAlarmSettingSuccess ->
+                    Toast
+                        .makeText(
+                            context,
+                            addCouponAlarmSettingSuccessMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                SettingEvent.DuplicatedCouponAlarmSetting ->
+                    Toast
+                        .makeText(
+                            context,
+                            addCouponAlarmSettingErrorMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                SettingEvent.RemoveCouponAlarmSettingFailed ->
+                    Toast
+                        .makeText(
+                            context,
+                            removeCouponAlarmSettingFailedMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                SettingEvent.RemoveCouponAlarmSettingSuccess ->
+                    Toast
+                        .makeText(
+                            context,
+                            removeCouponAlarmSettingSuccessMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+            }
+        }
+    }
+    SettingScreenContent(
+        couponAlarmSettings = couponAlarmSettings,
+        onClickNotice = { settingBackStack.add(Route.NoticeScreen) },
+        onTabChange = onTabChange,
+        addCouponAlarmSetting = viewModel::addCouponAlarmSetting,
+        removeCouponAlarmSetting = viewModel::removeCouponAlarmSetting,
+        checkPermissionAndShowSheet = { checkPermissionAndShowSheet() },
+        updatePendingExactAlarmCheck = { pendingExactAlarmCheck = it },
+        showNotificationSettingsDialog = showNotificationSettingsDialog.value,
+        onDismissNotificationDialog = { showNotificationSettingsDialog.value = false },
+        showExactAlarmSettingsDialog = showExactAlarmSettingsDialog.value,
+        onDismissExactAlarmDialog = { showExactAlarmSettingsDialog.value = false },
+        showSettingBottomSheet = showSettingBottomSheet.value,
+        onUpdateBottomSheet = { showSettingBottomSheet.value = it },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingScreenContent(
+    // 데이터 및 기본 콜백
+    couponAlarmSettings: Set<CouponAlarmSetting>,
+    onClickNotice: () -> Unit,
+    onTabChange: (TabDestination) -> Unit,
+    addCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
+    removeCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
+    // 권한 관련 액션
+    checkPermissionAndShowSheet: () -> Unit,
+    updatePendingExactAlarmCheck: (Boolean) -> Unit,
+    // UI 상태 제어 (State & 이벤트를 쌍으로 전달)
+    showNotificationSettingsDialog: Boolean,
+    onDismissNotificationDialog: () -> Unit,
+    showExactAlarmSettingsDialog: Boolean,
+    onDismissExactAlarmDialog: () -> Unit,
+    showSettingBottomSheet: CouponAlarmSetting?,
+    onUpdateBottomSheet: (CouponAlarmSetting?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+
     // POST_NOTIFICATIONS 거부 시 다이얼로그
-    if (showNotificationSettingsDialog.value) {
+    if (showNotificationSettingsDialog) {
         ConKeepConfirmDialog(
             title = "알림 권한 없음",
             description = "쿠폰 만료 알림을 표시하기 위해서\n설정에서 알림 권한 허용이 필요합니다.",
             confirmText = "설정하기",
             cancelText = "취소",
             onConfirm = {
-                showNotificationSettingsDialog.value = false
+                onDismissNotificationDialog()
                 val intent =
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", context.packageName, null)
                     }
                 context.startActivity(intent)
             },
-            onDismiss = { showNotificationSettingsDialog.value = false },
+            onDismiss = { onDismissNotificationDialog() },
             confirmTextColor = textPrimary,
             confirmBackgroundColor = brandPrimary,
         )
     }
 
     // 알람 및 리마인더 다이얼로그 canScheduleExactAlarms() false 시 (Android 12+)
-    if (showExactAlarmSettingsDialog.value) {
+    if (showExactAlarmSettingsDialog) {
         ConKeepConfirmDialog(
             title = "알람 및 리마인더 권한 없음",
             description = "정확한 쿠폰 만료 알림을 받기 위해서\n설정에서 알람 및 리마인더 권한 허용이 필요합니다.",
             confirmText = "설정하기",
             cancelText = "취소",
             onConfirm = {
-                showExactAlarmSettingsDialog.value = false
-                pendingExactAlarmCheck = true
+                onDismissExactAlarmDialog()
+                updatePendingExactAlarmCheck(true)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     val intent =
                         Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
@@ -260,21 +278,21 @@ fun SettingScreenContent(
                     context.startActivity(intent)
                 }
             },
-            onDismiss = { showExactAlarmSettingsDialog.value = false },
+            onDismiss = { onDismissExactAlarmDialog() },
             confirmTextColor = textPrimary,
             confirmBackgroundColor = brandPrimary,
         )
     }
 
-    showSettingBottomSheet.value?.let { initAlarmSetting: CouponAlarmSetting ->
+    showSettingBottomSheet?.let { initAlarmSetting: CouponAlarmSetting ->
         AlarmSettingDialog(
             onConfirm = { selectedAlarm ->
                 addCouponAlarmSetting(selectedAlarm)
-                showSettingBottomSheet.value = null
+                onUpdateBottomSheet(null)
             },
             initAlarmSetting = initAlarmSetting,
             onCancel = {
-                showSettingBottomSheet.value = null
+                onUpdateBottomSheet(null)
             },
         )
     }
@@ -336,10 +354,41 @@ fun SettingScreenContent(
 private fun SettingScreenContentPreview() {
     ConKeepTheme(darkTheme = false) {
         SettingScreenContent(
+            couponAlarmSettings = emptySet(),
             onClickNotice = {},
             onTabChange = {},
             addCouponAlarmSetting = {},
             removeCouponAlarmSetting = {},
+            checkPermissionAndShowSheet = {},
+            updatePendingExactAlarmCheck = {},
+            showNotificationSettingsDialog = false,
+            onDismissNotificationDialog = {},
+            showExactAlarmSettingsDialog = false,
+            onDismissExactAlarmDialog = {},
+            showSettingBottomSheet = null,
+            onUpdateBottomSheet = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingScreenContentPermissionDialogPreview() {
+    ConKeepTheme(darkTheme = false) {
+        SettingScreenContent(
+            couponAlarmSettings = emptySet(),
+            onClickNotice = {},
+            onTabChange = {},
+            addCouponAlarmSetting = {},
+            removeCouponAlarmSetting = {},
+            checkPermissionAndShowSheet = {},
+            updatePendingExactAlarmCheck = {},
+            showNotificationSettingsDialog = true,
+            onDismissNotificationDialog = {},
+            showExactAlarmSettingsDialog = false,
+            onDismissExactAlarmDialog = {},
+            showSettingBottomSheet = null,
+            onUpdateBottomSheet = {},
         )
     }
 }
