@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.setting
+package com.conkeep.ui.feature.setting.normal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

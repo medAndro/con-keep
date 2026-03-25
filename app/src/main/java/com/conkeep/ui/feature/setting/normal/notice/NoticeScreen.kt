@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.setting.notice
+package com.conkeep.ui.feature.setting.normal.notice
 
 import android.annotation.SuppressLint
 import android.view.ViewGroup

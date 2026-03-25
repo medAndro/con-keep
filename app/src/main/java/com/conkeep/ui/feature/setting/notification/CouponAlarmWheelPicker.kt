@@ -1,4 +1,4 @@
-package com.conkeep.ui.feature.setting
+package com.conkeep.ui.feature.setting.notification
 
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement

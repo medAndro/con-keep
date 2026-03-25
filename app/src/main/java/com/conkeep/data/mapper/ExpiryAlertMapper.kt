@@ -1,7 +1,7 @@
 package com.conkeep.data.mapper
 
 import com.conkeep.data.local.entity.ExpiryAlertEntity
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 
 fun ExpiryAlertEntity.toCouponAlarmSetting(): CouponAlarmSetting = this.couponAlarmSetting
 

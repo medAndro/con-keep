@@ -23,7 +23,7 @@ import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
 import com.conkeep.ui.feature.coupon.list.CouponScreen
 import com.conkeep.ui.feature.setting.SettingScreen
-import com.conkeep.ui.feature.setting.notice.NoticeScreen
+import com.conkeep.ui.feature.setting.normal.notice.NoticeScreen
 
 @Composable
 fun NavigationRoot(

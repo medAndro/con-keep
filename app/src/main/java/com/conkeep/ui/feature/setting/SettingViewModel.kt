@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.repository.setting.ExpiryAlertRepository
 import com.conkeep.notification.CouponAlarmScheduler
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview

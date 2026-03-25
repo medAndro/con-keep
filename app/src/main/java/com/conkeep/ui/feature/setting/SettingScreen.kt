@@ -49,6 +49,10 @@ import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.SettingTopBar
+import com.conkeep.ui.feature.setting.normal.NormalSetting
+import com.conkeep.ui.feature.setting.notification.AlarmSettingDialog
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.NotificationSetting
 import com.conkeep.ui.theme.ConKeepColors.brandPrimary
 import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepColors.textSecondary

@@ -24,7 +24,7 @@ import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponSortType
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
