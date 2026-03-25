@@ -29,10 +29,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.R
-import com.conkeep.navigation.Route
 import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.ConKeepConfirmDialog
@@ -54,8 +54,8 @@ import com.conkeep.ui.theme.PretendardSemibold16
 fun DeleteAccountScreen(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
+    viewModel: DeleteAccountViewModel = hiltViewModel(),
 ) {
-    val placeholderPainter = painterResource(R.drawable.img_conkeep_byebye)
     val context = LocalContext.current
 
     val showDeleteAccountDialog = rememberSaveable { mutableStateOf(false) }
@@ -66,7 +66,27 @@ fun DeleteAccountScreen(
         Toast.makeText(context, "콘킾을 계속 사용해주셔서 감사합니다!", Toast.LENGTH_SHORT).show()
     }
 
-    if (showDeleteAccountDialog.value) {
+    DeleteAccountScreenContents(
+        isShowDeleteAccountDialog = showDeleteAccountDialog.value,
+        setDeleteDialogShowStatus = { showDeleteAccountDialog.value = it },
+        cancelDeleteAccount = { cancelDeleteAccount() },
+        onTabChange = onTabChange,
+        onBackClick = { settingBackStack.removeLastOrNull() },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DeleteAccountScreenContents(
+    isShowDeleteAccountDialog: Boolean,
+    setDeleteDialogShowStatus: (Boolean) -> Unit,
+    cancelDeleteAccount: () -> Unit,
+    onTabChange: (TabDestination) -> Unit,
+    onBackClick: () -> Unit,
+) {
+    val context = LocalContext.current
+    val placeholderPainter = painterResource(R.drawable.img_conkeep_byebye)
+    if (isShowDeleteAccountDialog) {
         ConKeepConfirmDialog(
             title = "마지막 알림",
             description = "탈퇴하기 버튼을 누르면 탈퇴 처리됩니다.\n이 작업은 되돌릴 수 없습니다.",
@@ -74,16 +94,16 @@ fun DeleteAccountScreen(
             cancelText = "탈퇴하기",
             onConfirm = {
                 // 탈퇴 취소 로직
-                showDeleteAccountDialog.value = false
+                setDeleteDialogShowStatus(false)
                 cancelDeleteAccount()
             },
             onDismiss = {
                 // 닫기 로직
-                showDeleteAccountDialog.value = false
+                setDeleteDialogShowStatus(false)
             },
             onCancel = {
                 // 탈퇴 처리 로직
-                showDeleteAccountDialog.value = false
+                setDeleteDialogShowStatus(false)
                 Toast.makeText(context, "그동안 콘킾을 이용해주셔서 감사합니다.", Toast.LENGTH_SHORT).show()
             },
             confirmTextColor = textWhite,
@@ -101,7 +121,7 @@ fun DeleteAccountScreen(
                         TopBarButtonConfig(
                             iconResId = R.drawable.ic_back,
                             contentDescription = stringResource(R.string.topbar_back_description),
-                            onClick = { settingBackStack.removeLastOrNull() },
+                            onClick = onBackClick,
                         ),
                     ),
             )
@@ -182,7 +202,7 @@ fun DeleteAccountScreen(
                 }
 
                 Button(
-                    onClick = { showDeleteAccountDialog.value = true },
+                    onClick = { setDeleteDialogShowStatus(true) },
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -208,9 +228,12 @@ fun DeleteAccountScreen(
 @Composable
 fun DeleteAccountScreenPreview() {
     ConKeepTheme {
-        DeleteAccountScreen(
-            settingBackStack = NavBackStack(Route.SettingScreen),
+        DeleteAccountScreenContents(
+            isShowDeleteAccountDialog = false,
+            setDeleteDialogShowStatus = {},
+            cancelDeleteAccount = {},
             onTabChange = {},
+            onBackClick = {},
         )
     }
 }
