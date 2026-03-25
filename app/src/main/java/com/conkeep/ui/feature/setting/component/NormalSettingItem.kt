@@ -54,3 +54,8 @@ fun NormalSettingItem(
         }
     }
 }
+
+data class SettingItemData(
+    val title: String,
+    val onClick: () -> Unit,
+)
