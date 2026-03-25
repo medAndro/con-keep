@@ -2,6 +2,7 @@ package com.conkeep.ui.feature.setting.account
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,14 +15,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -29,7 +34,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.conkeep.R
@@ -54,16 +62,42 @@ import com.conkeep.ui.theme.PretendardSemibold16
 fun DeleteAccountScreen(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
+    moveLoginScreen: () -> Unit,
     viewModel: DeleteAccountViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
 
     val showDeleteAccountDialog = rememberSaveable { mutableStateOf(false) }
 
+    val isWithdrawing: Boolean by viewModel.isWithdrawing.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.deleteAccountEvent.collect { deleteAccountEvent: DeleteAccountEvent ->
+            when (deleteAccountEvent) {
+                DeleteAccountEvent.WithdrawSuccess -> {
+                    Toast.makeText(context, "그동안 콘킾을 이용해주셔서 감사합니다.", Toast.LENGTH_SHORT).show()
+                    moveLoginScreen()
+                }
+
+                DeleteAccountEvent.WithdrawFail -> {
+                    Toast
+                        .makeText(
+                            context,
+                            "탈퇴에 실패했습니다.\n네트워크 연결을 확인하고 재시도해 보거나,\n메일로 탈퇴 문의를 남겨 주세요",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
+            }
+        }
+    }
+
     fun cancelDeleteAccount() {
         settingBackStack.removeLastOrNull()
         onTabChange(TabDestination.Coupon)
         Toast.makeText(context, "콘킾을 계속 사용해주셔서 감사합니다!", Toast.LENGTH_SHORT).show()
+    }
+    if (isWithdrawing) {
+        WithdrawLoadingDialog()
     }
 
     DeleteAccountScreenContents(
@@ -72,6 +106,7 @@ fun DeleteAccountScreen(
         cancelDeleteAccount = { cancelDeleteAccount() },
         onTabChange = onTabChange,
         onBackClick = { settingBackStack.removeLastOrNull() },
+        withdrawAccount = viewModel::withdrawAccount,
     )
 }
 
@@ -83,8 +118,8 @@ fun DeleteAccountScreenContents(
     cancelDeleteAccount: () -> Unit,
     onTabChange: (TabDestination) -> Unit,
     onBackClick: () -> Unit,
+    withdrawAccount: () -> Unit,
 ) {
-    val context = LocalContext.current
     val placeholderPainter = painterResource(R.drawable.img_conkeep_byebye)
     if (isShowDeleteAccountDialog) {
         ConKeepConfirmDialog(
@@ -104,7 +139,7 @@ fun DeleteAccountScreenContents(
             onCancel = {
                 // 탈퇴 처리 로직
                 setDeleteDialogShowStatus(false)
-                Toast.makeText(context, "그동안 콘킾을 이용해주셔서 감사합니다.", Toast.LENGTH_SHORT).show()
+                withdrawAccount()
             },
             confirmTextColor = textWhite,
             confirmBackgroundColor = buttonPositiveBg,
@@ -224,6 +259,53 @@ fun DeleteAccountScreenContents(
     }
 }
 
+@Composable
+fun WithdrawLoadingDialog() {
+    Dialog(
+        onDismissRequest = {},
+        properties =
+            DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+            ),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator(
+                    color = brandSecondary,
+                    strokeWidth = 4.dp,
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "회원탈퇴 중입니다...",
+                    style = PretendardBold18,
+                    color = Color.White,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "잠시만 기다려 주세요.",
+                    style = PretendardSemibold16,
+                    color = Color.White.copy(alpha = 0.7f),
+                )
+            }
+        }
+    }
+}
+
 @Preview
 @Composable
 fun DeleteAccountScreenPreview() {
@@ -234,6 +316,7 @@ fun DeleteAccountScreenPreview() {
             cancelDeleteAccount = {},
             onTabChange = {},
             onBackClick = {},
+            withdrawAccount = {},
         )
     }
 }
