@@ -113,7 +113,7 @@ fun CouponImageContents(
     ) {
         if (isPreview) {
             Image(
-                painter = painterResource(id = R.drawable.ic_corn_ms_emoji),
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = stringResource(R.string.coupon_image_screen_image_description),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillWidth,

@@ -50,13 +50,7 @@ fun GoogleSignInButton(
                 disabledContainerColor = Color.White.copy(alpha = 0.6f),
                 disabledContentColor = Color.Black.copy(alpha = 0.6f),
             ),
-        shape = RoundedCornerShape(4.dp),
-        elevation =
-            ButtonDefaults.buttonElevation(
-                defaultElevation = 1.dp,
-                pressedElevation = 2.dp,
-                disabledElevation = 0.dp,
-            ),
+        shape = RoundedCornerShape(50.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
         Box(

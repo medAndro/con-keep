@@ -1,7 +1,6 @@
 package com.conkeep.ui.feature.auth.component
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +31,14 @@ import com.conkeep.ui.theme.PretendardMedium16
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreenContent(onGoogleSignInClick: () -> Unit) {
-    Scaffold { padding ->
+    Scaffold(
+        containerColor = brandPrimary,
+    ) { padding ->
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .background(color = brandPrimary),
+                    .padding(padding),
         ) {
             // 중앙 영역 (화면 정중앙)
             Column(
