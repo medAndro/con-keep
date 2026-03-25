@@ -33,5 +33,4 @@ enum class CouponStatus {
 
     /** 삭제됨: SoftDeleted된 쿠폰 */
     DELETED,
-
 }
