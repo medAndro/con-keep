@@ -49,6 +49,7 @@ import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.SettingTopBar
+import com.conkeep.ui.feature.setting.account.AccountSetting
 import com.conkeep.ui.feature.setting.normal.NormalSetting
 import com.conkeep.ui.feature.setting.notification.AlarmSettingDialog
 import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
@@ -319,6 +320,7 @@ fun SettingScreenContent(
                     couponAlarmSettings = couponAlarmSettings,
                 )
                 NormalSetting(onClickNotice)
+                AccountSetting({}, {})
                 Text(
                     "현재 버전 v${BuildConfig.VERSION_NAME}",
                     style = PretendardMedium12,
