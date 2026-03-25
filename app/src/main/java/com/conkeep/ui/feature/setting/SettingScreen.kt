@@ -71,6 +71,7 @@ fun SettingScreen(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
     moveLoginScreen: () -> Unit,
+    moveDeleteAccountScreen: () -> Unit,
     viewModel: SettingViewModel = hiltViewModel(),
 ) {
     val couponAlarmSettings by viewModel.couponAlarmSettings.collectAsStateWithLifecycle(
@@ -228,6 +229,7 @@ fun SettingScreen(
         showExactAlarmSettingsDialog = showExactAlarmSettingsDialog.value,
         onDismissExactAlarmDialog = { showExactAlarmSettingsDialog.value = false },
         showSettingBottomSheet = showSettingBottomSheet.value,
+        moveDeleteAccountScreen = moveDeleteAccountScreen,
         onUpdateBottomSheet = { showSettingBottomSheet.value = it },
         showLogoutDialog = showLogoutDialog.value,
         onShowLogoutDialog = { showLogoutDialog.value = true },
@@ -258,6 +260,7 @@ fun SettingScreenContent(
     showSettingBottomSheet: CouponAlarmSetting?,
     onUpdateBottomSheet: (CouponAlarmSetting?) -> Unit,
     // 계정 설정 관련
+    moveDeleteAccountScreen: () -> Unit,
     showLogoutDialog: Boolean,
     onShowLogoutDialog: () -> Unit,
     onLogout: () -> Unit,
@@ -330,7 +333,7 @@ fun SettingScreenContent(
     if (showLogoutDialog) {
         ConKeepConfirmDialog(
             title = "로그아웃 확인",
-            description = "다시 로그인하면 저장된 쿠폰을 불러올 수 있어요",
+            description = "다시 로그인하면\n저장된 쿠폰을 불러올 수 있어요",
             confirmText = "로그아웃",
             cancelText = "취소",
             onConfirm = {
@@ -384,7 +387,7 @@ fun SettingScreenContent(
                     couponAlarmSettings = couponAlarmSettings,
                 )
                 NormalSetting(onClickNotice)
-                AccountSetting({ onShowLogoutDialog() }, {})
+                AccountSetting(onShowLogoutDialog, moveDeleteAccountScreen)
                 Text(
                     "현재 버전 v${BuildConfig.VERSION_NAME}",
                     style = PretendardMedium12,
@@ -413,6 +416,7 @@ private fun SettingScreenContentPreview() {
             onDismissExactAlarmDialog = {},
             showSettingBottomSheet = null,
             onUpdateBottomSheet = {},
+            moveDeleteAccountScreen = {},
             showLogoutDialog = false,
             onShowLogoutDialog = {},
             onLogout = {},
@@ -439,6 +443,7 @@ private fun SettingScreenContentPermissionDialogPreview() {
             onDismissExactAlarmDialog = {},
             showSettingBottomSheet = null,
             onUpdateBottomSheet = {},
+            moveDeleteAccountScreen = {},
             showLogoutDialog = false,
             onShowLogoutDialog = {},
             onLogout = {},

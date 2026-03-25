@@ -16,14 +16,14 @@ import com.conkeep.ui.theme.ConKeepTheme
 @Composable
 fun AccountSetting(
     onClickLogout: () -> Unit,
-    onClickWithdrawal: () -> Unit,
+    onClickDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SettingListSection(
         "계정 설정",
         listOf(
             SettingItemData("로그아웃", onClick = onClickLogout),
-            SettingItemData("회원탈퇴", onClick = onClickWithdrawal),
+            SettingItemData("회원탈퇴", onClick = onClickDeleteAccount),
         ),
     )
 }
@@ -35,7 +35,7 @@ fun NormalSettingPreview() {
         Surface(color = brandSecondary) {
             AccountSetting(
                 onClickLogout = {},
-                onClickWithdrawal = {},
+                onClickDeleteAccount = {},
                 modifier = Modifier.padding(20.dp),
             )
         }

@@ -23,6 +23,7 @@ import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
 import com.conkeep.ui.feature.coupon.list.CouponScreen
 import com.conkeep.ui.feature.setting.SettingScreen
+import com.conkeep.ui.feature.setting.account.DeleteAccountScreen
 import com.conkeep.ui.feature.setting.normal.notice.NoticeScreen
 
 @Composable
@@ -201,10 +202,19 @@ private fun SettingNavigation(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
                         moveLoginScreen = moveLoginScreen,
+                        moveDeleteAccountScreen = {
+                            settingBackStack.add(Route.DeleteAccountScreen)
+                        },
                     )
                 }
                 entry<Route.NoticeScreen> {
                     NoticeScreen(
+                        settingBackStack = settingBackStack,
+                        onTabChange = onTabChange,
+                    )
+                }
+                entry<Route.DeleteAccountScreen> {
+                    DeleteAccountScreen(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
                     )
