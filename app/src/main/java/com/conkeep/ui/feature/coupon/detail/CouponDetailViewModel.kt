@@ -124,10 +124,11 @@ class CouponDetailViewModel
             viewModelScope.launch {
                 try {
                     couponRepository
-                        .softDelete(
+                        .softDeleteLocal(
                             id = couponId,
                         ).onSuccess {
                             onSuccess()
+                            couponWorkManager.enqueueDeleteRemoteCoupons(listOf(couponId))
                             forceUpdateCouponToWorker()
                         }.onFailure {
                             _errorEvent.emit(CouponDetailError.SoftDeleteFailed)
