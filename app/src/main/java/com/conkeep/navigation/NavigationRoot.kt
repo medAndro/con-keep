@@ -105,9 +105,6 @@ private fun MainNavigation(
                 SettingNavigation(
                     settingBackStack = settingBackStack,
                     onTabChange = { activeTab = it },
-                    moveLoginScreen = {
-                        navigateLoginScreen()
-                    },
                 )
             }
         }
@@ -180,7 +177,6 @@ private fun CouponNavigation(
 private fun SettingNavigation(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
-    moveLoginScreen: () -> Unit,
 ) {
     NavDisplay(
         backStack = settingBackStack,
@@ -200,7 +196,6 @@ private fun SettingNavigation(
                     SettingScreen(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
-                        moveLoginScreen = moveLoginScreen,
                         moveDeleteAccountScreen = {
                             settingBackStack.add(Route.DeleteAccountScreen)
                         },
@@ -215,7 +210,6 @@ private fun SettingNavigation(
                 entry<Route.DeleteAccountScreen> {
                     DeleteAccountScreen(
                         settingBackStack = settingBackStack,
-                        moveLoginScreen = moveLoginScreen,
                         onTabChange = onTabChange,
                     )
                 }

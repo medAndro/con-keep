@@ -106,12 +106,6 @@ class FcmService : FirebaseMessagingService() {
                         Log.w(TAG, "유저 ID를 찾을 수 없어 토큰 업데이트를 건너뜁니다.")
                         return@launch
                     }
-
-                // 캐시된 토큰 삭제
-                userPrefs.fcmToken.first()?.let { cachedToken ->
-                    userRepository.removeDevice(userId, cachedToken)
-                }
-
                 // 서버(Supabase)의 profiles 테이블에 내 주소를 저장합니다.
                 userRepository.registerDevice(userId, token)
 

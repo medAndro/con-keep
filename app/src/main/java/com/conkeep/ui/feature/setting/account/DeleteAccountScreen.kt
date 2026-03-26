@@ -62,7 +62,6 @@ import com.conkeep.ui.theme.PretendardSemibold16
 fun DeleteAccountScreen(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
-    moveLoginScreen: () -> Unit,
     viewModel: DeleteAccountViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -76,7 +75,6 @@ fun DeleteAccountScreen(
             when (deleteAccountEvent) {
                 DeleteAccountEvent.WithdrawSuccess -> {
                     Toast.makeText(context, "그동안 콘킾을 이용해주셔서 감사합니다.", Toast.LENGTH_SHORT).show()
-                    moveLoginScreen()
                 }
 
                 DeleteAccountEvent.WithdrawFail -> {

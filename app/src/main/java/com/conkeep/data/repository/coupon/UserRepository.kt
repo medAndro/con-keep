@@ -43,28 +43,4 @@ class UserRepository
                 Log.e("UserRepository", "디바이스 등록 실패", e)
                 Result.failure(e)
             }
-
-        /**
-         * 현재 로그인한 유저의 디바이스 FCM토큰을 삭제합니다
-         * @param userId 현재 로그인한 유저 ID
-         * @param fcmToken 삭제할 FCM 토큰
-         */
-        suspend fun removeDevice(
-            userId: String,
-            fcmToken: String,
-        ): Result<Unit> =
-            try {
-                supabase.from("devices").delete {
-                    filter {
-                        eq("user_id", userId)
-                        eq("fcm_token", fcmToken)
-                    }
-                }
-
-                Log.d("UserRepository", "디바이스 삭제 완료: $fcmToken")
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Log.e("UserRepository", "디바이스 삭제 실패", e)
-                Result.failure(e)
-            }
     }

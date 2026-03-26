@@ -105,7 +105,15 @@ class MainActivity : ComponentActivity() {
                         // 초기화가 끝난(isReady가 참이 되려는) 시점 이후에 로그아웃된 경우만 clear
                         // 초기 로딩 중에는 clearAll()을 호출하지 않도록 주의
                         if (isReady.value) {
-                            launch { userPrefs.clearAll() }
+                            Log.d("MainActivity", "로그아웃 확인됨: 앱을 재시작합니다.")
+
+                            // 1. 로컬 데이터 비우기 (중요: 재시작 직전에 실행)
+                            lifecycleScope.launch {
+                                userPrefs.clearAll()
+                                // 2. 재시작 실행
+                                restartApp()
+                            }
+                            return@collect
                         }
 
                         if (initialRoute.value == null) {
@@ -142,6 +150,18 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
+    }
+
+    /**
+     * 앱을 완전히 깨끗한 상태로 재시작합니다.
+     */
+    private fun restartApp() {
+        val intent =
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        startActivity(intent)
+        finish()
     }
 
     private fun handleIntent(intent: Intent) {
@@ -185,9 +205,6 @@ class MainActivity : ComponentActivity() {
             // 4. 비교: 값이 없거나 다르다면 서버 업데이트 진행
             if (currentToken != cachedToken) {
                 Log.d("MainActivity", "FCM 토큰 변경 감지: 업데이트를 시작합니다.")
-                // 기존 토큰 삭제
-                userRepository.removeDevice(userId, cachedToken)
-
                 // 새 토큰 서버 전송
                 userRepository.registerDevice(userId, currentToken)
 

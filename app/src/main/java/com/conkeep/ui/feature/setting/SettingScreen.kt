@@ -70,7 +70,6 @@ import kotlinx.datetime.LocalTime
 fun SettingScreen(
     settingBackStack: NavBackStack<NavKey>,
     onTabChange: (TabDestination) -> Unit,
-    moveLoginScreen: () -> Unit,
     moveDeleteAccountScreen: () -> Unit,
     viewModel: SettingViewModel = hiltViewModel(),
 ) {
@@ -211,7 +210,6 @@ fun SettingScreen(
                             logoutSettingMessage,
                             Toast.LENGTH_SHORT,
                         ).show()
-                    moveLoginScreen()
                 }
             }
         }
