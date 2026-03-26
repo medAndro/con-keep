@@ -99,8 +99,10 @@ class MainActivity : ComponentActivity() {
                             if (currentUserId != null && lastHandledUserId != currentUserId) {
                                 lastHandledUserId = currentUserId
 
-                                launch { syncUserIdToPrefs() }
-                                launch { handleFcmTokenUpdate() }
+                                launch {
+                                    syncUserIdToPrefs()
+                                    handleFcmTokenUpdate()
+                                }
                                 launch { syncManager.enqueueCouponSync() }
                             }
 
@@ -214,9 +216,10 @@ class MainActivity : ComponentActivity() {
 
             // 3. 로컬에 저장된 이전 토큰 확인
             val cachedToken = userPrefs.fcmToken.first() ?: ""
+            val cachedUserId = userPrefs.userId.first() ?: ""
 
             // 4. 비교: 값이 없거나 다르다면 서버 업데이트 진행
-            if (currentToken != cachedToken) {
+            if (currentToken != cachedToken || userId != cachedUserId) {
                 Log.d("MainActivity", "FCM 토큰 변경 감지: 업데이트를 시작합니다.")
                 // 새 토큰 서버 전송
                 userRepository.registerDevice(userId, currentToken)
