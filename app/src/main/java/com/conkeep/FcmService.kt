@@ -2,6 +2,7 @@ package com.conkeep
 
 import android.util.Log
 import androidx.work.WorkManager
+import com.conkeep.data.auth.AuthEventBus
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.data.sync.SyncManager
@@ -37,6 +38,9 @@ class FcmService : FirebaseMessagingService() {
     @Inject
     lateinit var syncManager: SyncManager
 
+    @Inject
+    lateinit var authEventBus: AuthEventBus
+
     /**
      * 2. 서비스 전용 코루틴 스코프
      * SupervisorJob: 자식 작업 중 하나가 실패해도 전체 스코프가 취소되지 않게 방어합니다.
@@ -62,6 +66,12 @@ class FcmService : FirebaseMessagingService() {
                     // 서버가 "동기화" 신호를 보낸 경우입니다.
                     val timestamp = message.data["timestamp"]
                     handleSyncTrigger(timestamp)
+                }
+
+                "WITHDRAW_TRIGGER" -> {
+                    serviceScope.launch {
+                        authEventBus.emitForceLogout()
+                    }
                 }
             }
         }
