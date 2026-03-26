@@ -2,12 +2,11 @@
 package com.conkeep.data.repository.coupon
 
 import android.util.Log
-import com.conkeep.data.remote.dto.DeviceDto
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.time.Clock
 
 @Singleton
 class UserRepository
@@ -25,19 +24,17 @@ class UserRepository
             fcmToken: String,
         ): Result<Unit> =
             try {
-                val device =
-                    DeviceDto(
-                        userId = userId,
-                        fcmToken = fcmToken,
-                        lastUsedAt = Clock.System.now().toString(),
+                // RPC 호출을 위한 파라미터 맵 구성
+                val parameters =
+                    mapOf(
+                        "p_user_id" to userId,
+                        "p_fcm_token" to fcmToken,
                     )
 
-                // onConflict = "fcm_token" 으로 동일 토큰 재등록 방지
-                supabase.from("devices").upsert(device) {
-                    onConflict = "fcm_token"
-                }
+                // upsert 대신 rpc 함수 호출
+                supabase.postgrest.rpc("register_device", parameters)
 
-                Log.d("UserRepository", "디바이스 등록/갱신 완료: $fcmToken")
+                Log.d("UserRepository", "디바이스 등록/갱신(RPC) 완료: $userId\n$fcmToken")
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e("UserRepository", "디바이스 등록 실패", e)

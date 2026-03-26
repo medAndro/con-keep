@@ -5,6 +5,7 @@ import com.conkeep.BuildConfig
 import com.conkeep.di.annotation.AuthClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.auth.clearAuthTokens
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
@@ -29,6 +30,7 @@ class AuthRepository
                     val response: HttpResponse = authClient.delete("${BuildConfig.BASE_URL}/withdraw")
 
                     if (response.status.isSuccess()) {
+                        authClient.clearAuthTokens()
                         val body = response.body<WithdrawResponse>()
                         Result.success(body)
                     } else {

@@ -3,7 +3,7 @@ package com.conkeep.ui.feature.setting.account
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.conkeep.data.auth.SupabaseAuthManager
+import com.conkeep.data.auth.AuthEventBus
 import com.conkeep.data.repository.auth.AuthRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,9 +21,9 @@ import javax.inject.Inject
 class DeleteAccountViewModel
     @Inject
     constructor(
-        private val supabaseAuthManager: SupabaseAuthManager,
         private val authRepository: AuthRepository,
         private val userPrefs: UserPreferencesRepository,
+        private val authEventBus: AuthEventBus,
     ) : ViewModel() {
         private val _deleteAccountEvent = MutableSharedFlow<DeleteAccountEvent>()
         val deleteAccountEvent = _deleteAccountEvent.asSharedFlow()
@@ -37,7 +37,7 @@ class DeleteAccountViewModel
                 authRepository.removeAccount().fold(
                     onSuccess = {
                         userPrefs.clearAll()
-                        supabaseAuthManager.signOut()
+                        authEventBus.emitForceLogout()
                         _isWithdrawing.value = false
                         _deleteAccountEvent.emit(DeleteAccountEvent.WithdrawSuccess)
                     },
