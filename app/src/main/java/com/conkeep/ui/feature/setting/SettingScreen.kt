@@ -53,6 +53,8 @@ import com.conkeep.navigation.TabDestination
 import com.conkeep.ui.component.BottomNavigationBar
 import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.SettingTopBar
+import com.conkeep.ui.feature.setting.account.AccountInfo
+import com.conkeep.ui.feature.setting.account.AccountProvider
 import com.conkeep.ui.feature.setting.account.AccountSetting
 import com.conkeep.ui.feature.setting.normal.NormalSetting
 import com.conkeep.ui.feature.setting.notification.AlarmSettingDialog
@@ -76,6 +78,7 @@ fun SettingScreen(
     val couponAlarmSettings by viewModel.couponAlarmSettings.collectAsStateWithLifecycle(
         initialValue = emptySet(),
     )
+    val accountInfo by viewModel.accountInfoFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context as Activity
     val addCouponAlarmSettingSuccessMessage = "알림이 추가되었습니다."
@@ -229,6 +232,7 @@ fun SettingScreen(
         showSettingBottomSheet = showSettingBottomSheet.value,
         moveDeleteAccountScreen = moveDeleteAccountScreen,
         onUpdateBottomSheet = { showSettingBottomSheet.value = it },
+        accountInfo = accountInfo,
         showLogoutDialog = showLogoutDialog.value,
         onShowLogoutDialog = { showLogoutDialog.value = true },
         onLogout = viewModel::logout,
@@ -258,6 +262,7 @@ fun SettingScreenContent(
     showSettingBottomSheet: CouponAlarmSetting?,
     onUpdateBottomSheet: (CouponAlarmSetting?) -> Unit,
     // 계정 설정 관련
+    accountInfo: AccountInfo?,
     moveDeleteAccountScreen: () -> Unit,
     showLogoutDialog: Boolean,
     onShowLogoutDialog: () -> Unit,
@@ -385,7 +390,7 @@ fun SettingScreenContent(
                     couponAlarmSettings = couponAlarmSettings,
                 )
                 NormalSetting(onClickNotice)
-                AccountSetting(onShowLogoutDialog, moveDeleteAccountScreen)
+                AccountSetting(onShowLogoutDialog, moveDeleteAccountScreen, accountInfo = accountInfo)
                 Text(
                     "현재 버전 v${BuildConfig.VERSION_NAME}",
                     style = PretendardMedium12,
@@ -414,6 +419,11 @@ private fun SettingScreenContentPreview() {
             onDismissExactAlarmDialog = {},
             showSettingBottomSheet = null,
             onUpdateBottomSheet = {},
+            accountInfo =
+                AccountInfo(
+                    email = "conkeepconkeepconke@conkeep.com",
+                    provider = AccountProvider.Google,
+                ),
             moveDeleteAccountScreen = {},
             showLogoutDialog = false,
             onShowLogoutDialog = {},
@@ -441,6 +451,7 @@ private fun SettingScreenContentPermissionDialogPreview() {
             onDismissExactAlarmDialog = {},
             showSettingBottomSheet = null,
             onUpdateBottomSheet = {},
+            accountInfo = null,
             moveDeleteAccountScreen = {},
             showLogoutDialog = false,
             onShowLogoutDialog = {},
