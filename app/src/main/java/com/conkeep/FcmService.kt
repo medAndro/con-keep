@@ -3,6 +3,7 @@ package com.conkeep
 import android.util.Log
 import androidx.work.WorkManager
 import com.conkeep.data.auth.AuthEventBus
+import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.data.sync.SyncManager
@@ -41,6 +42,9 @@ class FcmService : FirebaseMessagingService() {
     @Inject
     lateinit var authEventBus: AuthEventBus
 
+    @Inject
+    lateinit var supabaseAuthManager: SupabaseAuthManager
+
     /**
      * 2. 서비스 전용 코루틴 스코프
      * SupervisorJob: 자식 작업 중 하나가 실패해도 전체 스코프가 취소되지 않게 방어합니다.
@@ -70,7 +74,7 @@ class FcmService : FirebaseMessagingService() {
 
                 "WITHDRAW_TRIGGER" -> {
                     serviceScope.launch {
-                        authEventBus.emitForceLogout()
+                        supabaseAuthManager.signOut(applicationContext)
                     }
                 }
             }

@@ -29,6 +29,7 @@ import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +39,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -55,6 +58,8 @@ class SupabaseAuthManager
     ) {
         val auth = supabase.auth
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+        private val authActionMutex = Mutex()
 
         init {
             // 객체 생성 시점부터 백그라운드에서 로그아웃 이벤트 구독 시작
@@ -212,59 +217,61 @@ class SupabaseAuthManager
          * @param activity 호출하는 Activity (Credential Manager UI 표시용)
          */
         suspend fun signInWithGoogle(activity: Activity): Result<UserInfo> =
-            try {
-                // 1. Google Credential Manager 설정
-                val credentialManager = CredentialManager.create(activity)
-                credentialManager.clearCredentialState(ClearCredentialStateRequest())
+            authActionMutex.withLock {
+                try {
+                    Log.d("SupabaseAuth", "Google 로그인 시도")
+                    // 1. Google Credential Manager 설정
+                    val credentialManager = CredentialManager.create(activity)
 
-                val googleIdOption =
-                    GetGoogleIdOption
-                        .Builder()
-                        .setFilterByAuthorizedAccounts(false) // 모든 계정 표시
-                        .setServerClientId(BuildConfig.WEB_CLIENT_ID)
-                        .setAutoSelectEnabled(true)
-                        .build()
+                    val googleIdOption =
+                        GetGoogleIdOption
+                            .Builder()
+                            .setFilterByAuthorizedAccounts(false) // 모든 계정 표시
+                            .setServerClientId(BuildConfig.WEB_CLIENT_ID)
+                            .setAutoSelectEnabled(true)
+                            .build()
 
-                val request =
-                    GetCredentialRequest
-                        .Builder()
-                        .addCredentialOption(googleIdOption)
-                        .build()
+                    val request =
+                        GetCredentialRequest
+                            .Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
 
-                // 2. 인증 요청 및 토큰 획득
-                val result =
-                    credentialManager.getCredential(
-                        request = request,
-                        context = activity,
-                    )
+                    // 2. 인증 요청 및 토큰 획득
+                    val result =
+                        credentialManager.getCredential(
+                            request = request,
+                            context = activity,
+                        )
 
-                val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
-                val idToken = credential.idToken
+                    val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
+                    val idToken = credential.idToken
 
-                // 3. Supabase Auth에 ID Token 전달 (회원가입/로그인 동시 처리)
-                auth.signInWith(IDToken) {
-                    this.idToken = idToken
-                    provider = Google
+                    // 3. Supabase Auth에 ID Token 전달 (회원가입/로그인 동시 처리)
+                    auth.signInWith(IDToken) {
+                        this.idToken = idToken
+                        provider = Google
+                    }
+
+                    // 4. 사용자 정보 반환
+                    val user =
+                        auth.currentUserOrNull()
+                            ?: throw Exception("로그인 후 사용자 정보를 가져오지 못했습니다.")
+
+                    Result.success(user)
+                } catch (e: GetCredentialProviderConfigurationException) {
+                    // Play Services 미준비
+                    handlePlayServicesUpdate(activity)
+                    Result.failure(PlayServicesNotReadyException("Google Play Services를 업데이트해주세요"))
+                } catch (e: androidx.credentials.exceptions.NoCredentialException) {
+                    promptAddGoogleAccount(activity)
+                    Result.failure(NoGoogleAccountException("구글 계정을 먼저 추가해주세요"))
+                } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                    Result.failure(e)
+                } catch (e: Exception) {
+                    Log.e("SupabaseAuth", "Google 로그인 실패", e)
+                    Result.failure(e)
                 }
-
-                // 4. 사용자 정보 반환
-                val user =
-                    auth.currentUserOrNull()
-                        ?: throw Exception("로그인 후 사용자 정보를 가져오지 못했습니다.")
-
-                Result.success(user)
-            } catch (e: GetCredentialProviderConfigurationException) {
-                // Play Services 미준비
-                handlePlayServicesUpdate(activity)
-                Result.failure(PlayServicesNotReadyException("Google Play Services를 업데이트해주세요"))
-            } catch (e: androidx.credentials.exceptions.NoCredentialException) {
-                promptAddGoogleAccount(activity)
-                Result.failure(NoGoogleAccountException("구글 계정을 먼저 추가해주세요"))
-            } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
-                Result.failure(e)
-            } catch (e: Exception) {
-                Log.e("SupabaseAuth", "Google 로그인 실패", e)
-                Result.failure(e)
             }
 
         /**
@@ -316,17 +323,31 @@ class SupabaseAuthManager
         }
 
         suspend fun signOut(context: Context) {
-            try {
-                val credentialManager = CredentialManager.create(context)
-                credentialManager.clearCredentialState(ClearCredentialStateRequest())
-                Log.d("SupabaseAuth", "CredentialManager 세션 초기화 성공")
+            authActionMutex.withLock {
+                try {
+                    Log.d("SupabaseAuth", "로그아웃 프로세스 시작 (화면 즉시 전환)")
 
-                cachedMasterKeyInfo = null
-                auth.signOut(scope = SignOutScope.GLOBAL)
-            } catch (e: Exception) {
-                Log.e("SupabaseAuth", "로그아웃 중 오류 발생", e)
-                cachedMasterKeyInfo = null
-                auth.clearSession()
+                    cachedMasterKeyInfo = null
+                    auth.clearSession()
+
+                    // 앱이 백그라운드로 내려가도 로그아웃
+                    withContext(NonCancellable) {
+                        try {
+                            val credentialManager = CredentialManager.create(context)
+                            credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                            Log.d("SupabaseAuth", "CredentialManager 세션 초기화 성공")
+
+                            auth.signOut(scope = SignOutScope.GLOBAL)
+                            Log.d("SupabaseAuth", "Supabase 글로벌 로그아웃 성공")
+                        } catch (e: Exception) {
+                            Log.e("SupabaseAuth", "백그라운드 로그아웃 후처리 중 오류", e)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("SupabaseAuth", "로그아웃 중 오류 발생", e)
+                    cachedMasterKeyInfo = null
+                    auth.clearSession()
+                }
             }
         }
 
