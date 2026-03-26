@@ -13,6 +13,7 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import kotlinx.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltWorker
 class CouponSyncWorker
@@ -25,6 +26,7 @@ class CouponSyncWorker
     ) : CoroutineWorker(context, workerParams) {
         override suspend fun doWork(): Result =
             try {
+                Log.d("Worker", "증분 동기화 시작")
                 val syncResult = couponRepository.syncIncremental()
                 couponAlarmScheduler.allAlarmRefresh()
                 syncResult.fold(
@@ -37,6 +39,9 @@ class CouponSyncWorker
                         Result.retry()
                     },
                 )
+            } catch (e: CancellationException) {
+                Log.w("Worker", "증분 동기화 작업이 시스템에 의해 취소됨 (Doze 모드 등). 다시 예약됩니다.")
+                throw e
             } catch (e: ClientRequestException) {
                 // 4xx
                 handleHttpError(e)
