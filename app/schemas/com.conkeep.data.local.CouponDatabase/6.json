@@ -1,0 +1,178 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "448207d92b064fcb8ab071aa93206b7a",
+    "entities": [
+      {
+        "tableName": "coupons",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `image_url` TEXT, `image_key` TEXT, `thumbnail_url` TEXT, `local_image_path` TEXT, `product_name` TEXT, `brand` TEXT, `coupon_pin` TEXT, `expiry_date` TEXT, `is_monetary` INTEGER NOT NULL, `amount` INTEGER, `category` TEXT, `user_memo` TEXT, `is_used` INTEGER NOT NULL, `used_at` INTEGER, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `is_synced` INTEGER NOT NULL, `status` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "image_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imageKey",
+            "columnName": "image_key",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "thumbnailUrl",
+            "columnName": "thumbnail_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localImagePath",
+            "columnName": "local_image_path",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productName",
+            "columnName": "product_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "couponPin",
+            "columnName": "coupon_pin",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "expiryDate",
+            "columnName": "expiry_date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isMonetary",
+            "columnName": "is_monetary",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "userMemo",
+            "columnName": "user_memo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isUsed",
+            "columnName": "is_used",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usedAt",
+            "columnName": "used_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSynced",
+            "columnName": "is_synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_coupons_user_id_is_used_created_at",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "is_used",
+              "created_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_used_created_at` ON `${TABLE_NAME}` (`user_id`, `is_used`, `created_at`)"
+          },
+          {
+            "name": "index_coupons_user_id_is_used_expiry_date",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "is_used",
+              "expiry_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_used_expiry_date` ON `${TABLE_NAME}` (`user_id`, `is_used`, `expiry_date`)"
+          },
+          {
+            "name": "index_coupons_user_id_expiry_date_is_used",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "expiry_date",
+              "is_used"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_expiry_date_is_used` ON `${TABLE_NAME}` (`user_id`, `expiry_date`, `is_used`)"
+          },
+          {
+            "name": "index_coupons_user_id_is_used_used_at",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "is_used",
+              "used_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_coupons_user_id_is_used_used_at` ON `${TABLE_NAME}` (`user_id`, `is_used`, `used_at`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '448207d92b064fcb8ab071aa93206b7a')"
+    ]
+  }
+}

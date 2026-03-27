@@ -1,0 +1,337 @@
+package com.conkeep.ui.feature.setting.notification
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.mapSaver
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.conkeep.R
+import com.conkeep.ui.theme.ConKeepColors.badgeWarning
+import com.conkeep.ui.theme.ConKeepColors.badgeWarningBg
+import com.conkeep.ui.theme.ConKeepColors.bgSurface
+import com.conkeep.ui.theme.ConKeepColors.borderSubtle
+import com.conkeep.ui.theme.ConKeepColors.brandSecondary
+import com.conkeep.ui.theme.ConKeepColors.textPrimary
+import com.conkeep.ui.theme.ConKeepColors.textSecondary
+import com.conkeep.ui.theme.ConKeepTheme
+import com.conkeep.ui.theme.PretendardMedium16
+import com.conkeep.ui.theme.PretendardMedium20
+import com.conkeep.ui.theme.PretendardSemibold20
+import kotlinx.datetime.LocalTime
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationSetting(
+    onAddNewAlarmClick: () -> Unit,
+    onTrashClick: (CouponAlarmSetting) -> Unit,
+    onOverlayClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
+    isOverlayEnabled: Boolean = false,
+) {
+    Column(
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            "만료일 알림 설정",
+            style = PretendardSemibold20,
+            color = textPrimary,
+        )
+        Box(
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .background(color = bgSurface, shape = RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp)),
+        ) {
+            Column(
+                modifier =
+                    modifier
+                        .fillMaxWidth()
+                        .background(color = bgSurface)
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                when {
+                    couponAlarmSettings.isEmpty() -> {
+                        Surface(
+                            modifier =
+                                modifier
+                                    .fillMaxWidth()
+                                    .height(36.dp),
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .wrapContentHeight(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "현재 알림을 받고 있지 않아요",
+                                    style = PretendardMedium16,
+                                    color = textSecondary,
+                                )
+                            }
+                        }
+                    }
+
+                    else ->
+                        couponAlarmSettings
+                            .sortedWith(compareBy({ it.daysBefore }, { it.targetTime }))
+                            .forEach { couponAlarmSetting ->
+                                NotificationItem(
+                                    couponAlarmSetting = couponAlarmSetting,
+                                    onTrashClick = onTrashClick,
+                                )
+                            }
+                }
+
+                Surface(
+                    modifier =
+                        modifier
+                            .fillMaxWidth()
+                            .height(36.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border =
+                        BorderStroke(
+                            0.6.dp,
+                            borderSubtle,
+                        ),
+                    onClick = onAddNewAlarmClick,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .wrapContentHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_plus_small),
+                                contentDescription = "새 알림 추가",
+                                tint = textSecondary,
+                            )
+                            Text(
+                                text = "새 알림 추가",
+                                style = PretendardMedium16,
+                                color = textSecondary,
+                            )
+                        }
+                    }
+                }
+            }
+            // 덮어씌우는 반투명 검은색 오버레이
+            if (isOverlayEnabled) {
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                androidx.compose.ui.graphics.Color.Black
+                                    .copy(alpha = 0.7f),
+                            ).clickable(onClick = onOverlayClick),
+                    contentAlignment = Alignment.Center, // 문구를 정중앙에 배치
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "알림이 설정되어 있지만\n기기 알림 권한이 꺼져 있어요.",
+                            style = PretendardMedium20,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+
+                        Text(
+                            text = "터치하여 권한 설정하기",
+                            style = PretendardMedium20, // 필요하다면 밑줄 들어간 스타일 사용
+                            color = brandSecondary, // 브랜드 강조색 사용
+                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationItem(
+    couponAlarmSetting: CouponAlarmSetting,
+    onTrashClick: (CouponAlarmSetting) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(36.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = badgeWarningBg,
+        border =
+            BorderStroke(
+                0.6.dp,
+                borderSubtle,
+            ),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .wrapContentHeight(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = couponAlarmSetting.getText(),
+                style = PretendardMedium16,
+                color = badgeWarning,
+            )
+            IconButton(
+                onClick = { onTrashClick(couponAlarmSetting) },
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .align(Alignment.TopEnd),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_trash),
+                    contentDescription = "삭제",
+                    tint = badgeWarning,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
+
+data class CouponAlarmSetting(
+    val daysBefore: Int,
+    val targetTime: LocalTime,
+) {
+    fun getText(): String {
+        // 날짜 변위 텍스트
+        val dayText =
+            when (daysBefore) {
+                0 -> "당일"
+                else -> "${daysBefore}일 전"
+            }
+
+        // 오전/오후 판정
+        val amPm = if (targetTime.hour < 12) "오전" else "오후"
+
+        // 12시간제 시간 계산
+        val hour12 =
+            when {
+                targetTime.hour == 0 -> 12 // 00:00 -> 오전 12시
+                targetTime.hour > 12 -> targetTime.hour - 12 // 13:00 -> 오후 1시
+                else -> targetTime.hour // 12:00 -> 오후 12시 (위의 amPm에서 '오후' 처리됨)
+            }
+
+        return "만료 $dayText $amPm $hour12:00".trim()
+    }
+
+    companion object {
+        val Saver =
+            mapSaver<CouponAlarmSetting?>(
+                save = { setting ->
+                    if (setting == null) {
+                        mapOf("isNull" to true)
+                    } else {
+                        mapOf(
+                            "isNull" to false,
+                            "daysBefore" to setting.daysBefore,
+                            "targetTime" to setting.targetTime.toNanosecondOfDay(),
+                        )
+                    }
+                },
+                restore = { savedMap ->
+                    if (savedMap["isNull"] as Boolean) {
+                        null
+                    } else {
+                        CouponAlarmSetting(
+                            daysBefore = savedMap["daysBefore"] as Int,
+                            targetTime = LocalTime.fromNanosecondOfDay(savedMap["targetTime"] as Long),
+                        )
+                    }
+                },
+            )
+    }
+}
+
+@Preview
+@Composable
+fun NotificationSettingEmptyPreview() {
+    ConKeepTheme {
+        Surface(color = brandSecondary) {
+            NotificationSetting(
+                onAddNewAlarmClick = {},
+                couponAlarmSettings = emptySet(),
+                onTrashClick = {},
+                onOverlayClick = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+fun NotificationSettingPreview() {
+    ConKeepTheme {
+        Surface(color = brandSecondary) {
+            NotificationSetting(
+                onAddNewAlarmClick = {},
+                couponAlarmSettings =
+                    setOf(
+                        CouponAlarmSetting(0, LocalTime(12, 0)),
+                        CouponAlarmSetting(1, LocalTime(9, 0)),
+                    ),
+                onTrashClick = {},
+                onOverlayClick = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+fun NotificationSettingRevokePermissionPreview() {
+    ConKeepTheme {
+        Surface(color = brandSecondary) {
+            NotificationSetting(
+                onAddNewAlarmClick = {},
+                couponAlarmSettings =
+                    setOf(
+                        CouponAlarmSetting(0, LocalTime(12, 0)),
+                    ),
+                onTrashClick = {},
+                onOverlayClick = {},
+                isOverlayEnabled = true,
+            )
+        }
+    }
+}

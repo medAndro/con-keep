@@ -1,0 +1,68 @@
+package com.conkeep.data.local.entity
+
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+
+@Entity(
+    tableName = "coupons",
+    indices = [
+        // 1. 등록순 정렬 최적화
+        Index(value = ["user_id", "is_deleted", "is_used", "created_at"]),
+
+        // 2. 만료임박순 정렬 최적화
+        Index(value = ["user_id", "is_deleted", "is_used", "expiry_date"]),
+
+        // 3. 전체 보기 우선순위
+        Index(value = ["user_id", "is_deleted", "expiry_date", "is_used"]),
+
+        // 4. 최근 사용순 정렬 최적화
+        Index(value = ["user_id", "is_deleted", "is_used", "used_at"]),
+    ],
+)
+data class CouponEntity(
+    @PrimaryKey
+    val id: String,
+    @ColumnInfo(name = "user_id")
+    val userId: String,
+    // 업로드된 이미지 정보 (Supabase와 동기화)
+    @ColumnInfo(name = "image_url")
+    val imageUrl: String?,
+    // 쿠폰 정보
+    @ColumnInfo(name = "product_name")
+    val productName: String?,
+    val brand: String?,
+    @ColumnInfo(name = "coupon_pin")
+    val couponPin: String?,
+    // ISO 8601 형식 (2026-02-01)
+    @ColumnInfo(name = "expiry_date")
+    val expiryDate: String?,
+    @ColumnInfo(name = "is_monetary")
+    val isMonetary: Boolean,
+    // nullable (금액 쿠폰이 아닐 경우)
+    val amount: Int?,
+    // enum을 String으로 저장
+    val category: String?,
+    @ColumnInfo(name = "user_memo")
+    val userMemo: String?,
+    @ColumnInfo(name = "is_used")
+    val isUsed: Boolean,
+    // timestamptz를 Unix timestamp로 저장
+    @ColumnInfo(name = "used_at")
+    val usedAt: Long?,
+    @ColumnInfo(name = "created_at")
+    val createdAt: Long,
+    @ColumnInfo(name = "updated_at")
+    val updatedAt: Long,
+    // 동기화 상태 추적
+    @ColumnInfo(name = "is_synced")
+    val isSynced: Boolean = false,
+    // 로컬 UI 상태
+    @ColumnInfo(name = "status")
+    val status: String = CouponStatus.PENDING.name,
+    @ColumnInfo(name = "is_dirty")
+    val isDirty: Boolean = false,
+    @ColumnInfo(name = "is_deleted")
+    val isDeleted: Boolean = false,
+)

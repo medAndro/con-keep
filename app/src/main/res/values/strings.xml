@@ -1,0 +1,133 @@
+<resources>
+    <string name="app_name">ConKeep</string>
+    <string name="app_icon_description">콘킾 로고</string>
+
+    <!--    TopBar-->
+    <string name="topbar_back_description">뒤로가기</string>
+    <string name="topbar_share_description">공유하기</string>
+    <string name="topbar_save_description">저장하기</string>
+    <string name="topbar_conkeep_logo_description">ConKeep 로고</string>
+    <string name="topbar_search_toggle_description">검색바 열기/닫기</string>
+    <string name="topbar_add_coupon_description">쿠폰 추가</string>
+
+    <!--    BottomNav-->
+    <string name="bottom_nav_coupon_title">쿠폰</string>
+    <string name="bottom_nav_setting_title">설정</string>
+
+    <!--     로그인 화면-->
+    <string name="app_description">옥수수처럼 달콤한 쿠폰관리</string>
+    <string name="btn_google_sign_up">Google 계정으로 시작하기</string>
+    <string name="btn_google_logo_description">구글 로고</string>
+
+    <string name="category_cafe">카페</string>
+    <string name="category_convenience_store">편의점</string>
+    <string name="category_mart">마트</string>
+    <string name="category_bakery">베이커리</string>
+    <string name="category_chicken_pizza">치킨·피자</string>
+    <string name="category_burger_sandwich">버거·샌드위치</string>
+    <string name="category_fast_food">패스트푸드</string>
+    <string name="category_dining">외식·분식</string>
+    <string name="category_ice_cream">아이스크림</string>
+    <string name="category_dessert">디저트</string>
+    <string name="category_department_store">백화점</string>
+    <string name="category_gift_card">상품권·캐시</string>
+    <string name="category_culture">영화·문화</string>
+    <string name="category_fashion_beauty">패션·뷰티</string>
+    <string name="category_gas_transport">주유·교통</string>
+    <string name="category_etc">기타</string>
+
+    <!--    쿠폰 목록 화면-->
+    <string name="coupon_list_screen_search_bar_placeholder">상품명이나 브랜드로 검색하세요</string>
+    <string name="coupon_list_screen_search_bar_clear_description">검색 입력 초기화</string>
+
+    <!--    쿠폰 목록의 쿠폰 카드-->
+    <string name="coupon_card_monetary_value">%,1d₩</string>
+    <string name="coupon_card_image_description">쿠폰 이미지</string>
+    <string name="coupon_card_expiry_date_format">%1$d년 %2$d월 %3$d일 까지</string>
+
+    <!--    쿠폰 목록이 비었을 떄의 화면-->
+    <string name="coupon_list_screen_empty_all_placeholder_text">등록된 쿠폰이 없어요\n+ 버튼을 눌러 쿠폰을 추가해 보세요</string>
+    <string name="coupon_list_screen_empty_available_placeholder_text">사용 가능한 쿠폰이 없어요\n+ 버튼을 눌러 쿠폰을 추가해 보세요</string>
+    <string name="coupon_list_screen_empty_used_placeholder_text">사용 완료된 쿠폰이 없어요\n등록된 쿠폰을 사용해보세요!</string>
+    <string name="coupon_list_screen_empty_expired_placeholder_text">기간 만료된 쿠폰이 없어요\n지금처럼 까먹지 말고 사용해주세요!</string>
+
+    <!-- 필터 칩 -->
+    <string name="filter_all">전체</string>
+    <string name="filter_available">사용 가능</string>
+    <string name="filter_used">사용 완료</string>k
+    <string name="filter_expired">기간 만료</string>
+    <!-- 정렬 바 -->
+    <string name="sort_recent">최근 등록순</string>
+    <string name="sort_expiry">만료 임박순</string>
+    <string name="sort_recent_used">최근 사용순</string>
+    <string name="searched_coupon">검색된</string>
+    <string name="coupon_count">%1$s 쿠폰 %2$d개</string>
+    <string name="coupon_search_result">%1$s 쿠폰에서 %2$d개 찾음</string>
+
+    <!--    쿠폰 상세 화면-->
+    <string name="coupon_detail_screen_title">쿠폰 상세</string>
+    <string name="coupon_detail_screen_delete_top_bar_description">쿠폰 삭제</string>
+    <string name="coupon_detail_screen_barcode_image">바코드 이미지</string>
+    <string name="coupon_detail_screen_expiry_date_with_d_day_format">~ %1$d년 %2$d월 %3$02d일 까지 (%4$s)</string>
+    <string name="coupon_detail_screen_empty_expiry_date">만료일 없음</string>
+    <string name="coupon_detail_screen_memo_save_failed">메모 저장에 실패했습니다</string>
+    <string name="coupon_detail_screen_amount_save_failed">금액 저장에 실패했습니다</string>
+    <string name="coupon_detail_screen_soft_delete_failed">쿠폰 삭제에 실패했습니다</string>
+    <string name="coupon_detail_screen_delete_message">쿠폰이 삭제되었습니다.</string>
+    <string name="coupon_detail_screen_no_info_badge_text">정보 없음</string>
+    <string name="coupon_detail_screen_image_download_icon_description">이미지 다운로드</string>
+    <string name="coupon_detail_screen_null_coupon_number_badge_text">쿠폰번호 없음</string>
+    <string name="coupon_detail_screen_barcode_num_copy_icon_description">바코드 복사</string>
+    <string name="coupon_detail_screen_use_button_text">사용 완료 처리</string>
+    <string name="coupon_detail_screen_un_use_button_text">사용 완료 취소</string>
+    <string name="coupon_detail_screen_edit_amount_title">잔액 관리 (금액권 수정)</string>
+    <string name="coupon_detail_screen_memo_title">메모</string>
+    <string name="coupon_detail_screen_delete_dialog_title">쿠폰 삭제</string>
+    <string name="coupon_detail_screen_delete_dialog_message">정말로 이 쿠폰을 삭제하시겠습니까?\n삭제된 쿠폰은 복구할 수 없습니다.</string>
+    <string name="coupon_detail_screen_delete_dialog_confirm_text">삭제하기</string>
+
+    <!--    쿠폰 정보 수정 화면-->
+    <string name="coupon_edit_screen_title">쿠폰 정보 수정</string>
+    <string name="coupon_edit_screen_save_icon_description">쿠폰 저장</string>
+    <string name="coupon_edit_screen_input_title_brand">교환처 (브랜드)</string>
+    <string name="coupon_edit_screen_input_brand_placeholder">변경할 교환처 (브랜드)를 입력하세요</string>
+
+    <string name="coupon_edit_screen_input_title_product_name">상품명</string>
+    <string name="coupon_edit_screen_input_product_name_placeholder">변경할 상품명을 입력하세요</string>
+
+    <string name="coupon_edit_screen_input_title_pin_number">바코드 번호</string>
+    <string name="coupon_edit_screen_input_pin_number_placeholder">변경할 바코드 번호를 입력하세요</string>
+
+    <string name="coupon_detail_screen_modified_dialog_title">쿠폰 수정됨</string>
+    <string name="coupon_detail_screen_modified_dialog_message">저장하지 않은 변경사항이 있습니다\n변경된 내용을 저장할까요?</string>
+    <string name="coupon_detail_screen_modified_dialog_confirm_text">저장하기</string>
+    <string name="coupon_detail_screen_modified_dialog_cancel_text">그냥 나가기</string>
+
+    <string name="coupon_edit_screen_expiry_date_title">유효기간</string>
+    <string name="coupon_edit_screen_expiry_date_is_null_title">만료일 없음</string>
+    <string name="coupon_edit_screen_amount_title">잔액 관리</string>
+    <string name="coupon_edit_screen_is_not_monetary_label">금액권 아님</string>
+
+    <string name="coupon_edit_screen_coupon_data_is_same_alert">변경된 내용이 없습니다</string>
+    <string name="coupon_edit_screen_coupon_edited_alert">입력한 내용이 저장 되었습니다</string>
+
+    <!--    공통 입력폼 텍스트-->
+    <string name="memo_input_field_placeholder">쿠폰과 관련된 메모를 남겨주세요\n(예: 친구 선물, 생일 쿠폰)</string>
+
+    <!--    쿠폰 이미지 화면-->
+    <string name="coupon_image_screen_image_description">쿠폰 이미지</string>
+
+    <!--    쿠폰 액션 매니저-->
+    <string name="coupon_image_share_title">쿠폰 이미지 공유</string>
+    <string name="coupon_image_saved">갤러리에 쿠폰 이미지를 저장하였습니다.</string>
+    <string name="coupon_image_save_failed">쿠폰 이미지 저장에 실패하였습니다.</string>
+    <string name="coupon_image_processing_failed">이미지 파일 처리에 실패하였습니다.</string>
+    <string name="coupon_image_save_permission_not_grant">이미지 저장을 위해 앱 설정에서 파일 권한을 허용해주세요.</string>
+    <string name="coupon_code_copy">클립보드에 복사되었습니다</string>
+
+    <!--    다이얼로그-->
+    <string name="common_dialog_cancel_title">취소</string>
+    <string name="amount_input_placeholder">현재 잔액을 입력하세요</string>
+
+
+</resources>

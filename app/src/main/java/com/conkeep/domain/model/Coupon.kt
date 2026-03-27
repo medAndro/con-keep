@@ -1,0 +1,44 @@
+package com.conkeep.domain.model
+
+import kotlinx.datetime.LocalDate
+import kotlin.time.Instant
+
+data class Coupon(
+    val id: String,
+    val userId: String,
+    // 이미지
+    val imageUrl: String?,
+    // 쿠폰 정보
+    val productName: String?,
+    val brand: String?,
+    val couponPin: String?,
+    val expiryDate: ExpiryDate,
+    // 금액 정보
+    val isMonetary: Boolean,
+    val amount: Int?,
+    // 분류 및 메모
+    val category: CouponCategory?,
+    val userMemo: String?,
+    // 사용 정보
+    val isUsed: Boolean,
+    val usedAt: Instant?,
+    // 메타데이터
+    val createdAt: Instant,
+    val updatedAt: Instant,
+    val isSynced: Boolean,
+    // 쿠폰 저장 상태
+    val status: String,
+    val isDirty: Boolean,
+)
+
+sealed class ExpiryDate {
+    data object Processing : ExpiryDate()
+
+    data class Success(
+        val value: LocalDate,
+    ) : ExpiryDate()
+
+    data class Empty(
+        val value: LocalDate? = null,
+    ) : ExpiryDate()
+}
