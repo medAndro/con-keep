@@ -75,18 +75,18 @@ fun CouponCard(
             ),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            IconButton(
-                onClick = { /* 메뉴 열기 로직 */ },
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_more), // ... 아이콘
-                    contentDescription = "더보기 메뉴",
-                    tint = textPrimary,
-                )
-            }
+//            IconButton(
+//                onClick = { /* 메뉴 열기 로직 */ },
+//                modifier =
+//                    Modifier
+//                        .align(Alignment.TopEnd),
+//            ) {
+//                Icon(
+//                    painter = painterResource(R.drawable.ic_more), // ... 아이콘
+//                    contentDescription = "더보기 메뉴",
+//                    tint = textPrimary,
+//                )
+//            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(13.dp),
