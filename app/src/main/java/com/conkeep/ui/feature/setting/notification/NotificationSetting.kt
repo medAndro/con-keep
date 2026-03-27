@@ -2,6 +2,7 @@ package com.conkeep.ui.feature.setting.notification
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,7 @@ import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepColors.textSecondary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium16
+import com.conkeep.ui.theme.PretendardMedium20
 import com.conkeep.ui.theme.PretendardSemibold20
 import kotlinx.datetime.LocalTime
 
@@ -42,8 +45,10 @@ import kotlinx.datetime.LocalTime
 fun NotificationSetting(
     onAddNewAlarmClick: () -> Unit,
     onTrashClick: (CouponAlarmSetting) -> Unit,
+    onOverlayClick: () -> Unit,
     modifier: Modifier = Modifier,
     couponAlarmSettings: Set<CouponAlarmSetting> = emptySet(),
+    isOverlayEnabled: Boolean = false,
 ) {
     Column(
         horizontalAlignment = Alignment.Start,
@@ -54,80 +59,120 @@ fun NotificationSetting(
             style = PretendardSemibold20,
             color = textPrimary,
         )
-        Column(
+        Box(
             modifier =
                 modifier
                     .fillMaxWidth()
                     .background(color = bgSurface, shape = RoundedCornerShape(12.dp))
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                    .clip(RoundedCornerShape(12.dp)),
         ) {
-            when {
-                couponAlarmSettings.isEmpty() -> {
-                    Surface(
-                        modifier =
-                            modifier
-                                .fillMaxWidth()
-                                .height(36.dp),
-                    ) {
-                        Box(
+            Column(
+                modifier =
+                    modifier
+                        .fillMaxWidth()
+                        .background(color = bgSurface)
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                when {
+                    couponAlarmSettings.isEmpty() -> {
+                        Surface(
                             modifier =
-                                Modifier
-                                    .wrapContentHeight(),
-                            contentAlignment = Alignment.Center,
+                                modifier
+                                    .fillMaxWidth()
+                                    .height(36.dp),
                         ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .wrapContentHeight(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "현재 알림을 받고 있지 않아요",
+                                    style = PretendardMedium16,
+                                    color = textSecondary,
+                                )
+                            }
+                        }
+                    }
+
+                    else ->
+                        couponAlarmSettings
+                            .sortedWith(compareBy({ it.daysBefore }, { it.targetTime }))
+                            .forEach { couponAlarmSetting ->
+                                NotificationItem(
+                                    couponAlarmSetting = couponAlarmSetting,
+                                    onTrashClick = onTrashClick,
+                                )
+                            }
+                }
+
+                Surface(
+                    modifier =
+                        modifier
+                            .fillMaxWidth()
+                            .height(36.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border =
+                        BorderStroke(
+                            0.6.dp,
+                            borderSubtle,
+                        ),
+                    onClick = onAddNewAlarmClick,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .wrapContentHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_plus_small),
+                                contentDescription = "새 알림 추가",
+                                tint = textSecondary,
+                            )
                             Text(
-                                text = "현재 알림을 받고 있지 않아요",
+                                text = "새 알림 추가",
                                 style = PretendardMedium16,
                                 color = textSecondary,
                             )
                         }
                     }
                 }
-
-                else ->
-                    couponAlarmSettings
-                        .sortedWith(compareBy({ it.daysBefore }, { it.targetTime }))
-                        .forEach { couponAlarmSetting ->
-                            NotificationItem(
-                                couponAlarmSetting = couponAlarmSetting,
-                                onTrashClick = onTrashClick,
-                            )
-                        }
             }
-
-            Surface(
-                modifier =
-                    modifier
-                        .fillMaxWidth()
-                        .height(36.dp),
-                shape = RoundedCornerShape(12.dp),
-                border =
-                    BorderStroke(
-                        0.6.dp,
-                        borderSubtle,
-                    ),
-                onClick = onAddNewAlarmClick,
-            ) {
+            // 덮어씌우는 반투명 검은색 오버레이
+            if (isOverlayEnabled) {
                 Box(
                     modifier =
                         Modifier
-                            .wrapContentHeight(),
-                    contentAlignment = Alignment.Center,
+                            .matchParentSize()
+                            .background(
+                                androidx.compose.ui.graphics.Color.Black
+                                    .copy(alpha = 0.7f),
+                            ).clickable(onClick = onOverlayClick),
+                    contentAlignment = Alignment.Center, // 문구를 정중앙에 배치
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_plus_small),
-                            contentDescription = "새 알림 추가",
-                            tint = textSecondary,
-                        )
                         Text(
-                            text = "새 알림 추가",
-                            style = PretendardMedium16,
-                            color = textSecondary,
+                            text = "알림이 설정되어 있지만\n기기 알림 권한이 꺼져 있어요.",
+                            style = PretendardMedium20,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+
+                        Text(
+                            text = "터치하여 권한 설정하기",
+                            style = PretendardMedium20, // 필요하다면 밑줄 들어간 스타일 사용
+                            color = brandSecondary, // 브랜드 강조색 사용
+                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                         )
                     }
                 }
@@ -247,6 +292,7 @@ fun NotificationSettingEmptyPreview() {
                 onAddNewAlarmClick = {},
                 couponAlarmSettings = emptySet(),
                 onTrashClick = {},
+                onOverlayClick = {},
             )
         }
     }
@@ -265,6 +311,26 @@ fun NotificationSettingPreview() {
                         CouponAlarmSetting(1, LocalTime(9, 0)),
                     ),
                 onTrashClick = {},
+                onOverlayClick = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+fun NotificationSettingRevokePermissionPreview() {
+    ConKeepTheme {
+        Surface(color = brandSecondary) {
+            NotificationSetting(
+                onAddNewAlarmClick = {},
+                couponAlarmSettings =
+                    setOf(
+                        CouponAlarmSetting(0, LocalTime(12, 0)),
+                    ),
+                onTrashClick = {},
+                onOverlayClick = {},
+                isOverlayEnabled = true,
             )
         }
     }
