@@ -6,7 +6,7 @@ import android.content.Intent
 import android.util.Log
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.model.Coupon
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

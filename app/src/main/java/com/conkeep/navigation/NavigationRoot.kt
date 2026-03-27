@@ -23,7 +23,8 @@ import com.conkeep.ui.feature.coupon.image.CouponImageScreen
 import com.conkeep.ui.feature.coupon.image.CouponImageViewModel
 import com.conkeep.ui.feature.coupon.list.CouponScreen
 import com.conkeep.ui.feature.setting.SettingScreen
-import com.conkeep.ui.feature.setting.notice.NoticeScreen
+import com.conkeep.ui.feature.setting.account.DeleteAccountScreen
+import com.conkeep.ui.feature.setting.normal.notice.NoticeScreen
 
 @Composable
 fun NavigationRoot(
@@ -47,6 +48,9 @@ fun NavigationRoot(
             MainNavigation(
                 pendingCouponId = pendingCouponId,
                 onDeepLinkHandled = onDeepLinkHandled,
+                navigateLoginScreen = {
+                    isLoggedIn = false
+                },
             )
         }
     }
@@ -56,6 +60,7 @@ fun NavigationRoot(
 private fun MainNavigation(
     pendingCouponId: String?,
     onDeepLinkHandled: () -> Unit,
+    navigateLoginScreen: () -> Unit,
 ) {
     val couponBackStack = rememberNavBackStack(Route.CouponScreen)
     val settingBackStack = rememberNavBackStack(Route.SettingScreen)
@@ -191,10 +196,19 @@ private fun SettingNavigation(
                     SettingScreen(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
+                        moveDeleteAccountScreen = {
+                            settingBackStack.add(Route.DeleteAccountScreen)
+                        },
                     )
                 }
                 entry<Route.NoticeScreen> {
                     NoticeScreen(
+                        settingBackStack = settingBackStack,
+                        onTabChange = onTabChange,
+                    )
+                }
+                entry<Route.DeleteAccountScreen> {
+                    DeleteAccountScreen(
                         settingBackStack = settingBackStack,
                         onTabChange = onTabChange,
                     )

@@ -2,14 +2,24 @@ package com.conkeep.ui.feature.setting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.conkeep.data.auth.AuthEventBus
+import com.conkeep.data.auth.SupabaseAuthManager
+import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.data.repository.setting.ExpiryAlertRepository
 import com.conkeep.notification.CouponAlarmScheduler
+import com.conkeep.ui.feature.setting.account.AccountInfo
+import com.conkeep.ui.feature.setting.account.AccountProvider
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,6 +30,9 @@ class SettingViewModel
     constructor(
         private val expiryAlertRepository: ExpiryAlertRepository,
         private val couponAlarmScheduler: CouponAlarmScheduler,
+        private val supabaseAuthManager: SupabaseAuthManager,
+        private val userPrefs: UserPreferencesRepository,
+        private val authEventBus: AuthEventBus,
     ) : ViewModel() {
         val couponAlarmSettings: Flow<Set<CouponAlarmSetting>> =
             expiryAlertRepository
@@ -27,6 +40,21 @@ class SettingViewModel
 
         private val _toastEvent = MutableSharedFlow<SettingEvent>()
         val toastEvent = _toastEvent.asSharedFlow()
+
+        val accountInfoFlow: StateFlow<AccountInfo?> =
+            supabaseAuthManager.currentUserFlow
+                .map { userInfo ->
+                    userInfo?.let {
+                        AccountInfo(
+                            email = it.email ?: "",
+                            provider = AccountProvider.Google, // 현재는 Google만 사용하므로 고정
+                        )
+                    }
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = null,
+                )
 
         fun addCouponAlarmSetting(couponAlarmSetting: CouponAlarmSetting) {
             viewModelScope.launch {
@@ -64,6 +92,14 @@ class SettingViewModel
                 }
             }
         }
+
+        fun logout() {
+            viewModelScope.launch {
+                userPrefs.clearAll()
+                authEventBus.emitForceLogout()
+                _toastEvent.emit(SettingEvent.LogoutSuccess)
+            }
+        }
     }
 
 sealed class SettingEvent {
@@ -74,4 +110,6 @@ sealed class SettingEvent {
     data object RemoveCouponAlarmSettingSuccess : SettingEvent()
 
     data object RemoveCouponAlarmSettingFailed : SettingEvent()
+
+    data object LogoutSuccess : SettingEvent()
 }

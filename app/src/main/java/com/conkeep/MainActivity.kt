@@ -11,7 +11,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.WorkManager
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.coupon.UserRepository
@@ -22,6 +24,7 @@ import com.conkeep.navigation.Route
 import com.conkeep.ui.theme.ConKeepTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -71,67 +74,87 @@ class MainActivity : ComponentActivity() {
             !isReady.value
         }
 
+        var lastHandledUserId: String? = null
         // 백그라운드에서 로그인 상태 체크
         lifecycleScope.launch {
-            // [초기화 대기] Supabase 초기화 및 세션 복구 대기 (최대 3초)
+            // [초기화 대기]
             withTimeoutOrNull(3000L) {
                 authManager.awaitInitialSession()
             } ?: false
 
-            // [상태 감지 시작] 이제부터 로그인 상태 변화를 지속적으로 관찰
-            authManager.isLoggedIn.collect { isLoggedIn ->
-                when {
-                    isLoggedIn -> {
-                        Log.d("MainActivity", "로그인 상태 감지: 데이터 동기화 및 경로 설정")
+            // 화면에 보일 때(STARTED 이상)만 Flow를 수집합니다.
+            // 백그라운드(WorkManager 등)에서 상태가 변해도 화면을 띄우지 않습니다.
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                authManager.auth.sessionStatus.collect { status ->
+                    when (status) {
+                        SessionStatus.Initializing -> {
+                            Log.d("MainActivity", "세션 초기화 중...")
+                        }
 
-                        // 1. 유저 ID 동기화 (FcmService에서 사용 가능하도록)
-                        launch { syncUserIdToPrefs() }
+                        is SessionStatus.Authenticated -> {
+                            Log.d("MainActivity", "로그인 상태 감지")
 
-                        // 2. FCM 토큰 업데이트 (변경된 경우에만)
-                        launch { handleFcmTokenUpdate() }
+                            // 중복 호출 방지 로직
+                            val currentUserId = authManager.getAuthenticatedUserId()
+                            if (currentUserId != null && lastHandledUserId != currentUserId) {
+                                lastHandledUserId = currentUserId
 
-                        // 3. 쿠폰 증분 업데이트
-                        launch { syncManager.enqueueCouponSync() }
+                                launch {
+                                    syncUserIdToPrefs()
+                                    handleFcmTokenUpdate()
+                                }
+                                launch { syncManager.enqueueCouponSync() }
+                            }
 
-                        // 최초 실행 시에만 초기 경로 설정
-                        if (initialRoute.value == null) {
-                            initialRoute.value = Route.CouponScreen
+                            if (initialRoute.value == null) {
+                                initialRoute.value = Route.CouponScreen
+                            }
+                            if (!isReady.value) isReady.value = true
+                        }
+
+                        is SessionStatus.RefreshFailure -> {
+                            Log.w("MainActivity", "리프레시 실패 (일시적 네트워크 오류 등). 기존 뷰 유지")
+                            if (initialRoute.value == null) {
+                                initialRoute.value = Route.CouponScreen
+                            }
+                            if (!isReady.value) isReady.value = true
+                        }
+
+                        is SessionStatus.NotAuthenticated -> {
+                            Log.d("MainActivity", "비로그인 상태 감지. isSignOut: ${status.isSignOut}")
+                            lastHandledUserId = null // 유저 초기화
+
+                            // 앱 초기 실행 시점이 비로그인일 경우
+                            if (initialRoute.value == null) {
+                                initialRoute.value = Route.LoginScreen
+                                if (!isReady.value) isReady.value = true
+                                return@collect
+                            }
+
+                            // 명시적 로그아웃(탈퇴 등)일 때만 재시작
+                            // repeatOnLifecycle 안장이므로 앱이 백그라운드일 때는 실행되지 않습니다.
+                            if (status.isSignOut && isReady.value) {
+                                Log.d("MainActivity", "명시적 로그아웃 확인됨: 앱 재시작")
+                                lifecycleScope.launch {
+                                    userPrefs.clearAll()
+                                    restartApp()
+                                }
+                            }
                         }
                     }
-
-                    else -> {
-                        Log.d("MainActivity", "비로그인 상태 감지")
-
-                        // 초기화가 끝난(isReady가 참이 되려는) 시점 이후에 로그아웃된 경우만 clear
-                        // 초기 로딩 중에는 clearAll()을 호출하지 않도록 주의
-                        if (isReady.value) {
-                            launch { userPrefs.clearAll() }
-                        }
-
-                        if (initialRoute.value == null) {
-                            initialRoute.value = Route.LoginScreen
-                        }
-                    }
-                }
-
-                // 초기 경로가 결정되면 스플래시 해제 (딱 한 번만 실행됨)
-                if (initialRoute.value != null && !isReady.value) {
-                    isReady.value = true
                 }
             }
         }
+
         setContent {
             ConKeepTheme(darkTheme = false) {
                 if (isReady.value && initialRoute.value != null) {
                     NavigationRoot(
                         initialRoute = initialRoute.value!!,
-                        // [추가] 펜딩된 ID 전달 및 처리가 끝나면 null로 비워주는 콜백
                         pendingCouponId = pendingCouponId.value,
                         onDeepLinkHandled = { pendingCouponId.value = null },
                     )
                 }
-
-                // 앱이 처음 켜질 때 Intent 확인
                 LaunchedEffect(Unit) {
                     handleIntent(intent)
                 }
@@ -142,6 +165,18 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
+    }
+
+    /**
+     * 앱을 완전히 깨끗한 상태로 재시작합니다.
+     */
+    private fun restartApp() {
+        val intent =
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        startActivity(intent)
+        finish()
     }
 
     private fun handleIntent(intent: Intent) {
@@ -181,13 +216,11 @@ class MainActivity : ComponentActivity() {
 
             // 3. 로컬에 저장된 이전 토큰 확인
             val cachedToken = userPrefs.fcmToken.first() ?: ""
+            val cachedUserId = userPrefs.userId.first() ?: ""
 
             // 4. 비교: 값이 없거나 다르다면 서버 업데이트 진행
-            if (currentToken != cachedToken) {
+            if (currentToken != cachedToken || userId != cachedUserId) {
                 Log.d("MainActivity", "FCM 토큰 변경 감지: 업데이트를 시작합니다.")
-                // 기존 토큰 삭제
-                userRepository.removeDevice(userId, cachedToken)
-
                 // 새 토큰 서버 전송
                 userRepository.registerDevice(userId, currentToken)
 

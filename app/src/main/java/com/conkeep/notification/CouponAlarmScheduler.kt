@@ -8,7 +8,7 @@ import android.os.Build
 import android.util.Log
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.data.repository.setting.ExpiryAlertRepository
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
 import kotlinx.datetime.atTime

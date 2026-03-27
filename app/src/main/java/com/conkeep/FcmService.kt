@@ -2,6 +2,8 @@ package com.conkeep
 
 import android.util.Log
 import androidx.work.WorkManager
+import com.conkeep.data.auth.AuthEventBus
+import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.data.sync.SyncManager
@@ -37,6 +39,12 @@ class FcmService : FirebaseMessagingService() {
     @Inject
     lateinit var syncManager: SyncManager
 
+    @Inject
+    lateinit var authEventBus: AuthEventBus
+
+    @Inject
+    lateinit var supabaseAuthManager: SupabaseAuthManager
+
     /**
      * 2. 서비스 전용 코루틴 스코프
      * SupervisorJob: 자식 작업 중 하나가 실패해도 전체 스코프가 취소되지 않게 방어합니다.
@@ -62,6 +70,12 @@ class FcmService : FirebaseMessagingService() {
                     // 서버가 "동기화" 신호를 보낸 경우입니다.
                     val timestamp = message.data["timestamp"]
                     handleSyncTrigger(timestamp)
+                }
+
+                "WITHDRAW_TRIGGER" -> {
+                    serviceScope.launch {
+                        supabaseAuthManager.signOut(applicationContext)
+                    }
                 }
             }
         }
@@ -106,12 +120,6 @@ class FcmService : FirebaseMessagingService() {
                         Log.w(TAG, "유저 ID를 찾을 수 없어 토큰 업데이트를 건너뜁니다.")
                         return@launch
                     }
-
-                // 캐시된 토큰 삭제
-                userPrefs.fcmToken.first()?.let { cachedToken ->
-                    userRepository.removeDevice(userId, cachedToken)
-                }
-
                 // 서버(Supabase)의 profiles 테이블에 내 주소를 저장합니다.
                 userRepository.registerDevice(userId, token)
 

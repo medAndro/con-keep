@@ -13,6 +13,8 @@ import com.conkeep.data.mapper.toEntity
 import com.conkeep.data.remote.dto.AiAnalyzeJobResponse
 import com.conkeep.data.remote.dto.AiAnalyzeRequest
 import com.conkeep.data.remote.dto.CouponDto
+import com.conkeep.data.remote.dto.DeleteCouponsRequest
+import com.conkeep.data.remote.dto.DeleteCouponsResponse
 import com.conkeep.data.remote.dto.PresignedUrlResponse
 import com.conkeep.data.remote.dto.SupabaseCoupon
 import com.conkeep.data.remote.dto.toDto
@@ -24,12 +26,13 @@ import com.conkeep.di.annotation.R2UploadClient
 import com.conkeep.domain.model.Coupon
 import com.conkeep.ui.feature.coupon.model.CouponCountSummary
 import com.conkeep.ui.feature.coupon.model.CouponSortType
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -47,13 +50,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -317,17 +318,15 @@ class CouponRepository
             withContext(Dispatchers.IO) {
                 try {
                     val lastSyncTime = userPrefs.lastSyncTime.first()
-                    val (currentUserId, masterKey) =
-                        withTimeout(10000L) {
-                            // 10초 동안 대기
-                            combine(
-                                authManager.currentUserIdFlow,
-                                authManager.currentUserMasterKeyFlow,
-                            ) { id, key ->
-                                if (id != null && key != null) id to key else null
-                            }.filterNotNull().first()
-                        }
+                    val currentUserId =
+                        authManager.getAuthenticatedUserId()
+                            ?: return@withContext Result.failure(Exception("유저 ID를 가져올 수 없습니다. 로그인이 필요합니다."))
 
+                    val masterKey =
+                        authManager.getMasterKey()
+                            ?: return@withContext Result.failure(Exception("마스터키를 가져올 수 없습니다."))
+
+                    // Supabase 데이터 조회
                     val response =
                         supabase.from("coupons").select {
                             filter {
@@ -338,6 +337,7 @@ class CouponRepository
 
                     val coupons = response.decodeList<CouponDto>()
 
+                    // 로컬 DB 동기화 처리
                     coupons.forEach { dto: CouponDto ->
                         val localCoupon = couponDao.getCouponById(dto.id)
                         if (localCoupon?.isDirty == true) return@forEach
@@ -355,8 +355,8 @@ class CouponRepository
 
                         val entity =
                             dto.toEntity(imageUrl).copy(
-                                couponPin = decryptedPin, // 복호화된 평문
-                                imageUrl = imageUrl, // 파생된 URL
+                                couponPin = decryptedPin,
+                                imageUrl = imageUrl,
                             )
                         couponDao.upsert(entity)
                         couponDao.setIsClean(dto.id)
@@ -417,14 +417,40 @@ class CouponRepository
                 Result.failure(it) // DB 에러 발생 시
             }
 
-        suspend fun softDelete(id: String): Result<Unit> {
+        /**
+         * 서버에 다중 쿠폰 삭제 요청
+         */
+        suspend fun deleteCouponsRemote(couponIds: List<String>): Result<DeleteCouponsResponse> =
+            withContext(Dispatchers.IO) {
+                try {
+                    val response: HttpResponse =
+                        authClient.delete("${BuildConfig.BASE_URL}/delete") {
+                            contentType(ContentType.Application.Json)
+                            setBody(DeleteCouponsRequest(couponIds))
+                        }
+
+                    if (response.status.isSuccess()) {
+                        val body = response.body<DeleteCouponsResponse>()
+                        Result.success(body)
+                    } else {
+                        Result.failure(Exception("원격 삭제 실패: ${response.status}"))
+                    }
+                } catch (e: Exception) {
+                    Log.e("CouponRepository", "원격 삭제 중 오류 발생", e)
+                    Result.failure(e)
+                }
+            }
+
+        /**
+         * 로컬 플래그 변경 delete
+         */
+        suspend fun softDeleteLocal(id: String): Result<Unit> =
             try {
                 couponDao.softDelete(id)
-                return Result.success(Unit)
+                Result.success(Unit)
             } catch (e: Exception) {
-                return Result.failure(e)
+                Result.failure(e)
             }
-        }
 
         // 백그라운드에서 Supabase → Room 동기화
         suspend fun syncFromSupabase(): Result<Unit> =
@@ -447,22 +473,4 @@ class CouponRepository
                     Result.failure(e)
                 }
             }
-
-        // TODO : 로컬 변경사항 → Supabase 업로드
-//        suspend fun syncToSupabase(coupon: Coupon): Result<Unit> =
-//            withContext(Dispatchers.IO) {
-//                try {
-//                    // Supabase에 업로드
-//                    supabase
-//                        .from("coupons")
-//                        .upsert(coupon.toDto())
-//
-//                    // Room에도 저장 (로컬 캐시)
-//                    couponDao.insert(coupon.toEntity())
-//
-//                    Result.success(Unit)
-//                } catch (e: Exception) {
-//                    Result.failure(e)
-//                }
-//            }
     }

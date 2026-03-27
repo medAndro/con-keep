@@ -3,7 +3,7 @@ package com.conkeep.data.local.entity
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 
 @Entity(
     tableName = "expiry_alerts",

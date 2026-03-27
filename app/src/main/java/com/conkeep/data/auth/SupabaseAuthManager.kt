@@ -2,11 +2,13 @@ package com.conkeep.data.auth
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.util.Base64
 import android.util.Log
 import androidx.core.net.toUri
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
@@ -16,7 +18,9 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
@@ -25,6 +29,7 @@ import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +38,10 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,21 +51,47 @@ import kotlin.time.Clock
 class SupabaseAuthManager
     @Inject
     constructor(
+        @param:ApplicationContext private val context: Context,
         supabase: SupabaseClient,
-        authRepository: AuthRepository,
+        private val authRepository: AuthRepository,
+        private val authEventBus: AuthEventBus,
     ) {
         val auth = supabase.auth
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-        // 로그인 상태 (StateFlow)
+        private val authActionMutex = Mutex()
+
+        init {
+            // 객체 생성 시점부터 백그라운드에서 로그아웃 이벤트 구독 시작
+            scope.launch {
+                authEventBus.logoutEvent.collect {
+                    Log.d("SupabaseAuth", "AuthEventBus로부터 전역 로그아웃 신호 수신")
+
+                    signOut(context)
+
+                    // 로컬 DB/DataStore 초기화 필요 시 록직 추가
+                }
+            }
+        }
+
+        // 메모리에 캐싱될 마스터키 (userId와 쌍으로 저장)
+        private var cachedMasterKeyInfo: Pair<String, ByteArray>? = null
+        private val masterKeyMutex = kotlinx.coroutines.sync.Mutex()
+
         val isLoggedIn: StateFlow<Boolean> =
             auth.sessionStatus
                 .map { status ->
-                    status is SessionStatus.Authenticated
-                }.stateIn(
+                    when (status) {
+                        is SessionStatus.Authenticated -> true
+                        is SessionStatus.NotAuthenticated -> false
+                        // 그 외 상태(초기화 중, 리프레시 실패)는 null을 반환하여 필터링
+                        else -> null
+                    }
+                }.filterNotNull()
+                .stateIn(
                     scope = scope,
-                    started = SharingStarted.Eagerly, // 앱 시작부터 추적
-                    initialValue = false,
+                    started = SharingStarted.Eagerly,
+                    initialValue = auth.currentSessionOrNull() != null,
                 )
 
         // 현재 사용자 정보 Flow
@@ -108,22 +143,50 @@ class SupabaseAuthManager
             }
         }
 
-        // 현재 사용자의 마스터키
-        val currentUserMasterKeyFlow: StateFlow<ByteArray?> =
-            auth.sessionStatus
-                .map { status ->
-                    when (status) {
-                        is SessionStatus.Authenticated -> {
-                            runCatching { authRepository.getMasterKey().masterKey }
-                                .onFailure { Log.e("SupabaseAuth", "마스터키 fetch 실패", it) }
-                                .onSuccess { Log.d("SupabaseAuth", "마스터키 fetch 성공") }
-                                .getOrNull()
-                                ?.let { Base64.decode(it, Base64.NO_WRAP) }
-                        }
+        /**
+         * 마스터키를 반환하는 함수 (userId 검증 포함)
+         */
+        suspend fun getMasterKey(): ByteArray? {
+            // 유저가 로그인 상태인지 확인하여 현재 userId 획득
+            val currentUserId = getAuthenticatedUserId() ?: return null
 
-                        else -> null
+            // 캐시가 존재하고, 캐시된 userId가 현재 userId와 정확히 일치하면 바로 반환
+            cachedMasterKeyInfo?.let { (cachedUserId, cachedKey) ->
+                if (cachedUserId == currentUserId) {
+                    return cachedKey
+                }
+            }
+
+            // 멀티스레드 환경에서 중복 API 호출 방지 (Mutex)
+            masterKeyMutex.withLock {
+                // 3. 락을 얻고 들어왔을 때 그 사이 다른 스레드가 갱신했을 수 있으므로 재확인
+                cachedMasterKeyInfo?.let { (cachedUserId, cachedKey) ->
+                    if (cachedUserId == currentUserId) {
+                        return cachedKey
                     }
-                }.stateIn(scope, SharingStarted.Eagerly, null)
+                }
+
+                Log.d("SupabaseAuth", "마스터키 서버에서 페치 시도... (userId: $currentUserId)")
+                return try {
+                    val response = authRepository.getMasterKey()
+                    if (response.success) {
+                        val decodedKey = Base64.decode(response.masterKey, Base64.NO_WRAP)
+
+                        //  현재 userId와 페치된 키를 쌍으로 묶어서 캐싱
+                        cachedMasterKeyInfo = Pair(currentUserId, decodedKey)
+
+                        Log.d("SupabaseAuth", "마스터키 fetch 성공 및 캐싱 완료")
+                        decodedKey
+                    } else {
+                        Log.e("SupabaseAuth", "마스터키 서버 응답 실패")
+                        null
+                    }
+                } catch (e: Exception) {
+                    Log.e("SupabaseAuth", "마스터키 fetch 예외 발생", e)
+                    null
+                }
+            }
+        }
 
         suspend fun awaitInitialSession(): Boolean {
             auth.awaitInitialization()
@@ -154,58 +217,61 @@ class SupabaseAuthManager
          * @param activity 호출하는 Activity (Credential Manager UI 표시용)
          */
         suspend fun signInWithGoogle(activity: Activity): Result<UserInfo> =
-            try {
-                // 1. Google Credential Manager 설정
-                val credentialManager = CredentialManager.create(activity)
+            authActionMutex.withLock {
+                try {
+                    Log.d("SupabaseAuth", "Google 로그인 시도")
+                    // 1. Google Credential Manager 설정
+                    val credentialManager = CredentialManager.create(activity)
 
-                val googleIdOption =
-                    GetGoogleIdOption
-                        .Builder()
-                        .setFilterByAuthorizedAccounts(false) // 모든 계정 표시
-                        .setServerClientId(BuildConfig.WEB_CLIENT_ID)
-                        .setAutoSelectEnabled(true)
-                        .build()
+                    val googleIdOption =
+                        GetGoogleIdOption
+                            .Builder()
+                            .setFilterByAuthorizedAccounts(false) // 모든 계정 표시
+                            .setServerClientId(BuildConfig.WEB_CLIENT_ID)
+                            .setAutoSelectEnabled(true)
+                            .build()
 
-                val request =
-                    GetCredentialRequest
-                        .Builder()
-                        .addCredentialOption(googleIdOption)
-                        .build()
+                    val request =
+                        GetCredentialRequest
+                            .Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
 
-                // 2. 인증 요청 및 토큰 획득
-                val result =
-                    credentialManager.getCredential(
-                        request = request,
-                        context = activity,
-                    )
+                    // 2. 인증 요청 및 토큰 획득
+                    val result =
+                        credentialManager.getCredential(
+                            request = request,
+                            context = activity,
+                        )
 
-                val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
-                val idToken = credential.idToken
+                    val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
+                    val idToken = credential.idToken
 
-                // 3. Supabase Auth에 ID Token 전달 (회원가입/로그인 동시 처리)
-                auth.signInWith(IDToken) {
-                    this.idToken = idToken
-                    provider = Google
+                    // 3. Supabase Auth에 ID Token 전달 (회원가입/로그인 동시 처리)
+                    auth.signInWith(IDToken) {
+                        this.idToken = idToken
+                        provider = Google
+                    }
+
+                    // 4. 사용자 정보 반환
+                    val user =
+                        auth.currentUserOrNull()
+                            ?: throw Exception("로그인 후 사용자 정보를 가져오지 못했습니다.")
+
+                    Result.success(user)
+                } catch (e: GetCredentialProviderConfigurationException) {
+                    // Play Services 미준비
+                    handlePlayServicesUpdate(activity)
+                    Result.failure(PlayServicesNotReadyException("Google Play Services를 업데이트해주세요"))
+                } catch (e: androidx.credentials.exceptions.NoCredentialException) {
+                    promptAddGoogleAccount(activity)
+                    Result.failure(NoGoogleAccountException("구글 계정을 먼저 추가해주세요"))
+                } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                    Result.failure(e)
+                } catch (e: Exception) {
+                    Log.e("SupabaseAuth", "Google 로그인 실패", e)
+                    Result.failure(e)
                 }
-
-                // 4. 사용자 정보 반환
-                val user =
-                    auth.currentUserOrNull()
-                        ?: throw Exception("로그인 후 사용자 정보를 가져오지 못했습니다.")
-
-                Result.success(user)
-            } catch (e: GetCredentialProviderConfigurationException) {
-                // Play Services 미준비
-                handlePlayServicesUpdate(activity)
-                Result.failure(PlayServicesNotReadyException("Google Play Services를 업데이트해주세요"))
-            } catch (e: androidx.credentials.exceptions.NoCredentialException) {
-                promptAddGoogleAccount(activity)
-                Result.failure(NoGoogleAccountException("구글 계정을 먼저 추가해주세요"))
-            } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
-                Result.failure(e)
-            } catch (e: Exception) {
-                Log.e("SupabaseAuth", "Google 로그인 실패", e)
-                Result.failure(e)
             }
 
         /**
@@ -256,15 +322,40 @@ class SupabaseAuthManager
             }
         }
 
-        suspend fun signOut() {
-            auth.signOut()
+        suspend fun signOut(context: Context) {
+            authActionMutex.withLock {
+                try {
+                    Log.d("SupabaseAuth", "로그아웃 프로세스 시작 (화면 즉시 전환)")
+
+                    cachedMasterKeyInfo = null
+                    auth.clearSession()
+
+                    // 앱이 백그라운드로 내려가도 로그아웃
+                    withContext(NonCancellable) {
+                        try {
+                            val credentialManager = CredentialManager.create(context)
+                            credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                            Log.d("SupabaseAuth", "CredentialManager 세션 초기화 성공")
+
+                            auth.signOut(scope = SignOutScope.GLOBAL)
+                            Log.d("SupabaseAuth", "Supabase 글로벌 로그아웃 성공")
+                        } catch (e: Exception) {
+                            Log.e("SupabaseAuth", "백그라운드 로그아웃 후처리 중 오류", e)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("SupabaseAuth", "로그아웃 중 오류 발생", e)
+                    cachedMasterKeyInfo = null
+                    auth.clearSession()
+                }
+            }
         }
 
         suspend fun refreshSession() {
             try {
                 auth.refreshCurrentSession()
             } catch (e: Exception) {
-                signOut()
+                signOut(context)
             }
         }
     }

@@ -29,6 +29,27 @@ class CouponWorkManager
             return uploadRequest
         }
 
+        fun enqueueDeleteRemoteCoupons(couponIds: List<String>) {
+            val deleteRequest =
+                OneTimeWorkRequestBuilder<DeleteWorker>()
+                    .setConstraints(
+                        Constraints
+                            .Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build(),
+                    ).setInputData(
+                        workDataOf(
+                            "COUPON_IDS" to couponIds.toTypedArray(),
+                        ),
+                    ).build()
+
+            workManager.enqueueUniqueWork(
+                "delete_batch_${System.currentTimeMillis()}",
+                ExistingWorkPolicy.APPEND_OR_REPLACE,
+                deleteRequest,
+            )
+        }
+
         fun uploadImageWorkerRequest(
             couponId: String,
             localAbsolutePath: String,

@@ -5,7 +5,7 @@ import com.conkeep.data.local.dao.ExpiryAlertDao
 import com.conkeep.data.local.entity.ExpiryAlertEntity
 import com.conkeep.data.mapper.toCouponAlarmSetting
 import com.conkeep.data.mapper.toExpiryAlertEntity
-import com.conkeep.ui.feature.setting.CouponAlarmSetting
+import com.conkeep.ui.feature.setting.notification.CouponAlarmSetting
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
