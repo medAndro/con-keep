@@ -1,6 +1,7 @@
 package com.conkeep.ui.feature.coupon.image
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -39,7 +40,8 @@ import androidx.navigation3.runtime.NavKey
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.conkeep.R
-import com.conkeep.ui.feature.coupon.common.rememberCouponActionHandler
+import com.conkeep.ui.feature.coupon.common.CouponActionManager
+import com.conkeep.ui.feature.coupon.common.rememberStoragePermissionAction
 import com.conkeep.ui.theme.ConKeepColors.bgFullscreen
 import com.conkeep.ui.theme.ConKeepColors.bgFullscreenTransparency
 import com.conkeep.ui.theme.ConKeepColors.textWhite
@@ -58,11 +60,8 @@ fun CouponImageScreen(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val window = remember(context) { (context as? Activity)?.window }
-    val actionHandler =
-        rememberCouponActionHandler(
-            onSaveRequested = { callback -> viewModel.saveCouponImage(callback) },
-            onShareRequested = { callback -> viewModel.shareCoupon(callback) },
-        )
+    val actionManager = CouponActionManager(context)
+    val runWithStoragePermission = rememberStoragePermissionAction()
 
     if (window != null) {
         val controller =
@@ -89,8 +88,20 @@ fun CouponImageScreen(
                 backStack.removeLastOrNull()
             }
         },
-        onSaveClick = actionHandler.saveImage,
-        onShareClick = actionHandler.shareImage,
+        onSaveClick = {
+            runWithStoragePermission {
+                viewModel.saveCouponImage { isSuccess ->
+                    actionManager.handleSaveResult(isSuccess == true)
+                }
+            }
+        },
+        onShareClick = {
+            Log.d("CouponImageScreen", "onShareClick")
+            viewModel.shareCoupon { shareUri ->
+                Log.d("CouponImageScreen", "shareCoupon: $shareUri")
+                actionManager.launchShareIntent(shareUri)
+            }
+        },
     )
 }
 

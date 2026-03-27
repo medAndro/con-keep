@@ -1,6 +1,7 @@
 package com.conkeep.ui.feature.coupon.image
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.conkeep.data.local.file.LocalFileManager
@@ -49,11 +50,12 @@ class CouponImageViewModel
 
         fun shareCoupon(onResult: (Uri?) -> Unit) {
             val currentCoupon = coupon.value ?: return
-            val path = currentCoupon.localImagePath ?: return
+            val path = currentCoupon.localImagePath ?: return // todo: 교체 필
             val name = "${coupon.value?.name}_${coupon.value?.number}"
 
             viewModelScope.launch {
                 val shareUri = fileManager.getShareUriWithCustomName(path, name)
+                Log.d("CouponImageViewModel", "shareCoupon: $shareUri")
                 onResult(shareUri)
             }
         }

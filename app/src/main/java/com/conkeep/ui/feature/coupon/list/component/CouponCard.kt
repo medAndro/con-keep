@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,7 +41,6 @@ import com.conkeep.ui.theme.ConKeepColors.bgSurface
 import com.conkeep.ui.theme.ConKeepColors.borderDefault
 import com.conkeep.ui.theme.ConKeepColors.shimmerColor
 import com.conkeep.ui.theme.ConKeepColors.textBrandGray
-import com.conkeep.ui.theme.ConKeepColors.textPrimary
 import com.conkeep.ui.theme.ConKeepTheme
 import com.conkeep.ui.theme.PretendardMedium12
 import com.conkeep.ui.theme.PretendardSemibold13
