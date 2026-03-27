@@ -3,6 +3,7 @@ package com.conkeep.ui.feature.setting
 import android.Manifest
 import android.app.Activity
 import android.app.AlarmManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -83,32 +85,36 @@ fun SettingScreen(
     val activity = context as Activity
     val addCouponAlarmSettingSuccessMessage = "알림이 추가되었습니다."
     val addCouponAlarmSettingErrorMessage = "해당 알림은 이미 추가되어 있습니다."
-
     val removeCouponAlarmSettingSuccessMessage = "알림이 삭제되었습니다."
     val removeCouponAlarmSettingFailedMessage = "알림이 삭제되지 않았습니다."
-
     val logoutSettingMessage = "로그아웃 되었습니다."
 
-    val showSettingBottomSheet =
+    var showSettingBottomSheet by
         rememberSaveable(stateSaver = CouponAlarmSetting.Saver) {
             mutableStateOf(null)
         }
-    val showNotificationSettingsDialog = rememberSaveable { mutableStateOf(false) }
-    val showExactAlarmSettingsDialog = rememberSaveable { mutableStateOf(false) }
+    var showNotificationSettingsDialog by rememberSaveable { mutableStateOf(false) }
+    var showExactAlarmSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var pendingExactAlarmCheck by rememberSaveable { mutableStateOf(false) }
-    val showLogoutDialog = rememberSaveable { mutableStateOf(false) }
+    var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
+    var hasNotificationPermission by rememberSaveable {
+        mutableStateOf(checkNotificationPermission(context))
+    }
+    var pendingPermissionCheckOnly by rememberSaveable { mutableStateOf(false) }
 
-    val checkExactAlarmAndShowSheet = {
+    fun checkExactAlarmAndShowSheet() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = context.getSystemService(AlarmManager::class.java)
             if (alarmManager.canScheduleExactAlarms()) {
-                showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+                if (pendingPermissionCheckOnly) return
+                showSettingBottomSheet = CouponAlarmSetting(0, LocalTime(9, 0))
             } else {
-                showExactAlarmSettingsDialog.value = true
+                showExactAlarmSettingsDialog = true
             }
         } else {
-            // Android 11 이하: 권한 불필요
-            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+            // Android 11 이하
+            if (pendingPermissionCheckOnly) return
+            showSettingBottomSheet = CouponAlarmSetting(0, LocalTime(9, 0))
         }
     }
 
@@ -118,50 +124,85 @@ fun SettingScreen(
             contract = ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
             if (isGranted) {
-                checkExactAlarmAndShowSheet() // 알림 권한 허용 → 정확한 알람 권한 체크로 이동
+                checkExactAlarmAndShowSheet()
             } else {
                 if (!ActivityCompat.shouldShowRequestPermissionRationale(
                         activity,
                         Manifest.permission.POST_NOTIFICATIONS,
                     )
                 ) {
-                    showNotificationSettingsDialog.value = true
+                    showNotificationSettingsDialog = true
                 } else {
+                    showNotificationSettingsDialog = true
                     Toast.makeText(context, "알림 권한이 거부되었습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-    // 2. 권한 체크 및 실행 로직을 별도 함수로 분리
-    val checkPermissionAndShowSheet = {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionStatus =
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                )
-            if (permissionStatus == PackageManager.PERMISSION_GRANTED) {
-                checkExactAlarmAndShowSheet() // 알림 이미 있으면 바로 정확한 알람 및 리마인더 체크로
-            } else {
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        } else {
+    // 권한 체크 및 실행 로직을 별도 함수로 분리
+    fun checkPermissionAndShowSheet(isPermissionCheckOnly: Boolean = false) {
+        pendingPermissionCheckOnly = isPermissionCheckOnly
+
+        // 모든 안드로이드 버전 호환 알림 켜짐 여부 확인
+        val areNotificationsEnabled =
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+        if (areNotificationsEnabled) {
+            // 알림이 켜져 있으면, 정확한 알람(Exact Alarm) 권한 체크로 넘어감
             checkExactAlarmAndShowSheet()
+        } else {
+            // 알림이 꺼져 있는 경우 분기 처리
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Android 13 이상: 아직 권한을 요청할 수 있는 상태인지 확인
+                val permissionStatus =
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    )
+
+                if (permissionStatus == PackageManager.PERMISSION_GRANTED) {
+                    // 권한은 있으나 시스템 설정에서 꺼버린 경우
+                    showNotificationSettingsDialog = true
+                } else if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    )
+                ) {
+                    // 사용자가 명시적으로 거부했던 경우 -> 설정 다이얼로그
+                    showNotificationSettingsDialog = true
+                } else {
+                    // 아직 권한을 요청한 적이 없는 경우 -> 시스템 권한 팝업 띄우기
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            } else {
+                // Android 12 이하: 런타임 팝업이 없으므로 무조건 설정 앱으로 유도하는 다이얼로그 띄움
+                showNotificationSettingsDialog = true
+            }
         }
     }
 
-    DisposableEffect(
-        LocalLifecycleOwner.current,
-    ) {
+    DisposableEffect(LocalLifecycleOwner.current) {
         val observer =
             LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_RESUME && pendingExactAlarmCheck) {
-                    pendingExactAlarmCheck = false
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val alarmManager =
-                            context.getSystemService(AlarmManager::class.java)
-                        if (alarmManager.canScheduleExactAlarms()) {
-                            showSettingBottomSheet.value = CouponAlarmSetting(0, LocalTime(9, 0))
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    // 앱에 돌아올 때마다 권한 상태 갱신
+                    hasNotificationPermission = checkNotificationPermission(context)
+
+                    // 기존 ExactAlarm 체크 로직
+                    if (pendingExactAlarmCheck) {
+                        pendingExactAlarmCheck = false
+                        if (pendingPermissionCheckOnly) {
+                            pendingPermissionCheckOnly = false
+                            return@LifecycleEventObserver
+                        }
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val alarmManager = context.getSystemService(AlarmManager::class.java)
+                            if (alarmManager.canScheduleExactAlarms()) {
+                                showSettingBottomSheet = CouponAlarmSetting(0, LocalTime(9, 0))
+                            }
+                        } else {
+                            showSettingBottomSheet = CouponAlarmSetting(0, LocalTime(9, 0))
                         }
                     }
                 }
@@ -224,20 +265,22 @@ fun SettingScreen(
         addCouponAlarmSetting = viewModel::addCouponAlarmSetting,
         removeCouponAlarmSetting = viewModel::removeCouponAlarmSetting,
         checkPermissionAndShowSheet = { checkPermissionAndShowSheet() },
+        checkPermissionOnly = { checkPermissionAndShowSheet(true) },
+        isPermissionOverlyEnabled = hasNotificationPermission.not() && couponAlarmSettings.isNotEmpty(),
         updatePendingExactAlarmCheck = { pendingExactAlarmCheck = it },
-        showNotificationSettingsDialog = showNotificationSettingsDialog.value,
-        onDismissNotificationDialog = { showNotificationSettingsDialog.value = false },
-        showExactAlarmSettingsDialog = showExactAlarmSettingsDialog.value,
-        onDismissExactAlarmDialog = { showExactAlarmSettingsDialog.value = false },
-        showSettingBottomSheet = showSettingBottomSheet.value,
+        showNotificationSettingsDialog = showNotificationSettingsDialog,
+        onDismissNotificationDialog = { showNotificationSettingsDialog = false },
+        showExactAlarmSettingsDialog = showExactAlarmSettingsDialog,
+        onDismissExactAlarmDialog = { showExactAlarmSettingsDialog = false },
+        showSettingBottomSheet = showSettingBottomSheet,
         moveDeleteAccountScreen = moveDeleteAccountScreen,
-        onUpdateBottomSheet = { showSettingBottomSheet.value = it },
+        onUpdateBottomSheet = { showSettingBottomSheet = it },
         accountInfo = accountInfo,
-        showLogoutDialog = showLogoutDialog.value,
-        onShowLogoutDialog = { showLogoutDialog.value = true },
+        showLogoutDialog = showLogoutDialog,
+        onShowLogoutDialog = { showLogoutDialog = true },
         onLogout = viewModel::logout,
         onDismissLogoutDialog = {
-            showLogoutDialog.value = false
+            showLogoutDialog = false
         },
     )
 }
@@ -253,6 +296,8 @@ fun SettingScreenContent(
     removeCouponAlarmSetting: (CouponAlarmSetting) -> Unit,
     // 권한 관련 액션
     checkPermissionAndShowSheet: () -> Unit,
+    checkPermissionOnly: () -> Unit,
+    isPermissionOverlyEnabled: Boolean,
     updatePendingExactAlarmCheck: (Boolean) -> Unit,
     // UI 상태 제어 (State & 이벤트를 쌍으로 전달)
     showNotificationSettingsDialog: Boolean,
@@ -388,9 +433,17 @@ fun SettingScreenContent(
                         removeCouponAlarmSetting(it)
                     },
                     couponAlarmSettings = couponAlarmSettings,
+                    onOverlayClick = {
+                        checkPermissionOnly()
+                    },
+                    isOverlayEnabled = isPermissionOverlyEnabled,
                 )
                 NormalSetting(onClickNotice)
-                AccountSetting(onShowLogoutDialog, moveDeleteAccountScreen, accountInfo = accountInfo)
+                AccountSetting(
+                    onShowLogoutDialog,
+                    moveDeleteAccountScreen,
+                    accountInfo = accountInfo,
+                )
                 Text(
                     "현재 버전 v${BuildConfig.VERSION_NAME}",
                     style = PretendardMedium12,
@@ -399,6 +452,24 @@ fun SettingScreenContent(
             }
         }
     }
+}
+
+private fun checkNotificationPermission(context: Context): Boolean {
+    // - Android 13 이상: POST_NOTIFICATIONS 권한 허용 여부 및 채널 차단 여부까지 종합 확인
+    // - Android 12 이하: 시스템 설정에서 해당 앱의 알림을 수동으로 껐는지 확인
+    val hasPostNotifications = NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+    // 정확한 알람(리마인더) 권한 체크 (Android 12 / API 31 이상)
+    val hasExactAlarm =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(android.app.AlarmManager::class.java)
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true // Android 11 이하는 자동 허용됨
+        }
+
+    // 두 가지 권한을 모두 가지고 있어야 true 반환
+    return hasPostNotifications && hasExactAlarm
 }
 
 @Preview(showBackground = true)
@@ -412,6 +483,8 @@ private fun SettingScreenContentPreview() {
             addCouponAlarmSetting = {},
             removeCouponAlarmSetting = {},
             checkPermissionAndShowSheet = {},
+            checkPermissionOnly = {},
+            isPermissionOverlyEnabled = false,
             updatePendingExactAlarmCheck = {},
             showNotificationSettingsDialog = false,
             onDismissNotificationDialog = {},
@@ -444,6 +517,8 @@ private fun SettingScreenContentPermissionDialogPreview() {
             addCouponAlarmSetting = {},
             removeCouponAlarmSetting = {},
             checkPermissionAndShowSheet = {},
+            checkPermissionOnly = {},
+            isPermissionOverlyEnabled = true,
             updatePendingExactAlarmCheck = {},
             showNotificationSettingsDialog = true,
             onDismissNotificationDialog = {},
