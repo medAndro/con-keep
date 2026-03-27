@@ -27,10 +27,18 @@ class CouponActionManager(
                 Intent(Intent.ACTION_SEND).apply {
                     type = "image/*"
                     putExtra(Intent.EXTRA_STREAM, shareUri)
+                    clipData = ClipData.newRawUri("쿠폰 이미지", shareUri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
+
             val title = context.getString(R.string.coupon_image_share_title)
-            context.startActivity(Intent.createChooser(intent, title))
+
+            val chooserIntent =
+                Intent.createChooser(intent, title).apply {
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+
+            context.startActivity(chooserIntent)
         } else {
             Toast
                 .makeText(context, R.string.coupon_image_processing_failed, Toast.LENGTH_SHORT)
