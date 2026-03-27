@@ -1,11 +1,12 @@
 package com.conkeep.ui.feature.coupon.image
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.conkeep.data.local.file.LocalFileManager
 import com.conkeep.data.repository.coupon.CouponRepository
 import com.conkeep.domain.usecase.coupon.SaveCouponUseCase
+import com.conkeep.domain.usecase.coupon.ShareCouponUseCase
 import com.conkeep.ui.feature.coupon.model.CouponUiModel
 import com.conkeep.ui.mapper.toUiModel
 import com.conkeep.util.TimeProvider
@@ -28,8 +29,8 @@ class CouponImageViewModel
         private val couponRepository: CouponRepository,
         private val timeProvider: TimeProvider,
         @Assisted private val couponId: String,
-        private val fileManager: LocalFileManager,
         private val saveCouponUseCase: SaveCouponUseCase,
+        private val shareCouponUseCase: ShareCouponUseCase,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -48,12 +49,22 @@ class CouponImageViewModel
                 )
 
         fun shareCoupon(onResult: (Uri?) -> Unit) {
-            val currentCoupon = coupon.value ?: return
-            val path = currentCoupon.localImagePath ?: return
-            val name = "${coupon.value?.name}_${coupon.value?.number}"
+            val currentCoupon = coupon.value
+
+            if (currentCoupon == null) {
+                onResult(null)
+                return
+            }
 
             viewModelScope.launch {
-                val shareUri = fileManager.getShareUriWithCustomName(path, name)
+                val shareUri =
+                    shareCouponUseCase(
+                        r2Url = currentCoupon.r2Url,
+                        name = currentCoupon.name,
+                        number = currentCoupon.number,
+                    )
+
+                Log.d("CouponImageViewModel", "shareCoupon Uri: $shareUri")
                 onResult(shareUri)
             }
         }

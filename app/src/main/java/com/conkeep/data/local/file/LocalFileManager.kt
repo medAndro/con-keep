@@ -189,6 +189,7 @@ class LocalFileManager
          * @param absolutePath 원본 파일 경로
          * @param newFileName 보여주고 싶은 파일명 (확장자 제외)
          */
+
         suspend fun getShareUriWithCustomName(
             absolutePath: String,
             newFileName: String,
@@ -198,12 +199,28 @@ class LocalFileManager
                     val sourceFile = File(absolutePath)
                     if (!sourceFile.exists()) return@withContext null
 
-                    val extension = sourceFile.extension
-                    val finalFileName = "${newFileName.fileNameSanitize()}.$extension"
+                    val mimeType = getMimeTypeFromFile(sourceFile)
+
+                    val realExtension =
+                        when {
+                            mimeType.contains("png", ignoreCase = true) -> "png"
+                            mimeType.contains("jpeg", ignoreCase = true) ||
+                                mimeType.contains(
+                                    "jpg",
+                                    ignoreCase = true,
+                                ) -> "jpg"
+
+                            mimeType.contains("webp", ignoreCase = true) -> "webp"
+                            mimeType.contains("gif", ignoreCase = true) -> "gif"
+                            else -> "webp" // 알 수 없는 경우 기본적으로 jpg로 처리
+                        }
+
+                    // 사용자가 넘겨준 이름 뒤에 올바른 이미지 확장자를 붙입니다.
+                    val finalFileName = "${newFileName.fileNameSanitize()}.$realExtension"
 
                     if (!shareCacheDir.exists()) shareCacheDir.mkdirs()
 
-                    // 1시간 이상 된 파일만 정리
+                    // 1시간 이상 된 파일 정리
                     val currentTime = System.currentTimeMillis()
                     shareCacheDir.listFiles()?.forEach { file ->
                         if (currentTime - file.lastModified() > 3600000) {
@@ -211,6 +228,7 @@ class LocalFileManager
                         }
                     }
 
+                    //  새 확장자가 붙은 이름으로 임시 파일 생성 및 복사
                     val tempFile = File(shareCacheDir, finalFileName)
                     sourceFile.copyTo(tempFile, overwrite = true)
 

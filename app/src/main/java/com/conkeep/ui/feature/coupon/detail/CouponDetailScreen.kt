@@ -73,7 +73,8 @@ import com.conkeep.ui.component.ConKeepConfirmDialog
 import com.conkeep.ui.component.EvenlyTextTopBar
 import com.conkeep.ui.component.RoundedDashedLine
 import com.conkeep.ui.component.TopBarButtonConfig
-import com.conkeep.ui.feature.coupon.common.rememberCouponActionHandler
+import com.conkeep.ui.feature.coupon.common.CouponActionManager
+import com.conkeep.ui.feature.coupon.common.rememberStoragePermissionAction
 import com.conkeep.ui.feature.coupon.component.AmountInputField
 import com.conkeep.ui.feature.coupon.component.MemoInputField
 import com.conkeep.ui.feature.coupon.list.component.ExpirationBadge
@@ -116,10 +117,9 @@ fun CouponDetailScreen(
     val amountSaveFailedMessage = stringResource(R.string.coupon_detail_screen_amount_save_failed)
     val softDeleteFailedMessage = stringResource(R.string.coupon_detail_screen_soft_delete_failed)
     val softDeleteMessage = stringResource(R.string.coupon_detail_screen_delete_message)
-    val actionHandler =
-        rememberCouponActionHandler(
-            onSaveRequested = { callback -> viewModel.saveCouponImage(callback) },
-        )
+    val actionManager = CouponActionManager(context)
+    val runWithStoragePermission = rememberStoragePermissionAction()
+
     LaunchedEffect(Unit) {
         viewModel.errorEvent.collect { couponDetailError: CouponDetailError ->
             when (couponDetailError) {
@@ -156,8 +156,16 @@ fun CouponDetailScreen(
         },
         onUseCoupon = viewModel::useCoupon,
         onUnUseCoupon = viewModel::unUseCoupon,
-        onCouponImageSave = actionHandler.saveImage,
-        onCouponNumberCopy = actionHandler.copyToClipboard,
+        onCouponImageSave = {
+            runWithStoragePermission {
+                viewModel.saveCouponImage { isSuccess ->
+                    actionManager.handleSaveResult(isSuccess == true)
+                }
+            }
+        },
+        onCouponNumberCopy = {
+            actionManager.copyToClipboard(it)
+        },
         onCouponMemoSave = viewModel::saveCouponMemo,
         onCouponAmountSave = viewModel::saveCouponAmount,
         onDeleteCoupon = {
