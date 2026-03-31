@@ -1,4 +1,7 @@
 # 🌽 콘킾(ConKeep) - 모바일 쿠폰 관리 서비스
+<img width="2134" height="1042" alt="스크린샷2_홈" src="https://github.com/user-attachments/assets/cf2eb8cd-bb19-4217-abae-6c383cc4a818" />
+
+PlayStore : https://download.conkeep.com
 
 ## 📍 서비스 주제
 
@@ -27,12 +30,12 @@ Lovable 프로토타입  + Banani를 참고하여 Figma로 직접 제작하였�
 - **BaaS**: **Supabase** (Auth, Postgrest, Realtime)
 - **Compute**: Cloudflare Workers (Serverless Backend Logic)
 - **Storage**: Cloudflare R2 (S3 Compatible) + **Presigned URL** 보안 업로드
-- **Gen AI**: **Gemini Flash Vision** (기프티콘 정보 추출 및 자동 입력)
+- **Online AI**: OpenRouter & Gemini (이미지 내 쿠폰 정보 인식 및 Json 파싱)
 
 
 ### 💡 Architectural Insights
 - **Navigation 3**: Compose와의 더 깊은 통합과 선언적 상태 관리를 경험하고, 안드로이드 탐색 엔진의 차세대 표준을 미리 학습하기 위해 채택했습니다.
 - **Ktor**: Retrofit 대비 높은 커스텀 자유도와 향후 Kotlin Multiplatform (KMP)으로의 확장 가능성을 고려하여 Ktor 엔진을 선택했습니다.
-- **Gemini Flash**: 비용 효율성과 응답 속도 사이의 균형을 고려하여, 이미지 분석 작업에 최적화된 Flash 모델을 선정했습니다.
+- **OpenRouter Gemini**: 비용 효율성과 응답 속도 사이의 균형을 고려하였고, 백업 모델 전환 및 신뢰성을 이유로 오픈라우터를 사용했습니다.
 ---
 
