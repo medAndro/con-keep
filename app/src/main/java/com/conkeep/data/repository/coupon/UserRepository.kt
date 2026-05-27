@@ -2,6 +2,7 @@
 package com.conkeep.data.repository.coupon
 
 import android.util.Log
+import com.conkeep.util.SensitiveLogMasker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
@@ -34,7 +35,10 @@ class UserRepository
                 // upsert 대신 rpc 함수 호출
                 supabase.postgrest.rpc("register_device", parameters)
 
-                Log.d("UserRepository", "디바이스 등록/갱신(RPC) 완료: $userId\n$fcmToken")
+                Log.d(
+                    "UserRepository",
+                    "디바이스 등록/갱신(RPC) 완료: userId=$userId, fcmToken=${SensitiveLogMasker.maskToken(fcmToken)}",
+                )
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e("UserRepository", "디바이스 등록 실패", e)

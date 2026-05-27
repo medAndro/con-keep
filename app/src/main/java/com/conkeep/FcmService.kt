@@ -7,6 +7,7 @@ import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.repository.coupon.UserRepository
 import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.data.sync.SyncManager
+import com.conkeep.util.SensitiveLogMasker
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -93,7 +94,7 @@ class FcmService : FirebaseMessagingService() {
      */
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "새로운 토큰 발급됨: $token")
+        Log.d(TAG, "새로운 토큰 발급됨: ${SensitiveLogMasker.maskToken(token)}")
 
         // 주소가 바뀌었으니 즉시 서버 장부를 업데이트합니다.
         sendTokenToServer(token)

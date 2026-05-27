@@ -7,6 +7,7 @@ import com.conkeep.data.repository.auth.AuthRepository
 import com.conkeep.di.annotation.AuthClient
 import com.conkeep.di.annotation.PlainAuthClient
 import com.conkeep.di.annotation.R2UploadClient
+import com.conkeep.util.SensitiveLogMasker
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,6 +27,7 @@ import io.ktor.client.plugins.logging.ANDROID
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -36,6 +38,12 @@ import io.ktor.client.plugins.auth.Auth as KtorAuth
 @Module
 @InstallIn(SingletonComponent::class)
 object SupabaseModule {
+    private object MaskingLogger : Logger {
+        override fun log(message: String) {
+            Logger.ANDROID.log(SensitiveLogMasker.mask(message))
+        }
+    }
+
     @Provides
     @Singleton
     fun provideSupabaseClient(): SupabaseClient =
@@ -65,8 +73,9 @@ object SupabaseModule {
             }
             if (BuildConfig.DEBUG) {
                 install(Logging) {
-                    logger = Logger.ANDROID // 안드로이드 Logcat에 출력
+                    logger = MaskingLogger
                     level = LogLevel.HEADERS
+                    sanitizeHeader { header -> header == HttpHeaders.Authorization }
                 }
             }
         }
@@ -89,8 +98,9 @@ object SupabaseModule {
 
             if (BuildConfig.DEBUG) {
                 install(Logging) {
-                    logger = Logger.ANDROID
+                    logger = MaskingLogger
                     level = LogLevel.ALL
+                    sanitizeHeader { header -> header == HttpHeaders.Authorization }
                 }
             }
         }
@@ -162,8 +172,9 @@ object SupabaseModule {
 
             if (BuildConfig.DEBUG) {
                 install(Logging) {
-                    logger = Logger.ANDROID
+                    logger = MaskingLogger
                     level = LogLevel.ALL
+                    sanitizeHeader { header -> header == HttpHeaders.Authorization }
                 }
             }
         }
