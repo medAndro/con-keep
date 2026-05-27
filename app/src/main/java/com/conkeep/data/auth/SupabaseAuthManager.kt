@@ -14,6 +14,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import com.conkeep.BuildConfig
 import com.conkeep.data.repository.auth.AuthRepository
+import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -53,6 +54,7 @@ class SupabaseAuthManager
         supabase: SupabaseClient,
         private val authRepository: AuthRepository,
         private val authEventBus: AuthEventBus,
+        private val userPrefs: UserPreferencesRepository,
     ) {
         val auth = supabase.auth
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -122,19 +124,10 @@ class SupabaseAuthManager
          */
         suspend fun getAuthenticatedUserId(): String? {
             try {
-                // Supabase 내부 초기화 (DataStore에서 토큰 읽기) 대기
-                auth.awaitInitialization()
-
-                // 세션은 있지만 Flow에 아직 ID가 안 채워졌을 수 있으므로 대기
-                val userId =
-                    withTimeoutOrNull(5000L) {
-                        currentUserIdFlow.filterNotNull().first()
-                    } ?: auth.currentUserOrNull()?.id
-
-                if (userId == null) {
+                val userId = getValidSessionUserIdOrNull()
+                if (userId.isNullOrBlank()) {
                     Log.d("SupabaseAuth", "로그인 세션을 확인하지 못했습니다. 작업을 중단합니다.")
                 }
-
                 return userId
             } catch (e: Exception) {
                 Log.e("SupabaseAuth", "인증 정보 확인 중 오류 발생", e)
@@ -144,12 +137,7 @@ class SupabaseAuthManager
 
         suspend fun requireAuthenticatedUserId(): AuthUserIdResult {
             try {
-                auth.awaitInitialization()
-
-                val userId =
-                    withTimeoutOrNull(5000L) {
-                        currentUserIdFlow.filterNotNull().first()
-                    } ?: auth.currentUserOrNull()?.id
+                val userId = getValidSessionUserIdOrNull()
 
                 return if (userId.isNullOrBlank()) {
                     AuthUserIdResult.Unauthenticated
@@ -160,6 +148,22 @@ class SupabaseAuthManager
                 Log.e("SupabaseAuth", "인증 정보 확인 중 오류 발생", e)
                 return AuthUserIdResult.Unauthenticated
             }
+        }
+
+        private suspend fun getValidSessionUserIdOrNull(): String? {
+            auth.awaitInitialization()
+
+            if (auth.currentSessionOrNull() == null) {
+                return null
+            }
+
+            if (authRepository.getValidAccessToken().isNullOrBlank()) {
+                return null
+            }
+
+            return withTimeoutOrNull(5000L) {
+                currentUserIdFlow.filterNotNull().first()
+            } ?: auth.currentUserOrNull()?.id
         }
 
         /**
@@ -329,8 +333,7 @@ class SupabaseAuthManager
                 try {
                     Log.d("SupabaseAuth", "로그아웃 프로세스 시작 (화면 즉시 전환)")
 
-                    cachedMasterKeyInfo = null
-                    auth.clearSession()
+                    clearLocalAuthState()
 
                     // 앱이 백그라운드로 내려가도 로그아웃
                     withContext(NonCancellable) {
@@ -347,10 +350,16 @@ class SupabaseAuthManager
                     }
                 } catch (e: Exception) {
                     Log.e("SupabaseAuth", "로그아웃 중 오류 발생", e)
-                    cachedMasterKeyInfo = null
-                    auth.clearSession()
+                    clearLocalAuthState()
                 }
             }
+        }
+
+        private suspend fun clearLocalAuthState() {
+            cachedMasterKeyInfo = null
+            runCatching { userPrefs.clearAll() }
+                .onFailure { Log.e("SupabaseAuth", "로컬 사용자 설정 초기화 실패", it) }
+            auth.clearSession()
         }
 
         suspend fun refreshSession() {

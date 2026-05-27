@@ -4,8 +4,6 @@ import android.util.Log
 import androidx.work.WorkManager
 import com.conkeep.data.auth.AuthEventBus
 import com.conkeep.data.auth.SupabaseAuthManager
-import com.conkeep.data.repository.coupon.UserRepository
-import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.conkeep.data.sync.SyncManager
 import com.conkeep.util.SensitiveLogMasker
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -14,7 +12,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -29,10 +26,7 @@ class FcmService : FirebaseMessagingService() {
      * 서비스는 시스템이 생성하므로 생성자 주입이 안 되어 @Inject lateinit을 사용합니다.
      */
     @Inject
-    lateinit var userRepository: UserRepository
-
-    @Inject
-    lateinit var userPrefs: UserPreferencesRepository
+    lateinit var fcmTokenRegistrar: FcmTokenRegistrar
 
     @Inject
     lateinit var workManager: WorkManager
@@ -115,26 +109,19 @@ class FcmService : FirebaseMessagingService() {
     private fun sendTokenToServer(token: String) {
         serviceScope.launch {
             try {
-                // 이 서비스는 화면이 없으므로, 로컬 저장소(Datastore)에서 현재 로그인된 유저 ID를 찾습니다.
-                val userId =
-                    supabaseAuthManager.getAuthenticatedUserId()
-                        ?: userPrefs.userId.first()?.takeUnless { it.isBlank() }
-                        ?: run {
-                            Log.w(TAG, "유저 ID를 찾을 수 없어 토큰 업데이트를 건너뜁니다.")
-                            return@launch
-                        }
-                // 서버(Supabase)의 profiles 테이블에 내 주소를 저장합니다.
-                userRepository
-                    .registerDevice(userId, token)
-                    .onSuccess {
-                        // 나중에 중복 요청을 방지하기 위해 로컬 캐시에도 저장해 둡니다.
-                        userPrefs.updateUserId(userId)
-                        userPrefs.updateFcmToken(token)
-
-                        Log.d(TAG, "서버 토큰 업데이트 성공")
-                    }.onFailure {
-                        Log.e(TAG, "서버 토큰 업데이트 실패", it)
+                when (val result = fcmTokenRegistrar.registerCurrentDeviceToken(token)) {
+                    FcmTokenRegistrationResult.AuthRequired -> {
+                        Log.w(TAG, "인증 세션을 확인하지 못해 토큰 업데이트를 건너뜁니다.")
                     }
+
+                    is FcmTokenRegistrationResult.Failure -> {
+                        Log.e(TAG, "서버 토큰 업데이트 실패", result.throwable)
+                    }
+
+                    FcmTokenRegistrationResult.Success -> {
+                        Log.d(TAG, "서버 토큰 업데이트 성공")
+                    }
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "토큰 업데이트 중 오류 발생", e)
             }
