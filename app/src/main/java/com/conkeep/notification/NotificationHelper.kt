@@ -80,8 +80,8 @@ class NotificationHelper
                 NotificationCompat
                     .Builder(context, EXPIRY_REMINDER_CHANNEL_ID)
                     .setSmallIcon(R.drawable.ic_corn_ms_emoji)
-                    .setContentTitle("쿠폰 알림 확인이 필요해요")
-                    .setContentText("로그인 상태를 확인하지 못해 만료 예정 쿠폰을 조회하지 못했습니다.")
+                    .setContentTitle("⚠️콘킾 로그아웃 알림")
+                    .setContentText("로그아웃되어 못해 쿠폰 알림을 받을 수 없어요. 콘킾을 실행해서 로그인 상태를 확인해 주세요")
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
                     .setContentIntent(pendingIntent)
