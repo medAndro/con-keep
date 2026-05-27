@@ -222,11 +222,16 @@ class MainActivity : ComponentActivity() {
             if (currentToken != cachedToken || userId != cachedUserId) {
                 Log.d("MainActivity", "FCM 토큰 변경 감지: 업데이트를 시작합니다.")
                 // 새 토큰 서버 전송
-                userRepository.registerDevice(userId, currentToken)
-
-                // 성공적으로 전송 완료 후 로컬 캐시 갱신
-                userPrefs.updateFcmToken(currentToken)
-                Log.d("MainActivity", "FCM 토큰 서버 업데이트 완료")
+                userRepository
+                    .registerDevice(userId, currentToken)
+                    .onSuccess {
+                        // 성공적으로 전송 완료 후 로컬 캐시 갱신
+                        userPrefs.updateUserId(userId)
+                        userPrefs.updateFcmToken(currentToken)
+                        Log.d("MainActivity", "FCM 토큰 서버 업데이트 완료")
+                    }.onFailure {
+                        Log.e("MainActivity", "FCM 토큰 서버 업데이트 실패", it)
+                    }
             } else {
                 Log.d("MainActivity", "FCM 토큰이 동일합니다. 업데이트를 건너뜁니다.")
             }

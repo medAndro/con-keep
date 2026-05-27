@@ -116,17 +116,24 @@ class FcmService : FirebaseMessagingService() {
             try {
                 // 이 서비스는 화면이 없으므로, 로컬 저장소(Datastore)에서 현재 로그인된 유저 ID를 찾습니다.
                 val userId =
-                    userPrefs.userId.first() ?: run {
-                        Log.w(TAG, "유저 ID를 찾을 수 없어 토큰 업데이트를 건너뜁니다.")
-                        return@launch
-                    }
+                    supabaseAuthManager.getAuthenticatedUserId()
+                        ?: userPrefs.userId.first()?.takeUnless { it.isBlank() }
+                        ?: run {
+                            Log.w(TAG, "유저 ID를 찾을 수 없어 토큰 업데이트를 건너뜁니다.")
+                            return@launch
+                        }
                 // 서버(Supabase)의 profiles 테이블에 내 주소를 저장합니다.
-                userRepository.registerDevice(userId, token)
+                userRepository
+                    .registerDevice(userId, token)
+                    .onSuccess {
+                        // 나중에 중복 요청을 방지하기 위해 로컬 캐시에도 저장해 둡니다.
+                        userPrefs.updateUserId(userId)
+                        userPrefs.updateFcmToken(token)
 
-                // 나중에 중복 요청을 방지하기 위해 로컬 캐시에도 저장해 둡니다.
-                userPrefs.updateFcmToken(token)
-
-                Log.d(TAG, "서버 토큰 업데이트 성공")
+                        Log.d(TAG, "서버 토큰 업데이트 성공")
+                    }.onFailure {
+                        Log.e(TAG, "서버 토큰 업데이트 실패", it)
+                    }
             } catch (e: Exception) {
                 Log.e(TAG, "토큰 업데이트 중 오류 발생", e)
             }
