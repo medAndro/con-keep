@@ -6,6 +6,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.conkeep.BuildConfig
+import com.conkeep.data.auth.AuthUserIdResult
 import com.conkeep.data.auth.SupabaseAuthManager
 import com.conkeep.data.local.dao.CouponDao
 import com.conkeep.data.mapper.toDomain
@@ -139,8 +140,29 @@ class CouponRepository
 
         // N일 만료일인 쿠폰들을 가져옴
         suspend fun getImminentCoupons(daysBefore: Int): List<Coupon> {
-            val userId = authManager.getAuthenticatedUserId() ?: return emptyList()
+            val userId =
+                when (val result = authManager.requireAuthenticatedUserId()) {
+                    is AuthUserIdResult.Authenticated -> result.userId
+                    AuthUserIdResult.Unauthenticated -> return emptyList()
+                }
 
+            return getImminentCouponsByUserId(userId, daysBefore)
+        }
+
+        suspend fun getImminentCouponsForAlarm(daysBefore: Int): ImminentCouponsResult {
+            val userId =
+                when (val result = authManager.requireAuthenticatedUserId()) {
+                    is AuthUserIdResult.Authenticated -> result.userId
+                    AuthUserIdResult.Unauthenticated -> return ImminentCouponsResult.AuthRequired
+                }
+
+            return ImminentCouponsResult.Success(getImminentCouponsByUserId(userId, daysBefore))
+        }
+
+        private suspend fun getImminentCouponsByUserId(
+            userId: String,
+            daysBefore: Int,
+        ): List<Coupon> {
             // 1. 현재 시점 및 타임존 설정
             val now: Instant = Clock.System.now()
             val systemTimeZone: TimeZone = TimeZone.currentSystemDefault()
@@ -474,3 +496,11 @@ class CouponRepository
                 }
             }
     }
+
+sealed interface ImminentCouponsResult {
+    data class Success(
+        val coupons: List<Coupon>,
+    ) : ImminentCouponsResult
+
+    data object AuthRequired : ImminentCouponsResult
+}

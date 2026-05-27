@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlinSerializaitons)
     alias(libs.plugins.room)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.android.junit)
 }
 room {
     schemaDirectory("$projectDir/schemas")
@@ -53,6 +54,10 @@ android {
             "COUPON_IMAGE_ENDPOINT",
             "\"${gradleLocalProperties(rootDir, providers).getProperty("COUPON_IMAGE_ENDPOINT")}\"",
         )
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     buildTypes {
@@ -173,6 +178,13 @@ dependencies {
 
     // Test
     testImplementation(libs.junit)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.robolectric)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+    testRuntimeOnly(libs.junit.vintage.engine)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

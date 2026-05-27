@@ -62,6 +62,34 @@ class NotificationHelper
             manager.notify(NOTICE_ID, notification)
         }
 
+        fun showAuthRequiredNotification() {
+            val intent =
+                Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+
+            val pendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    AUTH_REQUIRED_ID,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+
+            val notification =
+                NotificationCompat
+                    .Builder(context, EXPIRY_REMINDER_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_corn_ms_emoji)
+                    .setContentTitle("⚠️콘킾 로그아웃 알림")
+                    .setContentText("로그아웃되어 못해 쿠폰 알림을 받을 수 없어요. 콘킾을 실행해서 로그인 상태를 확인해 주세요")
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+
+            manager.notify(AUTH_REQUIRED_ID, notification)
+        }
+
         // 만료일 알림 전송 함수
         fun showGroupedNotifications(
             daysBefore: Int,
@@ -139,6 +167,7 @@ class NotificationHelper
         companion object {
             private const val EXPIRY_REMINDER_CHANNEL_ID = "expiry_reminder"
             private const val EXPIRY_REMINDER_ID = 1001
+            private const val AUTH_REQUIRED_ID = 1003
 
             private const val EXPIRY_GROUP_KEY_COUPON = "com.conkeep.COUPON_EXPIRY"
             private const val COUPON_ETC_INFO_ID = "coupon_etc_info_id"

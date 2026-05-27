@@ -14,6 +14,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import com.conkeep.BuildConfig
 import com.conkeep.data.repository.auth.AuthRepository
+import com.conkeep.data.repository.datastore.UserPreferencesRepository
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -26,7 +27,6 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
-import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -45,7 +45,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.time.Clock
 
 @Singleton
 class SupabaseAuthManager
@@ -55,6 +54,7 @@ class SupabaseAuthManager
         supabase: SupabaseClient,
         private val authRepository: AuthRepository,
         private val authEventBus: AuthEventBus,
+        private val userPrefs: UserPreferencesRepository,
     ) {
         val auth = supabase.auth
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -124,23 +124,46 @@ class SupabaseAuthManager
          */
         suspend fun getAuthenticatedUserId(): String? {
             try {
-                // Supabase 내부 초기화 (DataStore에서 토큰 읽기) 대기
-                auth.awaitInitialization()
-
-                // 초기화 직후 세션이 아예 없다면 비로그인 상태로 간주
-                if (auth.currentSessionOrNull() == null) {
-                    Log.d("SupabaseAuth", "로그인 세션이 없습니다. 작업을 중단합니다.")
-                    return null
+                val userId = getValidSessionUserIdOrNull()
+                if (userId.isNullOrBlank()) {
+                    Log.d("SupabaseAuth", "로그인 세션을 확인하지 못했습니다. 작업을 중단합니다.")
                 }
-
-                // 세션은 있지만 Flow에 아직 ID가 안 채워졌을 수 있으므로 대기
-                return withTimeoutOrNull(5000L) {
-                    currentUserIdFlow.filterNotNull().first()
-                }
+                return userId
             } catch (e: Exception) {
                 Log.e("SupabaseAuth", "인증 정보 확인 중 오류 발생", e)
                 return null
             }
+        }
+
+        suspend fun requireAuthenticatedUserId(): AuthUserIdResult {
+            try {
+                val userId = getValidSessionUserIdOrNull()
+
+                return if (userId.isNullOrBlank()) {
+                    AuthUserIdResult.Unauthenticated
+                } else {
+                    AuthUserIdResult.Authenticated(userId)
+                }
+            } catch (e: Exception) {
+                Log.e("SupabaseAuth", "인증 정보 확인 중 오류 발생", e)
+                return AuthUserIdResult.Unauthenticated
+            }
+        }
+
+        private suspend fun getValidSessionUserIdOrNull(): String? {
+            auth.awaitInitialization()
+
+            if (auth.currentSessionOrNull() == null) {
+                return null
+            }
+
+            if (authRepository.getValidAccessToken().isNullOrBlank()) {
+                return null
+            }
+
+            return withTimeoutOrNull(5000L) {
+                currentUserIdFlow.filterNotNull().first()
+            } ?: auth.currentUserOrNull()?.id
         }
 
         /**
@@ -193,24 +216,7 @@ class SupabaseAuthManager
             return auth.currentSessionOrNull() != null
         }
 
-        suspend fun getValidAccessToken(): String? {
-            val session: UserSession = auth.currentSessionOrNull() ?: return null
-
-            // 만료 2분 전에 미리 갱신 시도
-            val expiresIn = (session.expiresAt - Clock.System.now()).inWholeSeconds
-            Log.d("SupabaseAuth", "토큰 만료 시간: $expiresIn")
-            return if (expiresIn < 120) {
-                try {
-                    auth.refreshCurrentSession()
-                    auth.currentSessionOrNull()?.accessToken
-                } catch (e: Exception) {
-                    Log.e("SupabaseAuth", "토큰 갱신 실패", e)
-                    null
-                }
-            } else {
-                session.accessToken
-            }
-        }
+        suspend fun getValidAccessToken(): String? = authRepository.getValidAccessToken()
 
         /**
          * 구글 로그인
@@ -327,8 +333,7 @@ class SupabaseAuthManager
                 try {
                     Log.d("SupabaseAuth", "로그아웃 프로세스 시작 (화면 즉시 전환)")
 
-                    cachedMasterKeyInfo = null
-                    auth.clearSession()
+                    clearLocalAuthState()
 
                     // 앱이 백그라운드로 내려가도 로그아웃
                     withContext(NonCancellable) {
@@ -345,20 +350,33 @@ class SupabaseAuthManager
                     }
                 } catch (e: Exception) {
                     Log.e("SupabaseAuth", "로그아웃 중 오류 발생", e)
-                    cachedMasterKeyInfo = null
-                    auth.clearSession()
+                    clearLocalAuthState()
                 }
             }
         }
 
+        private suspend fun clearLocalAuthState() {
+            cachedMasterKeyInfo = null
+            runCatching { userPrefs.clearAll() }
+                .onFailure { Log.e("SupabaseAuth", "로컬 사용자 설정 초기화 실패", it) }
+            auth.clearSession()
+        }
+
         suspend fun refreshSession() {
-            try {
-                auth.refreshCurrentSession()
-            } catch (e: Exception) {
+            val refreshedToken = authRepository.refreshAccessToken()
+            if (refreshedToken == null) {
                 signOut(context)
             }
         }
     }
+
+sealed interface AuthUserIdResult {
+    data class Authenticated(
+        val userId: String,
+    ) : AuthUserIdResult
+
+    data object Unauthenticated : AuthUserIdResult
+}
 
 class NoGoogleAccountException(
     message: String,

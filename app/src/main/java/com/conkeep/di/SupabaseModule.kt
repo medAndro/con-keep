@@ -3,8 +3,11 @@ package com.conkeep.di
 import android.util.Log
 import com.conkeep.BuildConfig
 import com.conkeep.data.auth.AuthEventBus
+import com.conkeep.data.repository.auth.AuthRepository
 import com.conkeep.di.annotation.AuthClient
+import com.conkeep.di.annotation.PlainAuthClient
 import com.conkeep.di.annotation.R2UploadClient
+import com.conkeep.util.SensitiveLogMasker
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,17 +27,23 @@ import io.ktor.client.plugins.logging.ANDROID
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import java.net.URL
 import javax.inject.Singleton
-import io.github.jan.supabase.auth.auth as SupabaseAuth
 import io.ktor.client.plugins.auth.Auth as KtorAuth
 
 @Module
 @InstallIn(SingletonComponent::class)
 object SupabaseModule {
+    private object MaskingLogger : Logger {
+        override fun log(message: String) {
+            Logger.ANDROID.log(SensitiveLogMasker.mask(message))
+        }
+    }
+
     @Provides
     @Singleton
     fun provideSupabaseClient(): SupabaseClient =
@@ -64,8 +73,34 @@ object SupabaseModule {
             }
             if (BuildConfig.DEBUG) {
                 install(Logging) {
-                    logger = Logger.ANDROID // 안드로이드 Logcat에 출력
+                    logger = MaskingLogger
                     level = LogLevel.HEADERS
+                    sanitizeHeader { header -> header == HttpHeaders.Authorization }
+                }
+            }
+        }
+
+    @Provides
+    @PlainAuthClient
+    @Singleton
+    fun providePlainAuthClient(): HttpClient =
+        HttpClient(Android) {
+            // 공통 JSON 설정
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                        encodeDefaults = true
+                    },
+                )
+            }
+
+            if (BuildConfig.DEBUG) {
+                install(Logging) {
+                    logger = MaskingLogger
+                    level = LogLevel.ALL
+                    sanitizeHeader { header -> header == HttpHeaders.Authorization }
                 }
             }
         }
@@ -74,7 +109,7 @@ object SupabaseModule {
     @AuthClient
     @Singleton
     fun provideAuthClient(
-        supabaseClient: SupabaseClient,
+        authRepository: AuthRepository,
         authEventBus: AuthEventBus,
     ): HttpClient =
         HttpClient(Android) {
@@ -94,7 +129,7 @@ object SupabaseModule {
                 bearer {
                     cacheTokens = false
                     loadTokens {
-                        val accessToken = supabaseClient.SupabaseAuth.currentAccessTokenOrNull()
+                        val accessToken = authRepository.currentAccessToken()
                         if (accessToken != null) {
                             BearerTokens(accessToken, refreshToken = "not_used")
                         } else {
@@ -108,21 +143,10 @@ object SupabaseModule {
                     }
 
                     refreshTokens {
-                        try {
-                            supabaseClient.SupabaseAuth.refreshCurrentSession()
-                            val newToken = supabaseClient.SupabaseAuth.currentAccessTokenOrNull()
-
-                            if (newToken != null) {
-                                BearerTokens(newToken, refreshToken = "not_used")
-                            } else {
-                                // [갱신 실패 시 1차 로그아웃 이벤트 발행]
-                                authEventBus.emitForceLogout()
-                                null
-                            }
-                        } catch (e: Exception) {
-                            Log.e("AuthClient", "토큰 갱신 실패", e)
-                            // [네트워크 에러 등으로 갱신 실패 시 로그아웃 이벤트 발행]
-                            authEventBus.emitForceLogout()
+                        val newToken = authRepository.refreshAccessToken()
+                        if (newToken != null) {
+                            BearerTokens(newToken, refreshToken = "not_used")
+                        } else {
                             null
                         }
                     }
@@ -148,8 +172,9 @@ object SupabaseModule {
 
             if (BuildConfig.DEBUG) {
                 install(Logging) {
-                    logger = Logger.ANDROID
+                    logger = MaskingLogger
                     level = LogLevel.ALL
+                    sanitizeHeader { header -> header == HttpHeaders.Authorization }
                 }
             }
         }

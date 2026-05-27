@@ -31,9 +31,23 @@ class UserPreferencesRepository
             }
 
         // 데이터 저장 (suspend) - 코루틴 안에서 실행되어 UI 스레드를 차단하지 않습니다.
-        suspend fun updateUserId(id: String?) = dataStore.edit { it[Keys.USER_ID] = id ?: "" }
+        suspend fun updateUserId(id: String?) =
+            dataStore.edit {
+                if (id.isNullOrBlank()) {
+                    it.remove(Keys.USER_ID)
+                } else {
+                    it[Keys.USER_ID] = id
+                }
+            }
 
-        suspend fun updateFcmToken(token: String?) = dataStore.edit { it[Keys.FCM_TOKEN] = token ?: "" }
+        suspend fun updateFcmToken(token: String?) =
+            dataStore.edit {
+                if (token.isNullOrBlank()) {
+                    it.remove(Keys.FCM_TOKEN)
+                } else {
+                    it[Keys.FCM_TOKEN] = token
+                }
+            }
 
         suspend fun updateLastSyncTime(time: String) =
             dataStore.edit { prefs ->
